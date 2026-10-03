@@ -77,3 +77,50 @@ bot.once('spawn', () => {
 })
 bot.on('kicked', r => console.log('KICK:', util.inspect(r, { depth: null })))
 bot.on('error', e => console.log('ERR:', e.code, e.message))
+
+// ---------- CLI command handling ----------
+const readline = require('readline')
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
+let isSpawned = false
+const commandQueue = []
+
+function handleInput(line) {
+  const trimmed = line.trim()
+  if (!trimmed) return
+  // Custom internal commands start with '!'
+  if (trimmed.startsWith('!')) {
+    const cmd = trimmed.slice(1).split(' ')[0]
+    const args = trimmed.slice(cmd.length + 2).trim()
+    switch (cmd) {
+      case 'quit':
+        console.log('Exiting...')
+        process.exit(0)
+        break
+      case 'help':
+        console.log('Available commands: !help, !quit, /<mc command>, or plain chat')
+        break
+      default:
+        console.log(`Unknown internal command: ${cmd}`)
+    }
+    return
+  }
+  // If line starts with '/', treat as raw command (Minecraft will interpret)
+  const toSend = trimmed.startsWith('/') ? trimmed : trimmed
+  bot.chat(toSend)
+}
+
+rl.on('line', line => {
+  if (isSpawned) {
+    handleInput(line)
+  } else {
+    commandQueue.push(line)
+  }
+})
+
+bot.once('spawn', () => {
+  isSpawned = true
+  // Process any queued commands
+  while (commandQueue.length) {
+    handleInput(commandQueue.shift())
+  }
+})
