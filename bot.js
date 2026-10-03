@@ -61,6 +61,8 @@ const wrapParser = () => {
   }
 }
 wrapParser()
+let pk = 0, lastPk = ''
+client.on('packet', (d, m) => { pk++; lastPk = m.name })
 client.on('state', wrapParser)
 client.on('neoforgeRegistry', r => {
   if (r.name !== 'minecraft:data_component_type') return
@@ -80,7 +82,6 @@ bot.on('error', e => console.log('ERR:', e.code, e.message))
 bot.on('login', () => console.log('EVENT login'))
 bot.on('spawn', () => console.log('EVENT spawn'))
 bot.on('end', r => console.log('EVENT end:', r))
-setInterval(() => console.log('STATUS', bot.entity ? bot.entity.position : 'belum ada entity', 'item:', bot.inventory ? bot.inventory.items().length : '-'), 5000)
 
 
 // ---------- CLI command handling ----------
@@ -129,3 +130,9 @@ bot.once('spawn', () => {
     handleInput(commandQueue.shift())
   }
 })
+setTimeout(() => console.log('CEK10s: paket', pk, lastPk, 'pos', bot.entity && bot.entity.position, 'item', bot.inventory.items().length), 10000)
+let lastN = -1, still = 0
+setInterval(() => {
+  if (pk === lastN) { if (++still >= 6) { console.log('WATCHDOG: tidak ada paket 30 detik, keluar'); process.exit(1) } }
+  else { still = 0; lastN = pk }
+}, 5000)

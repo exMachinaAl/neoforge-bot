@@ -105,18 +105,98 @@ ENUM EXT: [
     extension: { vanillaCount: 4, totalCount: 5, entries: [ 'EPICFIGHT_UNIQUE' ] }
   }
 ]
+EVENT login
 PARSE GAGAL di paket: declare_recipes (133523 byte)
-Error: Read error for undefined : array size is abnormally large, not reading: 2003791716
-    at Object.intArray (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:3929:60)
-    at Object.nbtSwitch (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:3968:47)
-    at Object.anonymousNbt (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:83:64)
-    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:166:56)
+SKIP paket gagal: Read error for undefined : array size is abnormally large, not reading: 2003791716
+PARSE GAGAL di paket: window_items (73 byte)
+PartialReadError: Read error for undefined : Unexpected buffer end while reading VarInt
+    at new ExtendableError (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/utils.js:63:13)
+    at new PartialReadError (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/utils.js:70:5)
+    at Object.readVarInt [as varint] (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/datatypes/varint.js:19:40)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:654:42)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:659:15)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:661:13)
     at Object.SlotComponent (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:720:9)
     at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:957:49)
     at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:962:15)
     at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:980:13)
-    at Object.Slot (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:982:9)
-    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:389:40) {
-  field: 'play.toClient'
-}
-ERR: undefined Parse error for play.toClient: Read error for undefined : array size is abnormally large, not reading: 2003791716
+handshake complete: true
+EVENT spawn
+Chunk size is 194 but only 40 was read ; partial packet : {"name":"entity_equipment","params":{"entityId":266,"equipments":[{"slot":0,"item":{"itemCount":1,"itemId":823,"addedComponentCount":0,"removedComponentCount":0,"components":[],"removeComponents":[]}},{"slot":2,"item":{"itemCount":1,"itemId":859,"addedComponentCount":0,"removedComponentCount":0,"components":[],"removeComponents":[]}},{"slot":3,"item":{"itemCount":1,"itemId":858,"addedComponentCount":0,"removedComponentCount":0,"components":[],"removeComponents":[]}},{"slot":4,"item":{"itemCount":1,"itemId":1334,"addedComponentCount":6,"removedComponentCount":0,"components":[{"type":77},{"type":-399482625},{"type":9471},{"type":73},{"type":73},{"type":75}],"removeComponents":[]}},{"slot":0,"item":{"itemCount":0}}]}}; buffer :5b8a020001b70600000201db0600000301da0600000401b60a06004dffc1c1c14eff4949494b0000001b4f22f05af6af2d46e080d8a7990c671c3d4c00000001520a0a000875706772616465730a00076a756b65626f78010007706c6179696e6701000009000c757067726164654974656d730a00000001030005636f756e74000000010800026964002f736f70686973746963617465646261636b7061636b733a616476616e6365645f6a756b65626f785f7570677261646500000501e0060000
+CEK10s: paket 5901 chunk_batch_finished pos Vec3 { x: -91.5, y: 74, z: 31.5 } item 0
+PARSE GAGAL di paket: entity_equipment (86 byte)
+PartialReadError: Read error for undefined : Missing characters in string, found size is 86 expected size was 168
+    at new ExtendableError (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/utils.js:63:13)
+    at new PartialReadError (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/utils.js:70:5)
+    at Object.string (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:107:15)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:591:53)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:595:15)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:629:13)
+    at Object.SlotComponent (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:720:9)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:957:49)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:962:15)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:980:13)
+PARSE GAGAL di paket: entity_equipment (86 byte)
+PartialReadError: Read error for undefined : Missing characters in string, found size is 86 expected size was 168
+    at new ExtendableError (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/utils.js:63:13)
+    at new PartialReadError (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/utils.js:70:5)
+    at Object.string (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:107:15)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:591:53)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:595:15)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:629:13)
+    at Object.SlotComponent (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:720:9)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:957:49)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:962:15)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:980:13)
+PARSE GAGAL di paket: entity_metadata (29 byte)
+PartialReadError: Read error for undefined : Unexpected buffer end while reading VarInt
+    at new ExtendableError (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/utils.js:63:13)
+    at new PartialReadError (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/utils.js:70:5)
+    at Object.readVarInt [as varint] (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/datatypes/varint.js:19:40)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:1112:45)
+    at Object.entityMetadataEntry (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:1114:9)
+    at Object.entityMetadata (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:1252:47)
+    at Object.packet_entity_metadata (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:3080:73)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:3850:70)
+    at packet (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:3888:9)
+    at CompiledProtodef.read (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:70:12)
+PARSE GAGAL di paket: entity_metadata (29 byte)
+PartialReadError: Read error for undefined : Unexpected buffer end while reading VarInt
+    at new ExtendableError (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/utils.js:63:13)
+    at new PartialReadError (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/utils.js:70:5)
+    at Object.readVarInt [as varint] (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/datatypes/varint.js:19:40)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:1112:45)
+    at Object.entityMetadataEntry (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:1114:9)
+    at Object.entityMetadata (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:1252:47)
+    at Object.packet_entity_metadata (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:3080:73)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:3850:70)
+    at packet (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:3888:9)
+    at CompiledProtodef.read (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:70:12)
+EVENT spawn
+PARSE GAGAL di paket: entity_metadata (32 byte)
+PartialReadError: Read error for undefined : Unexpected buffer end while reading VarInt
+    at new ExtendableError (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/utils.js:63:13)
+    at new PartialReadError (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/utils.js:70:5)
+    at Object.readVarInt [as varint] (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/datatypes/varint.js:19:40)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:1112:45)
+    at Object.entityMetadataEntry (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:1114:9)
+    at Object.entityMetadata (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:1252:47)
+    at Object.packet_entity_metadata (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:3080:73)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:3850:70)
+    at packet (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:3888:9)
+    at CompiledProtodef.read (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:70:12)
+PARSE GAGAL di paket: entity_equipment (86 byte)
+PartialReadError: Read error for undefined : Missing characters in string, found size is 86 expected size was 168
+    at new ExtendableError (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/utils.js:63:13)
+    at new PartialReadError (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/utils.js:70:5)
+    at Object.string (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:107:15)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:591:53)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:595:15)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:629:13)
+    at Object.SlotComponent (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:720:9)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:957:49)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:962:15)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:980:13)
+Chunk size is 80 but only 36 was read ; partial packet : {"name":"entity_equipment","params":{"entityId":659,"equipments":[{"slot":2,"item":{"itemCount":1,"itemId":859,"addedComponentCount":1,"removedComponentCount":0,"components":[{"type":"enchantments","data":{"enchantments":[{"id":43,"level":1}],"showTooltip":true}}],"removeComponents":[]}},{"slot":3,"item":{"itemCount":1,"itemId":858,"addedComponentCount":0,"removedComponentCount":0,"components":[],"removeComponents":[]}},{"slot":4,"item":{"itemCount":1,"itemId":1334,"addedComponentCount":4,"removedComponentCount":0,"components":[{"type":77},{"type":1791},{"type":1447},{"type":78}],"removeComponents":[]}},{"slot":127,"item":{"itemCount":0}},{"slot":0,"item":{"itemCount":0}}]}}; buffer :5b93050201db06010009012b01010301da0600000401b60a04004dff0da70b4e7f000000391f6d696e6563726166743a6368657374732f6465736572745f707972616d69643a3f2aaaab0501d8060000
+Chunk size is 80 but only 36 was read ; partial packet : {"name":"entity_equipment","params":{"entityId":659,"equipments":[{"slot":2,"item":{"itemCount":1,"itemId":859,"addedComponentCount":1,"removedComponentCount":0,"components":[{"type":"enchantments","data":{"enchantments":[{"id":43,"level":1}],"showTooltip":true}}],"removeComponents":[]}},{"slot":3,"item":{"itemCount":1,"itemId":858,"addedComponentCount":0,"removedComponentCount":0,"components":[],"removeComponents":[]}},{"slot":4,"item":{"itemCount":1,"itemId":1334,"addedComponentCount":4,"removedComponentCount":0,"components":[{"type":77},{"type":1791},{"type":1447},{"type":78}],"removeComponents":[]}},{"slot":127,"item":{"itemCount":0}},{"slot":0,"item":{"itemCount":0}}]}}; buffer :5b93050201db06010009012b01010301da0600000401b60a04004dff0da70b4e7f000000391f6d696e6563726166743a6368657374732f6465736572745f707972616d69643a3f2aaaab0501d8060000
+Chunk size is 28 but only 12 was read ; partial packet : {"name":"set_slot","params":{"windowId":0,"stateId":2,"slot":36,"item":{"itemCount":1,"itemId":1426,"addedComponentCount":1,"removedComponentCount":0,"components":[{"type":152}],"removeComponents":[]}}}; buffer :150002002401920b01009801669efc38c8ca31c49f8ae1f20f336b4a

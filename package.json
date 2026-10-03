@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "node patch-nmpf.js && node patch-checks.js"
+    "postinstall": "node patch-nmpf.js && node patch-checks.js && node patch-protodef.js"
   },
   "keywords": [],
   "author": "",
