@@ -40,11 +40,6 @@ client.on('neoforgeEnums', e => console.log('ENUM EXT:', util.inspect(e.filter(x
 client.on('custom_payload', p => {
   if (p.channel === 'neoforge:modded_network_setup_failed') console.log('SETUP FAILED:', p.data.toString('latin1'))
 })
-bot.on('login', () => console.log('EVENT login'))
-bot.on('spawn', () => console.log('EVENT spawn'))
-bot.on('end', r => console.log('EVENT end:', r))
-setInterval(() => console.log('STATUS', bot.entity ? bot.entity.position : 'belum ada entity', 'item:', bot.inventory ? bot.inventory.items().length : '-'), 5000)
-
 
 // ---- DIAGNOSA PARSE ERROR ----
 const mcData = require('minecraft-data')('1.21.1')
@@ -82,6 +77,11 @@ bot.once('spawn', () => {
 })
 bot.on('kicked', r => console.log('KICK:', util.inspect(r, { depth: null })))
 bot.on('error', e => console.log('ERR:', e.code, e.message))
+bot.on('login', () => console.log('EVENT login'))
+bot.on('spawn', () => console.log('EVENT spawn'))
+bot.on('end', r => console.log('EVENT end:', r))
+setInterval(() => console.log('STATUS', bot.entity ? bot.entity.position : 'belum ada entity', 'item:', bot.inventory ? bot.inventory.items().length : '-'), 5000)
+
 
 // ---------- CLI command handling ----------
 const readline = require('readline')
