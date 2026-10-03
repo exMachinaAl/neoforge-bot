@@ -47,6 +47,7 @@ const packetNames = mcData.protocol.play.toClient.types.packet[1][0].type[1].map
 // NMP membuat ulang deserializer di setiap pergantian state, jadi bungkus ulang tiap kali
 const wrapParser = () => {
   const parser = client.deserializer
+  parser.noErrorLogging = true
   const origParse = parser.parsePacketBuffer.bind(parser)
   parser.parsePacketBuffer = buf => {
     try {
@@ -136,3 +137,13 @@ setInterval(() => {
   if (pk === lastN) { if (++still >= 6) { console.log('WATCHDOG: tidak ada paket 30 detik, keluar'); process.exit(1) } }
   else { still = 0; lastN = pk }
 }, 5000)
+
+bot.on('death', () => console.log('EVENT death'))
+bot.on('respawn', () => console.log('EVENT respawn'))
+rl.on('line', l => {
+  if (l.trim() !== '!hit') return
+  const e = bot.nearestEntity(x => x !== bot.entity && (x.type === 'mob' || x.type === 'hostile' || x.type === 'animal'))
+  if (!e) return console.log('HIT: tidak ada entitas dekat')
+  console.log('HIT target:', e.name, bot.entity.position.distanceTo(e.position).toFixed(1), 'm')
+  bot.attack(e)
+})
