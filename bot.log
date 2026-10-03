@@ -1,0 +1,122 @@
+CHANNELS OK: 4:7 1:164
+DATA COMPONENT MODDED (98):
+   57 sophisticatedbackpacks:loot_table
+   58 sophisticatedbackpacks:loot_factor
+   59 sophisticatedbackpacks:columns_taken
+   60 sophisticatedbackpacks:item_name
+   61 sophisticatedbackpacks:filter_by_inventory
+   62 sophisticatedbackpacks:inventory_order
+   63 sophisticatedbackpacks:target_slots
+   64 sophisticatedbackpacks:should_swap_weapon
+   65 sophisticatedbackpacks:tool_swap_mode
+   66 sophisticatedbackpacks:template_location
+   67 geckolib:stack_animatable_id
+   68 irons_lib:transmog
+   69 irons_lib:statue_item_data
+   70 irons_lib:kinetic_weapon
+   71 irons_lib:use_effects
+   72 irons_lib:attack_range
+   73 irons_patreon_lib:transmog
+   74 irons_patreon_lib:statue_item_data
+   75 sophisticatedcore:number_of_inventory_slots
+   76 sophisticatedcore:number_of_upgrade_slots
+   77 sophisticatedcore:main_color
+   78 sophisticatedcore:accent_color
+   79 sophisticatedcore:storage_uuid
+   80 sophisticatedcore:open_tab_id
+   81 sophisticatedcore:sort_by
+   82 sophisticatedcore:render_info_tag
+   83 sophisticatedcore:shift_click_into_storage
+   84 sophisticatedcore:refill_crafting_grid
+   85 sophisticatedcore:input_item
+   86 sophisticatedcore:result_item
+   87 sophisticatedcore:energy_stored
+   88 sophisticatedcore:compact_non_uncraftable
+   89 sophisticatedcore:should_work_in_gui
+   90 sophisticatedcore:cooking_inventory
+   91 sophisticatedcore:burn_time_finish
+   92 sophisticatedcore:burn_time_total
+   93 sophisticatedcore:cook_time_finish
+   94 sophisticatedcore:cook_time_total
+   95 sophisticatedcore:is_cooking
+   96 sophisticatedcore:feed_at_hunger_level
+   97 sophisticatedcore:feed_immediately_when_hurt
+   98 sophisticatedcore:direction
+   99 sophisticatedcore:is_playing
+   100 sophisticatedcore:pickup_items
+   101 sophisticatedcore:pickup_xp
+   102 sophisticatedcore:fluid_filters
+   103 sophisticatedcore:is_input
+   104 sophisticatedcore:interact_with_hand
+   105 sophisticatedcore:interact_with_world
+   106 sophisticatedcore:interact_with_fluid_handler
+   107 sophisticatedcore:recipe_id
+   108 sophisticatedcore:fluid_contents
+   109 sophisticatedcore:should_void_overflow
+   110 sophisticatedcore:automation_direction
+   111 sophisticatedcore:level
+   112 sophisticatedcore:levels_to_store
+   113 sophisticatedcore:levels_to_take
+   114 sophisticatedcore:mend_items
+   115 sophisticatedcore:filter_attributes
+   116 sophisticatedcore:input_filter_attributes
+   117 sophisticatedcore:fuel_filter_attributes
+   118 sophisticatedcore:alchemy_filter_attributes
+   119 sophisticatedcore:enabled
+   120 sophisticatedcore:repeat_mode
+   121 sophisticatedcore:shuffle
+   122 sophisticatedcore:disc_slot_active
+   123 sophisticatedcore:disc_finish_time
+   124 sophisticatedcore:match_all_effects
+   125 sophisticatedcore:match_effect_duration
+   126 sophisticatedcore:match_effect_amplifier
+   127 sophisticatedcore:entity_match
+   128 sophisticatedcore:recipes_used
+   129 sophisticatedcore:stored_xp
+   130 sophisticatedcore:lenient_container
+   131 touhou_little_maid:recipe_id
+   132 touhou_little_maid:maid_info
+   133 touhou_little_maid:track_info
+   134 touhou_little_maid:model_id
+   135 touhou_little_maid:mounted_height
+   136 touhou_little_maid:tameable_can_ride
+   137 touhou_little_maid:is_no_gravity
+   138 touhou_little_maid:kappa_compass_activity_pos
+   139 touhou_little_maid:kappa_compass_dimension
+   140 touhou_little_maid:item_filter_mode
+   141 touhou_little_maid:item_io_mode
+   142 touhou_little_maid:item_filter_list
+   143 touhou_little_maid:binding_pos
+   144 touhou_little_maid:slot_config_data
+   145 touhou_little_maid:storage_data
+   146 touhou_little_maid:tanks
+   147 touhou_little_maid:sakuya_bell_uuid
+   148 touhou_little_maid:sakuya_bell_tip
+   149 touhou_little_maid:sakuya_bell_show
+   150 touhou_little_maid:bed_color
+   151 touhou_little_maid:board_state
+   152 touhou_little_maid:init_maid_owner
+   153 epicfight:skill
+   154 wom:obscuridad
+ENUM EXT: [
+  {
+    name: 'net.minecraft.world.item.Rarity',
+    direction: 'BIDIRECTIONAL',
+    extension: { vanillaCount: 4, totalCount: 5, entries: [ 'EPICFIGHT_UNIQUE' ] }
+  }
+]
+PARSE GAGAL di paket: declare_recipes (133523 byte)
+Error: Read error for undefined : array size is abnormally large, not reading: 2003791716
+    at Object.intArray (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:3929:60)
+    at Object.nbtSwitch (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:3968:47)
+    at Object.anonymousNbt (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:83:64)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:166:56)
+    at Object.SlotComponent (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:720:9)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:957:49)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:962:15)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:980:13)
+    at Object.Slot (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:982:9)
+    at eval (eval at compile (/data/data/com.termux/files/home/almine/neoforge-bot/node_modules/protodef/src/compiler.js:262:12), <anonymous>:389:40) {
+  field: 'play.toClient'
+}
+ERR: undefined Parse error for play.toClient: Read error for undefined : array size is abnormally large, not reading: 2003791716

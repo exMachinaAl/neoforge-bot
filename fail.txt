@@ -1,0 +1,209 @@
+h%sophisticatedbackpacks:backpack_close    with          Sophisticated Backpacks    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod &sophisticatedbackpacks:block_tool_swap    with          Sophisticated Backpacks    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod (sophisticatedcore:sync_template_settings    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 4epicfight:client_bound_register_or_remove_skill_data    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod ,sophisticatedbackpacks:inventory_interaction    with          Sophisticated Backpacks    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod  sophisticatedcore:play_disc    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 9ysm_epicfight_compat:movement_animation_preference_update    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod *epicfight:server_bound_update_player_input    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 3ysm_epicfight_compat:maid_movement_preference_query    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod +epicfight:client_bound_change_living_motion    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod &sophisticatedcore:sync_item_highlights    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 0ysm_epicfight_compat:sub_entity_preference_query    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 'epicfight:client_bound_animator_control    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod .epicfight:client_bound_set_lasst_attack_result    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 1sophisticatedcore:sync_datapack_settings_template    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod %sophisticatedcore:sync_item_transfers    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod "epicfight:server_bound_set_stamina    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod $epicfight:bi_directional_emote_slots    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod (sophisticatedcore:sync_slot_change_error    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 1ysm_epicfight_compat:sub_entity_preference_update    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod  sophisticatedcore:restock_items    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod $epicfight:server_bound_skill_request    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod !sophisticatedcore:sync_slot_stack    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod *ysm_epicfight_compat:maid_preference_query    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod .epicfight:client_bound_create_terrain_fracture    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 'sophisticatedbackpacks:entity_tool_swap    with          Sophisticated Backpacks    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod "ysm_epicfight_compat:model_request    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 'ysm_epicfight_compat:attack_swing_sound    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 2ysm_epicfight_compat:configuration_variable_update    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod &epicfight:client_bound_set_player_mode    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod /epicfight:server_bound_modify_entitypatch_y_rot    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod $sophisticatedcore:stop_disc_playback    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod -ysm_epicfight_compat:maid_preference_snapshot    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 4ysm_epicfight_compat:maid_movement_preference_update    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 7ysm_epicfight_compat:configuration_variable_scope_reply    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod $sophisticatedbackpacks:backpack_open    with          Sophisticated Backpacks    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod )epicfight:server_bound_change_player_mode    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 3ysm_epicfight_compat:sub_entity_preference_snapshot    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod ,epicskills:client_bound_unlock_achieved_node    with          Epic Fight: Skill Tree    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod ,epicfight:bi_directional_update_player_input    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod +epicfight:client_bound_disable_player_y_rot    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod (sophisticatedbackpacks:backpack_contents    with          Sophisticated Backpacks    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 2epicfight:bi_directional_modify_animation_variable    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 2epicfight:client_bound_modify_expanded_entity_data    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 'epicfight:client_bound_set_player_y_rot    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod *epicskills:server_bound_change_player_mode    with          Epic Fight: Skill Tree    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod #epicfight:client_bound_clear_skills    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod ;epicfight:client_bound_share_mob_effect_to_tracking_players    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 'epicskills:client_bound_sync_tree_state    with          Epic Fight: Skill Tree    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod !sophisticatedbackpacks:block_pick    with          Sophisticated Backpacks    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod ;ysm_epicfight_compat:movement_animation_preference_snapshot    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod (ysm_epicfight_compat:script_sync_request    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod  sophisticatedcore:transfer_items    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod .sophisticatedbackpacks:request_player_settings    with          Sophisticated Backpacks    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod $sophisticatedcore:transfer_full_slot    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod *epicskills:client_bound_reload_unlock_tree    with          Epic Fight: Skill Tree    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod ,sophisticatedcore:sync_container_client_data    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod #epicfight:client_bound_remove_skill    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod (epicfight:server_bound_set_player_target    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 2ysm_epicfight_compat:held_item_preference_snapshot    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod #epicfight:server_bound_change_skill    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod +sophisticatedcore:sync_additional_slot_info    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod (epicfight:client_bound_add_learned_skill    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod .epicfight:client_bound_set_remote_player_skill    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod )ysm_epicfight_compat:script_sync_snapshot    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod +epicfight:client_bound_set_grappling_target    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 0ysm_epicfight_compat:held_item_preference_update    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod *epicskills:client_bound_set_ability_points    with          Epic Fight: Skill Tree    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 1epicskills:client_bound_deallocate_ability_points    with          Epic Fight: Skill Tree    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod *epicskills:client_bound_reload_unlock_node    with          Epic Fight: Skill Tree    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod  sophisticatedcore:deposit_items    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod $epicfight:client_bound_play_ui_sound    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod %epicfight:client_bound_entity_pairing    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod &epicfight:client_bound_change_gamerule    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 1epicfight:server_bound_pairing_animation_registry    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod  sophisticatedcore:tank_click    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod )epicfight:client_bound_change_player_mode    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod *epicfight:client_bound_update_player_input    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 'sophisticatedcore:sync_container_stacks    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod (epicskills:server_bound_animator_control    with          Epic Fight: Skill Tree    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod %epicfight:client_bound_skill_feedback    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 'sophisticatedcore:sync_empty_slot_icons    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod )sophisticatedcore:request_item_highlights    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod +ysm_epicfight_compat:owner_preference_epoch    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 1epicfight:client_bound_set_skill_container_values    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod &sophisticatedcore:sync_player_settings    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod :sophisticatedbackpacks:request_backpack_inventory_contents    with          Sophisticated Backpacks    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod  ysm_epicfight_compat:model_chunk    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod "epicfight:client_bound_init_skills    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod %ysm_epicfight_compat:selection_update    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod %sophisticatedbackpacks:upgrade_toggle    with          Sophisticated Backpacks    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod $epicfight:client_bound_sycn_datapack    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod (epicfight:server_bound_modify_skill_data    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod !ysm_epicfight_compat:shield_block    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 'sophisticatedbackpacks:sync_client_info    with          Sophisticated Backpacks    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod )epicskills:client_bound_reload_skill_tree    with          Epic Fight: Skill Tree    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 4ysm_epicfight_compat:configuration_variable_snapshot    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod -sophisticatedcore:sound_finished_notification    with          Sophisticated Core    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod #epicfight:client_bound_change_skill    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 3sophisticatedbackpacks:another_player_backpack_open    with          Sophisticated Backpacks    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod !epicfight:client_bound_absorption    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod +ysm_epicfight_compat:maid_preference_update    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 'epicfight:server_bound_animator_control    with          Epic Fight    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 9ysm_epicfight_compat:configuration_variable_scope_request    with          YSM Epic Fight Compat    
+translate :neoforge.network.negotiation.failure.missing.server.client    
+translate (neoforge.network.negotiation.failure.mod 

@@ -4,16 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "node patch-nmpf.js && node patch-checks.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "minecraft-protocol-forge": "github:Pix3lPirat3/node-minecraft-protocol-forge#feat/forge-compat-matrix",
-    "mineflayer": "latest"
+    "mineflayer": "latest",
+    "minecraft-protocol-forge": "github:Pix3lPirat3/node-minecraft-protocol-forge#feat/forge-compat-matrix"
   },
   "overrides": {
     "minecraft-protocol": "github:Pix3lPirat3/node-minecraft-protocol#fix/custom-protocol-isolation"
