@@ -7,4 +7,6 @@ lastfail.bin
 dump_*.bin
 status.json
 .env
-old-v/mc.local.json
+old-v/
+mc.local.json
+
