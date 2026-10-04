@@ -5,8 +5,8 @@ const util = require('util')
 const playChannels = require('./modchannels')
 
 const client = mc.createClient({
-  host: 'localhost',
-  port: 25565,
+  host: require('./config').host,
+  port: require('./config').port,
   username: 'BotAlpha',
   auth: 'offline',
   version: '1.21.1'

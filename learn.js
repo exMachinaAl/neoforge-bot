@@ -72,7 +72,7 @@ const mc = require('minecraft-protocol')
 const { neoforgeHandshake } = require('minecraft-protocol-forge')
 const fresh = () => { delete require.cache[require.resolve('./modchannels')]; return require('./modchannels') }
 const attempt = () => new Promise(resolve => {
-  const client = mc.createClient({ host: process.env.HOST || 'localhost', port: +(process.env.PORT || 25565), username: 'BotAlpha', auth: 'offline', version: '1.21.1' })
+  const client = mc.createClient({ host: require('./config').host, port: require('./config').port, username: 'BotAlpha', auth: 'offline', version: '1.21.1' })
   let done = false
   const finish = r => { if (done) return; done = true; try { client.end() } catch {} ; setTimeout(() => resolve(r), 800) }
   const m = fresh()

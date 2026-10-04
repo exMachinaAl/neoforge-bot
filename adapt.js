@@ -3,9 +3,7 @@ const fs = require('fs')
 const { spawnSync } = require('child_process')
 const { parseFailure, learnStep } = require('./learn')
 
-const HOST = process.env.HOST || 'localhost'
-const PORT = +(process.env.PORT || 25565)
-const LOG = process.env.LOG || 'server/logs/latest.log'
+const { host: HOST, port: PORT, log: LOG } = require('./config')
 const rd = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')) } catch { return d } }
 const wr = (f, o) => fs.writeFileSync(f, JSON.stringify(o, null, 1))
 const sleep = ms => new Promise(r => setTimeout(r, ms))
@@ -83,9 +81,9 @@ const real = {
     return (line || 'RESULT: TIDAK_ADA ' + String(r.stderr || '').slice(0, 200)).trim()
   },
   learn: learnChannels,
-  logSize: () => { try { return fs.statSync(LOG).size } catch { return 0 } },
-  logFrom: off => { try { const b = fs.readFileSync(LOG); return b.slice(Math.min(off, b.length)).toString('utf8') } catch { return '' } },
-  logExists: () => fs.existsSync(LOG),
+  logSize: () => require('./logsrc').size(),
+  logFrom: off => require('./logsrc').from(off),
+  logExists: () => require('./logsrc').exists(),
   sleep,
   say: console.log
 }
@@ -95,7 +93,7 @@ async function adapt (o = real) {
   const pa = o.patchAll()
   o.say(pa.trim())
   if (/GAGAL/.test(pa)) return 'patch-gagal'
-  if (!o.logExists()) o.say(`(log server tidak ada di ${LOG}; error "Payload ... may not be sent" tidak terdeteksi. Set LOG=...)`)
+  if (!o.logExists()) o.say(`(log server tidak ada di ${LOG}; error "Payload ... may not be sent" tidak terdeteksi. Set MC_LOG atau MC_LOG_CMD)`)
   const seen = new Set()
   let repatch = 0
   for (let i = 1; i <= 40; i++) {
