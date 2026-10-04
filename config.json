@@ -2,5 +2,8 @@
  "tacz:acknowledge": {},
  "tacz:server_synced_entity_data_mapping": {
   "ack": "tacz:acknowledge"
+ },
+ "create_connected:sync_config": {
+  "both": true
  }
 }

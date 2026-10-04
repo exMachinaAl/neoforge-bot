@@ -43,7 +43,13 @@ function learnStep (st, p) {
   let n = 0
   const notes = []
   for (const id of p.need) {
-    if (st.cfg[id]) { notes.push(`MACET: ${id} masih hilang walau sudah di fase konfigurasi`); continue }
+    if (st.cfg[id]) {
+      if (!st.cfg[id].both) {
+        st.cfg[id].both = true; if (!st.ids.includes(id)) st.ids.push(id); n++
+        notes.push(`${id}: didaftarkan di KONFIGURASI dan PLAY (mod mendaftar di dua fase)`)
+      } else notes.push(`MACET: ${id} masih hilang walau sudah di dua fase`)
+      continue
+    }
     if (st.ids.includes(id)) {
       st.ids = st.ids.filter(x => x !== id); st.cfg[id] = {}; n++
       notes.push(`${id}: dipindah ke fase konfigurasi`)

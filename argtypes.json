@@ -6,5 +6,9 @@
  "sophisticatedbackpacks:template_name",
  "sophisticatedbackpacks:backpack_uuid",
  "sophisticatedbackpacks:player_name",
- "touhou_little_maid:handle_types"
+ "touhou_little_maid:handle_types",
+ "sable:sub_level",
+ "sable:vec3_absolute",
+ "numismatics:enum",
+ "ponder:config_path"
 ]

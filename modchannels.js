@@ -19,7 +19,7 @@ const make = (id, handler) => {
   return e
 }
 const play = { ...base }
-for (const id of ids) if (!base[id] && !cfg[id]) play[id] = make(id)
+for (const id of ids) if (!base[id] && (!cfg[id] || cfg[id].both)) play[id] = make(id)
 const configuration = {}
 for (const [id, c] of Object.entries(cfg)) {
   const ack = c && c.ack

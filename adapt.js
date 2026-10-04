@@ -25,7 +25,7 @@ if (process.argv.includes('--check')) {
     setTimeout(() => process.exit(0), 300)
   }
   neoforgeHandshake(client, { playChannels: m, configurationChannels: m.configurationChannels })
-  client.on('error', e => end('ERR', (e.code ? e.code + ' ' : '') + e.message))
+  client.on('error', e => e.code === 'NEOFORGE_CHANNEL_MISMATCH' ? end('SETUP_FAILED') : end('ERR', (e.code ? e.code + ' ' : '') + e.message))
   client.on('custom_payload', p => { if (p.channel === 'neoforge:modded_network_setup_failed') end('SETUP_FAILED') })
   const onKick = p => { kick = JSON.stringify(p.reason || p) }
   client.on('disconnect', onKick)
