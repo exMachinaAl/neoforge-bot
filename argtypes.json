@@ -10,5 +10,11 @@
  "sable:sub_level",
  "sable:vec3_absolute",
  "numismatics:enum",
- "ponder:config_path"
+ "ponder:config_path",
+ "curios:slot_type",
+ "puffish_skills:category",
+ "puffish_skills:skill",
+ "creativecore:string_array",
+ "creativecore:test",
+ "irons_spellbooks:spell"
 ]
