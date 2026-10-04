@@ -27,5 +27,8 @@ for (const [id, c] of Object.entries(cfg)) {
     ? (bytes, { client }) => client.write('custom_payload', { channel: ack, data: Buffer.alloc(0) })
     : null)
 }
+configuration['neoforge:known_registry_data_maps'] = { version: '1', flow: 'clientbound', optional: true,
+  handler: (bytes, { client }) => client.write('custom_payload', { channel: 'neoforge:known_registry_data_maps_reply', data: Buffer.from([0]) }) }
+configuration['neoforge:known_registry_data_maps_reply'] = { version: '1', flow: 'serverbound', optional: true }
 Object.defineProperty(play, 'configurationChannels', { value: configuration, enumerable: false })
 module.exports = play
