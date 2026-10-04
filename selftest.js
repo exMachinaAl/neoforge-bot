@@ -2,10 +2,11 @@
 const { Vec3 } = require('vec3')
 const mcData = require('minecraft-data')('1.21.1')
 const sleep = ms => new Promise(r => setTimeout(r, ms))
-const AIR = n => !n || n === 'air' || n === 'cave_air' || n === 'void_air'
+const AIR = n => n === 'air' || n === 'cave_air' || n === 'void_air'
 const SKIP = d => ({ r: 'SKIP', d })
 const PASS = d => ({ r: 'PASS', d })
 const FAIL = d => ({ r: 'FAIL', d })
+const WARN = d => ({ r: 'WARN', d })
 
 module.exports = function (bot, args) {
   const f = () => bot.entity.position.floored()
@@ -58,6 +59,56 @@ module.exports = function (bot, args) {
       const d = `${it.length} item: ` + it.slice(0, 10).map(i => i.name + 'x' + i.count).join(', ') + ' | tangan: ' + (bot.heldItem ? bot.heldItem.name : '-') + ' | akurasi vs server BELUM diverifikasi (bandingkan /data get entity BotAlpha Inventory)'
       return PASS(d)
     },
+    async equip () {
+      const it = bot.inventory.items()[0]
+      if (!it) return SKIP('inventory kosong (/give BotAlpha minecraft:cobblestone 16)')
+      const inv = bot.inventory
+      let slot = it.slot
+      if (slot >= inv.hotbarStart) {
+        let dst = -1
+        for (let i = inv.inventoryStart; i < inv.hotbarStart; i++) if (!inv.slots[i]) { dst = i; break }
+        if (dst < 0) return SKIP('tidak ada slot kosong di inventory utama')
+        await bot.moveSlotItem(slot, dst)
+        await sleep(400)
+        slot = dst
+        if (!inv.slots[slot] || inv.slots[slot].name !== it.name) return FAIL('item tidak pindah ke slot ' + slot + ' (klik window ditolak/serialisasi gagal?)')
+      }
+      await bot.equip(inv.slots[slot], 'hand')
+      await sleep(400)
+      const held = bot.heldItem
+      const d = it.name + ' dari slot ' + it.slot + ' lewat slot ' + slot + ', tangan: ' + (held ? held.name : '-')
+      return held && held.name === it.name ? PASS(d) : FAIL(d)
+    },
+    async modblock () {
+      const c = f(); const ids = {}; let n = 0; let near = null
+      for (let dx = -8; dx <= 8; dx++) for (let dy = -4; dy <= 4; dy++) for (let dz = -8; dz <= 8; dz++) {
+        const p = c.offset(dx, dy, dz); const b = bot.blockAt(p)
+        if (!b || b.name !== '' || b.stateId == null) continue
+        n++; ids[b.stateId] = (ids[b.stateId] || 0) + 1
+        if (!near || p.distanceTo(c) < near.distanceTo(c)) near = p
+      }
+      if (!n) return SKIP('tidak ada blok modded dalam radius 8 (dekati blok Create/mod lain lalu ulangi)')
+      const top = Object.entries(ids).slice(0, 8).map(e => e[0] + ':' + e[1]).join(' ')
+      return WARN(n + ' blok modded terbaca name="" boundingBox empty (tanpa tabrakan: bot bisa menembus/jatuh). stateId:jumlah ' + top + '; terdekat ' + near)
+    },
+    async chest () {
+      const ch = bot.findBlock({ matching: mcData.blocksByName.chest.id, maxDistance: 6 })
+      if (!ch) return SKIP('tidak ada chest dalam 6 blok (/setblock ~2 ~ ~ minecraft:chest)')
+      const it = bot.inventory.items()[0]
+      if (!it) return SKIP('inventory kosong, tidak ada yang bisa disimpan')
+      const w = await bot.openContainer(ch)
+      try {
+        const before = w.containerItems().reduce((a, x) => a + x.count, 0)
+        await w.deposit(it.type, null, 1)
+        await sleep(300)
+        const mid = w.containerItems().reduce((a, x) => a + x.count, 0)
+        await w.withdraw(it.type, null, 1)
+        await sleep(300)
+        const after = w.containerItems().reduce((a, x) => a + x.count, 0)
+        const d = it.name + ': isi chest ' + before + ' -> ' + mid + ' -> ' + after
+        return mid === before + 1 && after === before ? PASS(d) : FAIL(d)
+      } finally { w.close() }
+    },
     async dig () {
       const ids = ['dirt', 'grass_block', 'sand', 'gravel', 'stone', 'cobblestone', 'netherrack'].filter(n => mcData.blocksByName[n]).map(n => mcData.blocksByName[n].id)
       const c = f()
@@ -100,7 +151,7 @@ module.exports = function (bot, args) {
       return hurt ? PASS(`${e.name} terkena (entityHurt)`) : FAIL(`${e.name}: tidak ada entityHurt (meleset, Epic Fight memblok damage vanilla, atau event hilang)`)
     }
   }
-  const order = ['state', 'look', 'walk', 'jump', 'blocks', 'inventory', 'dig', 'place', 'attack']
+  const order = ['state', 'look', 'walk', 'jump', 'blocks', 'inventory', 'equip', 'modblock', 'chest', 'dig', 'place', 'attack']
   const want = args && args.trim() ? args.trim().split(/\s+/) : order
   if (want[0] === 'list') return console.log('TEST tersedia: ' + order.join(' '))
   return (async () => {
