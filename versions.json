@@ -273,5 +273,10 @@
  "curios:sync_data": "1.0",
  "curios:toggle_cosmetics": "1.0",
  "puffish_skills:hide_category": "puffish_skills",
- "irons_spellbooks:sync_config": "1.0.0"
+ "irons_spellbooks:sync_config": "1.0.0",
+ "irons_spellbooks:sync_cooldowns": "1.0.0",
+ "irons_spellbooks:sync_recasts": "1.0.0",
+ "irons_spellbooks:sync_player_data": "1.0.0",
+ "irons_spellbooks:sync_mana": "1.0.0",
+ "irons_spellbooks:sync_all_camera_shake": "1.0.0"
 }

@@ -19,5 +19,8 @@
   },
   "overrides": {
     "minecraft-protocol": "github:Pix3lPirat3/node-minecraft-protocol#58efc1b2b25c6fc1213a4b16d809d9b6deb22fdb"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0"
   }
 }

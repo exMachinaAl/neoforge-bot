@@ -103,6 +103,11 @@ function handleInput(line) {
         console.log('Exiting...')
         process.exit(0)
         break
+      case 'test':
+        require('./selftest')(bot, args)
+        break
+      case 'hit':
+        break // ditangani listener !hit di bawah
       case 'help':
         console.log('Available commands: !help, !quit, /<mc command>, or plain chat')
         break

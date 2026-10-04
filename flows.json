@@ -336,5 +336,10 @@
  "curios:sync_data": "CLIENTBOUND",
  "curios:toggle_cosmetics": "SERVERBOUND",
  "puffish_skills:hide_category": "CLIENTBOUND",
- "irons_spellbooks:sync_config": "CLIENTBOUND"
+ "irons_spellbooks:sync_config": "CLIENTBOUND",
+ "irons_spellbooks:sync_cooldowns": "CLIENTBOUND",
+ "irons_spellbooks:sync_recasts": "CLIENTBOUND",
+ "irons_spellbooks:sync_player_data": "CLIENTBOUND",
+ "irons_spellbooks:sync_mana": "CLIENTBOUND",
+ "irons_spellbooks:sync_all_camera_shake": "CLIENTBOUND"
 }
