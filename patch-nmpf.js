@@ -1,12 +1,10 @@
-// Menambah tipe argumen command modded (tanpa properti) ke plugin NeoForge.
-// Jalankan lagi setiap selesai "npm install":  node patch-nmpf.js
+// patch-nmpf.js
 const fs = require('fs')
+const path = require('path')
 const file = require.resolve('minecraft-protocol-forge/src/client/commandRegistry.js')
-
-// Tambahkan nama tipe lain di sini kalau muncul error serupa.
-// Hanya untuk tipe yang didaftarkan dengan SingletonArgumentInfo (tanpa properti).
-const extra = ['epicfight:animation', 'epicfight:skill', 'sophisticatedbackpacks:backpack_upgrade_item', 'sophisticatedbackpacks:backpack_item', 'sophisticatedbackpacks:template_name', 'sophisticatedbackpacks:backpack_uuid', 'sophisticatedbackpacks:player_name', 'touhou_little_maid:handle_types']
-
+let extra = []
+try { extra = JSON.parse(fs.readFileSync(path.join(__dirname, 'argtypes.json'), 'utf8')) } catch {}
+extra = [...new Set(['touhou_little_maid:handle_types', ...extra])]
 let src = fs.readFileSync(file, 'utf8')
 const anchor = "'minecraft:test_class': 'void'"
 if (!src.includes(anchor)) throw new Error('anchor tidak ditemukan, versi plugin berbeda')

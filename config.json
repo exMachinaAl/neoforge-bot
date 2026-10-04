@@ -1,0 +1,6 @@
+{
+ "tacz:acknowledge": {},
+ "tacz:server_synced_entity_data_mapping": {
+  "ack": "tacz:acknowledge"
+ }
+}

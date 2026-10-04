@@ -12,7 +12,7 @@ const client = mc.createClient({
   version: '1.21.1'
 })
 
-neoforgeHandshake(client, { playChannels, respondToPing: false }) // mineflayer sudah menjawab ping
+neoforgeHandshake(client, { playChannels, configurationChannels: playChannels.configurationChannels, respondToPing: false }) // mineflayer sudah menjawab ping
 
 // ---- TRACE (aktif hanya dengan: TRACE=1 node bot.js) ----
 if (process.env.TRACE) {

@@ -82,6 +82,8 @@
  "sophisticatedcore:tank_click",
  "sophisticatedcore:transfer_full_slot",
  "sophisticatedcore:transfer_items",
+ "tacz:acknowledge",
+ "tacz:server_synced_entity_data_mapping",
  "ysm_epicfight_compat:attack_swing_sound",
  "ysm_epicfight_compat:configuration_variable_scope_reply",
  "ysm_epicfight_compat:configuration_variable_scope_request",
