@@ -83,6 +83,7 @@ bot.on('error', e => console.log('ERR:', e.code, e.message))
 bot.on('login', () => console.log('EVENT login'))
 bot.on('spawn', () => console.log('EVENT spawn'))
 bot.on('end', r => console.log('EVENT end:', r))
+const runner = require('./skills').createRunner(bot)
 
 
 // ---------- CLI command handling ----------
@@ -105,6 +106,9 @@ function handleInput(line) {
         break
       case 'test':
         require('./selftest')(bot, args)
+        break
+      case 'task':
+        runner.cli(args)
         break
       case 'hit':
         break // ditangani listener !hit di bawah
