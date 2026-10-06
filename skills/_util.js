@@ -14,6 +14,16 @@ async function gotoTimed (bot, goal, ms, signal) {
   try { await Promise.race([bot.pathfinder.goto(goal), timeout]) } finally { clearTimeout(t); if (signal) signal.removeEventListener('abort', onAbort) }
 }
 
+
+// Mendekati blok. Blok TANPA bentuk tabrakan (tanaman, rumput, bunga, rel: shapes kosong) tidak bisa dikenai raycast,
+// jadi GoalLookAtBlock tidak pernah terpenuhi -> pakai GoalNear. Blok padat memakai GoalLookAtBlock.
+async function approach (bot, pos, ctx, ms = 30000) {
+  const b = bot.blockAt(pos)
+  const solid = b && b.shapes && b.shapes.length > 0
+  const goal = solid ? new goals.GoalLookAtBlock(pos, bot.world, { reach: 4 }) : new goals.GoalNear(pos.x, pos.y, pos.z, 2)
+  return gotoTimed(bot, goal, ms, ctx && ctx.signal)
+}
+
 function creative (bot) { return bot.game && bot.game.gameMode === 'creative' }
 
 // Alat terbaik untuk memecah blok. Hanya alat yang BOLEH memanen (harvestTools) bila blok mensyaratkan.
@@ -98,6 +108,7 @@ async function guard (bot, ctx, opts = {}) {
 // Cari wadah (chest/trapped_chest/barrel): tepat di koordinat hint, atau terdekat dari hint (<=6 blok), atau terdekat dari bot.
 function findContainer (bot, mcData, hint, maxDist = 48) {
   const ids = ['chest', 'trapped_chest', 'barrel'].map(n => mcData.blocksByName[n] && mcData.blocksByName[n].id).filter(x => x != null)
+  if (typeof hint === 'string') { const n = hint.match(/-?\d+(\.\d+)?/g); hint = n && n.length >= 3 ? { x: +n[0], y: +n[1], z: +n[2] } : true } // "x y z" atau "x,y,z"
   const at = hint && typeof hint === 'object' && [hint.x, hint.y, hint.z].every(Number.isFinite) ? hint : null
   const seen = at ? bot.blockAt(new Vec3(Math.floor(at.x), Math.floor(at.y), Math.floor(at.z))) : null
   if (seen && ids.includes(seen.type)) return { block: seen, how: 'koordinat', seen: seen.name }
@@ -109,7 +120,9 @@ function findContainer (bot, mcData, hint, maxDist = 48) {
   return { block: bot.blockAt(best), how: at ? 'terdekat dari koordinat' : 'terdekat dari bot', seen: seen ? seen.name : null }
 }
 
-function invTotals (bot) { const m = {}; for (const i of bot.inventory.items()) m[i.name] = (m[i.name] || 0) + i.count; return m }
+// item modded tak dikenal bernama 'unknown': dibedakan per id numerik (unknown#<id>) supaya bisa dikelompokkan; komponen item tidak terbaca
+const itemKey = i => i.name === 'unknown' || !i.name ? 'unknown#' + i.type : i.name
+function invTotals (bot) { const m = {}; for (const i of bot.inventory.items()) { const k = itemKey(i); m[k] = (m[k] || 0) + i.count } return m }
 function diffTotals (a, b) { const d = {}; for (const k of Object.keys(b)) { const v = b[k] - (a[k] || 0); if (v > 0) d[k] = v } return d }
 
-module.exports = { sleep, NATURAL, gotoTimed, bestTool, movementsFor, equipWeapon, autoEat, hostiles, fight, guard, invTotals, diffTotals, creative, findContainer }
+module.exports = { sleep, NATURAL, gotoTimed, bestTool, movementsFor, equipWeapon, autoEat, hostiles, fight, guard, invTotals, diffTotals, creative, findContainer, approach, itemKey }

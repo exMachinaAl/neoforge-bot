@@ -1,6 +1,7 @@
 // engine/index.js - antrean task berprioritas + BotState + Event (kontrak: contracts/)
 const EventEmitter = require('events')
-const { validate } = require('../contracts/validate')
+const fs = require('fs')
+const { validate, compile } = require('../contracts/validate')
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 const CAPS = ['move', 'block.read', 'block.dig', 'block.place', 'combat.vanilla', 'chat', 'inventory.protocol']
 
@@ -19,13 +20,16 @@ function createEngine (bot, runner) {
 
   function enqueue (spec = {}) {
     if (!spec.skill || !runner.skills[spec.skill]) { const e = new Error('skill tidak dikenal: ' + spec.skill); e.status = 400; throw e }
+    const sk = runner.skills[spec.skill]
+    if (!sk.check) sk.check = compile(sk.manifest.paramsSchema)
+    const perr = sk.check(spec.params && typeof spec.params === 'object' ? spec.params : {}); if (perr) { const e = new Error('params tidak valid: ' + perr); e.status = 400; throw e }
     const t = { id: 'q' + (++seq) + '-' + Date.now().toString(36), skill: spec.skill, params: spec.params && typeof spec.params === 'object' ? spec.params : {}, priority: Number.isInteger(spec.priority) ? spec.priority : 50, status: 'queued', source: spec.source || 'api', retries: Number.isInteger(spec.retries) ? spec.retries : 0, onFail: spec.onFail || 'abort', createdAt: Date.now() }
     const bad = validate('Task', brief(t)); if (bad) { const e = new Error('task melanggar kontrak: ' + bad); e.status = 400; throw e }
     queue.push(t); queue.sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt)
     emit('task.queued', brief(t)); pump(); return brief(t)
   }
   function cancel (id) {
-    if (running && running.id === id) { runner.abort('ABORTED'); return { cancelled: 'running' } }
+    if (running && running.id === id) { runner.abort('USER_CANCEL'); return { cancelled: 'running' } }
     const i = queue.findIndex(t => t.id === id)
     if (i < 0) { const e = new Error('task tidak ditemukan: ' + id); e.status = 404; throw e }
     const [t] = queue.splice(i, 1); t.status = 'aborted'; history.unshift(t)
@@ -34,9 +38,9 @@ function createEngine (bot, runner) {
   function clear () { const n = queue.length; for (const t of queue) { t.status = 'aborted'; history.unshift(t) } queue = []; return { cleared: n } }
   function pause () { paused = true; return { paused } }
   function resume () { paused = false; pump(); return { paused } }
-  function stop () { runner.abort('ABORTED'); return { stopped: !!running } }
+  function stop () { runner.abort('USER_STOP'); return { stopped: !!running } }
   function killswitch () {
-    paused = true; clear(); runner.abort('ABORTED')
+    paused = true; clear(); runner.abort('KILLSWITCH')
     try { for (const k of ['forward', 'back', 'left', 'right', 'jump', 'sprint']) bot.setControlState(k, false) } catch (e) {}
     emit('safety.killswitch', {}); return { killed: true, paused }
   }
@@ -53,6 +57,7 @@ function createEngine (bot, runner) {
         emit('task.started', brief(t))
         const r = await runner.run(t.skill, t.params, { priority: t.priority, source: t.source })
         engineBusy = false; running = null
+        console.log('SKILLRESULT ' + JSON.stringify(r))
         t.status = r.ok ? 'done' : r.code === 'ABORTED' ? 'aborted' : 'failed'; t.result = r
         history.unshift(t); if (history.length > 60) history.pop()
         emit(r.ok ? 'task.finished' : 'task.failed', { taskId: t.id, skill: t.skill, code: r.code, result: r })
@@ -70,7 +75,7 @@ function createEngine (bot, runner) {
     if (bot.game && bot.game.dimension) st.dimension = String(bot.game.dimension)
     if (typeof bot.health === 'number') st.health = bot.health
     if (typeof bot.food === 'number') st.food = bot.food
-    if (bot.inventory) st.inventory = { items: bot.inventory.items().map(i => ({ name: i.name, count: i.count, slot: i.slot })), source: 'protocol', accurate: false }
+    if (bot.inventory) st.inventory = { items: bot.inventory.items().map(i => ({ name: i.name === 'unknown' || !i.name ? 'unknown#' + i.type : i.name, count: i.count, slot: i.slot })), source: 'protocol', accurate: false }
     return st
   }
 
@@ -81,6 +86,10 @@ function createEngine (bot, runner) {
   bot.on('kicked', r => emit('bot.kicked', { reason: String(JSON.stringify(r)).slice(0, 300) }))
   bot.on('end', r => { status = 'offline'; emit('bot.disconnected', { reason: String(r) }) })
   bot.on('chat', (username, message) => { if (username !== bot.username) emit('chat.in', { username, message: String(message).slice(0, 200) }) })
+  // jejak lengkap tiap task (params + hasil utuh) ke tasks.log (JSON per baris; *.log diabaikan git). ARCADIA_TASKLOG=off mematikan.
+  const logFile = process.env.ARCADIA_TASKLOG || 'tasks.log'; const startedParams = {}
+  runner.events.on('task.started', t => { startedParams[t.id] = t.params })
+  runner.events.on('task.finished', r => { if (logFile === 'off') return; fs.appendFile(logFile, JSON.stringify({ ts: Date.now(), taskId: r.taskId, skill: r.skill, params: startedParams[r.taskId], result: r }) + '\n', () => {}); delete startedParams[r.taskId] })
   runner.events.on('task.started', t => { if (!engineBusy) emit('task.started', { id: t.id, skill: t.skill, params: t.params, source: 'cli' }) })
   runner.events.on('task.finished', r => { if (!engineBusy && r.code !== 'PRECONDITION_FAILED') emit(r.ok ? 'task.finished' : 'task.failed', { taskId: r.taskId, skill: r.skill, code: r.code, result: r }) })
 

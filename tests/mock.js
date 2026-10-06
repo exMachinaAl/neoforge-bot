@@ -9,7 +9,7 @@ function mk (o = {}) {
   bot.game = { gameMode: o.mode || 'survival' }; bot.health = o.health ?? 20; bot.food = o.food ?? 20
   bot.entity = { position: new Vec3(0.5, 64, 0.5), effects: {}, onGround: true, isInWater: false }
   bot.entities = {}; bot.world = {}; bot.heldItem = null
-  const inv = []; bot.inventory = { items: () => inv.filter(i => i.count > 0), count: (id) => inv.filter(i => i.type === id).reduce((a, i) => a + i.count, 0) }
+  const inv = []; bot._inv = inv; bot.inventory = { items: () => inv.filter(i => i.count > 0), count: (id) => inv.filter(i => i.type === id).reduce((a, i) => a + i.count, 0) }
   bot._give = (name, n) => { const e = inv.find(i => i.type === it(name).id); if (e) e.count += n; else inv.push({ type: it(name).id, name, count: n }) }
   for (const [n, c] of Object.entries(o.inv || {})) bot._give(n, c)
   const blocks = o.blocks || []

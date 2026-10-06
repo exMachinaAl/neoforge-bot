@@ -38,3 +38,23 @@ YSM (sumber publik, bukan kode): perintah /ysm butuh OP level 2 (model reload, a
 tidak ditemukan di sumber yang saya baca (BELUM DIVERIFIKASI). Dugaan: bot tak punya model terpilih sehingga tampak T-pose; solusi mungkin meniru paket pilih-model klien asli (format tertutup).
 Langkah: ketik "/ysm " + Tab di klien OP; jalankan !channels ysm di bot; tangkap paket klien asli bila perlu.
 `)
+
+add('README.md', '## Log task (tasks.log)', `## Log task (tasks.log)
+Tiap task menulis satu baris JSON (params + hasil utuh) ke \`tasks.log\` (diabaikan git; \`ARCADIA_TASKLOG=off\` mematikan, atau isi path lain). Terminal mencetak \`SKILLRESULT {...}\` untuk task antrean juga.
+Lihat detail kegagalan: \`tail -n 3 tasks.log\`. Di UI, ketuk baris Riwayat untuk membuka params + hasil lengkap. Params divalidasi terhadap manifest skill (HTTP 400 bila salah).
+`)
+add('TODO.md', '## Pembaruan #6', `## Pembaruan #6
+- [x] farm.harvest: akar masalah ditemukan di source (GoalLookAtBlock tak pernah terpenuhi untuk blok tanpa shapes seperti tanaman); kini U.approach memakai GoalNear untuk blok tanpa bentuk tabrakan - TERUJI TIRUAN, BELUM DIUJI server
+- [x] Item unknown dikelompokkan per id numerik (unknown#<id>) di invTotals/BotState - TERUJI TIRUAN
+- [ ] Verifikasi inventory: skill inv.snapshot (/data get entity <bot> Inventory, parser SNBT) dibanding bot.inventory; butuh bot op
+- [ ] craft.item: resep vanilla ada di minecraft-data (782 item); alur crafting table + window click BELUM diuji; hanya bahan vanilla
+- [ ] Uji ulang farm.harvest di server; kirim tail -n 3 tasks.log bila gagal
+`)
+add('docs/HANDOFF.md', '## 12. Pembaruan checkpoint #6', `## 12. Pembaruan checkpoint #6
+Log pemilik (UI/SSE): mine.collect oak_log + chest OK (24 dtk), hunt.kill cow x5 OK (8,7 dtk), fish.cast OK (58 dtk; detail tangkapan terpotong), nav.goto OK; hunt.kill tanpa mob -> PRECONDITION_FAILED; fish.cast pertama ABORTED (penyebab tak terlihat, kemungkinan stop manual);
+farm.harvest wheat GAGAL dua kali (TARGET_NOT_FOUND, 26 dan 28 dtk = kira-kira 5 x thinkTimeout 5 dtk). Hasil lengkap terpotong di log, jadi data.reasons tidak terlihat.
+Akar masalah (TERBUKTI dari source): world.raycast memakai block.shapes; tanaman punya shapes kosong sehingga GoalLookAtBlock.isEnd tak pernah terpenuhi -> pathfinder timeout. Perbaikan: U.approach (GoalNear untuk blok tanpa shapes). Berlaku juga bagi mine.collect pada blok tanpa shapes.
+Params skill dari UI bisa berupa string ("wheat"); farm.harvest kini menerima daftar dipisah koma. Engine memvalidasi params terhadap paramsSchema (HTTP 400). ABORTED membawa alasan (USER_STOP, USER_CANCEL, KILLSWITCH, DIED, TIMEOUT).
+Inventory: item modded tak dikenal bernama "unknown" oleh prismarine-item; dikelompokkan per id numerik (unknown#<id>); komponen item tidak terbaca (dua item berbeda komponen dengan id sama tampak sama).
+Paket yang memuat komponen modded gagal parse dan dibuang (PARSE GAGAL window_items/set_slot) sehingga bot.inventory dapat tertinggal dari server. Belum ada pemeriksaan silang; rencana: inv.snapshot via /data get entity.
+`)

@@ -69,6 +69,7 @@ function createRunner (bot) {
     try { bot.pathfinder.stop() } catch (e) {}
     ;['forward', 'back', 'left', 'right', 'jump', 'sprint'].forEach(k => bot.setControlState(k, false))
     if (ac.signal.aborted && !out.ok && (!out.code || out.code === 'ABORTED' || out.code === 'UNKNOWN')) out.code = ac.signal.reason === 'DIED' ? 'DIED' : ac.signal.reason === 'TIMEOUT' ? 'TIMEOUT' : 'ABORTED'
+    if (ac.signal.aborted && !out.ok && !out.error) out.error = 'dihentikan: ' + String(ac.signal.reason)
     current = null
     return finish(task, t0, out)
   }

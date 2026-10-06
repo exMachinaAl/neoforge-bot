@@ -1,1 +1,1 @@
-unzip -o arcadia-v2.zip && node install/fix-wire3.js && node install/fix-docs.js && npm pkg set scripts.test="node tests/skills.test.js && node tests/engine.test.js" && npm test && npm run check
+unzip -o arcadia-v2-1.zip && node install/fix-docs.js && npm test

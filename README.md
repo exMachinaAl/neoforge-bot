@@ -70,3 +70,7 @@ Kirim: `grep -a "TASK\|SKILLRESULT\|TEST\|CH \|EVENT\|SKIP\|ERR\|KICK" bot.log`
 - Kegagalan task yang mematikan bot (`DIED`/`INTERRUPTED`) menjeda antrean; lanjutkan manual (`!queue resume` atau tombol Lanjut).
 - `mine.collect ... chest=true` (atau `"chest":"auto"`) menyimpan ke chest/barrel terdekat; `chest` berkoordinat memakai wadah di/dekat koordinat itu.
 - Tes otomatis (bot tiruan): `npm test`.
+
+## Log task (tasks.log)
+Tiap task menulis satu baris JSON (params + hasil utuh) ke `tasks.log` (diabaikan git; `ARCADIA_TASKLOG=off` mematikan, atau isi path lain). Terminal mencetak `SKILLRESULT {...}` untuk task antrean juga.
+Lihat detail kegagalan: `tail -n 3 tasks.log`. Di UI, ketuk baris Riwayat untuk membuka params + hasil lengkap. Params divalidasi terhadap manifest skill (HTTP 400 bila salah).

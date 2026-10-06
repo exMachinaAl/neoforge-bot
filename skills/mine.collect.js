@@ -53,7 +53,7 @@ async function run (bot, p, ctx) {
   const why = m => { reasons.push(m); if (reasons.length > 6) reasons.shift() }
   const res = (ok, code, error, extra) => ({ ok, code, error, data: Object.assign({ collected: collected ?? got(), items: dropNames, dug, fights: (ctx.stats && ctx.stats.fights) || 0, reasons }, extra) })
   const mv = ctx.movements('mine', { dig, keepIds: [blockInfo.id] })
-  const gotoLook = pos => U.gotoTimed(bot, new goals.GoalLookAtBlock(pos, bot.world, { reach: 4 }), 45000, ctx.signal)
+  const gotoLook = pos => U.approach(bot, pos, ctx, 45000)
 
   bot.pathfinder.setMovements(mv)
   while (got() < count) {

@@ -1,3 +1,4 @@
+process.env.ARCADIA_TASKLOG = 'off'
 const { mk, mkBlock, bi } = require('./mock')
 const { createRunner } = require('../skills'); const { createEngine } = require('../engine'); const control = require('../control')
 const { validate } = require('../contracts/validate')
@@ -56,5 +57,17 @@ const sleep = ms => new Promise(r => setTimeout(r, ms))
   // CLI !queue
   const logs = []; const ol = console.log; console.log = (...a) => { logs.push(a.join(' ')); }; engine.cli('pause'); engine.cli('add nav.goto x=2 z=2'); engine.cli('list'); engine.cli('clear'); engine.cli('add tidak.ada'); console.log = ol
   ok(logs.some(x => /QUEUE \+q\d+/.test(x)) && logs.some(x => /galat: skill tidak dikenal/.test(x)), '!queue add/list/clear + galat jelas')
+
+  // v2.1: validasi params, alasan abort, tasks.log, nama unknown
+  r = await post('/bots/me/tasks', { skill: 'hunt.kill', params: { count: 5 } }); ok(r.s === 400 && /mob/.test(r.j.error), 'hunt.kill tanpa mob -> 400: ' + r.j.error)
+  r = await post('/bots/me/tasks', { skill: 'mine.collect', params: { block: 'stone', count: 'banyak' } }); ok(r.s === 400 && /count/.test(r.j.error), 'count bukan angka -> 400: ' + r.j.error)
+  engine.pause(); r = await post('/bots/me/tasks', { skill: 'farm.harvest', params: { crops: 'wheat', replant: true } }); ok(r.s === 201, 'farm.harvest crops string lolos validasi'); engine.clear(); engine.resume()
+  ok(ee.list().history.some(h => h.result && h.result.code === 'ABORTED' && /KILLSWITCH/.test(h.result.error || '')), 'ABORTED membawa alasan: KILLSWITCH')
+  const tmp = require('os').tmpdir() + '/arcadia-test-' + process.pid + '.log'; process.env.ARCADIA_TASKLOG = tmp
+  const lg = mk({ inv: { iron_pickaxe: 1 }, blocks: [mkBlock('stone', 4, 64, 2)] }); lg.username = 'L'; lg.chat = () => {}; lg._inv.push({ type: 99999, name: 'unknown', count: 2, slot: 12 }); const rl = createRunner(lg); const el = createEngine(lg, rl); lg.emit('spawn'); process.env.ARCADIA_TASKLOG = 'off'
+  el.enqueue({ skill: 'mine.collect', params: { block: 'stone', count: 1 } }); await sleep(600)
+  const fsx = require('fs'); const line = fsx.existsSync(tmp) ? JSON.parse(fsx.readFileSync(tmp, 'utf8').trim().split('\n').pop()) : null; if (fsx.existsSync(tmp)) fsx.unlinkSync(tmp)
+  ok(line && line.params.block === 'stone' && line.result.code === 'OK' && line.result.data.collected === 1, 'tasks.log: params + hasil utuh tercatat')
+  const stl = el.state(); ok(!validate('BotState', stl) && stl.inventory.items.some(i => i.name === 'unknown#99999'), 'BotState: item unknown bernama unknown#<id> dan valid kontrak')
   c.close(); console.log('\nHASIL: ' + pass + ' lulus, ' + fail + ' gagal'); process.exit(fail ? 1 : 0)
 })().catch(e => { console.error('CRASH', e); process.exit(2) })

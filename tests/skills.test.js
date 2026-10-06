@@ -61,6 +61,17 @@ const ok = (c, m) => { c ? pass++ : fail++; console.log((c ? 'PASS ' : 'FAIL ') 
   b = mk({ noMoveFirst: 1 }); r = createRunner(b); o = await r.run('nav.goto', { x: 10, z: 5 }); ok(o.ok && b._mvs.length === 2 && !b._mvs.includes(true), 'nav: terjebak sekali -> ulang jalan kaki lalu sampai (tanpa gali)')
   b = mk({ noMoveFirst: 2 }); r = createRunner(b); o = await r.run('nav.goto', { x: 10, z: 5 }); ok(o.ok && b._mvs[2] === true && /menggali keluar/.test(o.data.escaped), 'nav: terjebak dua kali -> gali keluar (blok alami) lalu sampai')
   b = mk({ noMoveFirst: 2 }); r = createRunner(b); o = await r.run('nav.goto', { x: 10, z: 5, escape: false }); ok(!o.ok && o.code === 'UNKNOWN', 'nav: escape:false -> tetap melapor kegagalan jelas')
+
+  // v2.1: approach, crops, unknown, chest string
+  const wA = mkBlock('wheat', 3, 64, 1, 7), stA = mkBlock('stone', 5, 64, 1)
+  b = mk({ blocks: [wA, stA] }); await U.approach(b, wA.position, { signal: new AbortController().signal }); await U.approach(b, stA.position, { signal: new AbortController().signal })
+  ok(b._goals[0] === 'GoalNear' && b._goals[1] === 'GoalLookAtBlock', 'approach: tanaman (shapes kosong) -> GoalNear; blok padat -> GoalLookAtBlock: ' + b._goals.join(','))
+  b = mk({ inv: { wheat_seeds: 2 }, blocks: [mkBlock('wheat', 3, 64, 1, 7), mkBlock('farmland', 3, 63, 1)] }); r = createRunner(b); o = await r.run('farm.harvest', { crops: 'wheat', count: 1 }); ok(o.ok && o.data.harvested === 1 && !b._goals.includes('GoalLookAtBlock'), 'farm: crops string "wheat" diterima, tanpa GoalLookAtBlock untuk tanaman (' + b._goals.join(',') + ')')
+  b = mk({ blocks: [mkBlock('wheat', 3, 64, 1, 2), mkBlock('wheat', 4, 64, 1, 3)] }); r = createRunner(b); o = await r.run('farm.harvest', { crops: 'wheat,carrots' }); ok(!o.ok && /matang 0, belum matang 2/.test(o.error) && o.data.tanaman.immature === 2, 'farm: hanya muda -> pesan jelas: ' + o.error)
+  b = mk({ delay: 1, gotoErr: 'Timeout', blocks: [mkBlock('wheat', 3, 64, 1, 7)] }); r = createRunner(b); o = await r.run('farm.harvest', { crops: 'wheat' }); ok(!o.ok && /jalan 3,64,1: Timeout/.test(o.error) && o.data.tanaman.mature >= 1, 'farm: gagal jalan -> alasan + hitungan tanaman ada di error/data')
+  b = mk(); b._inv.push({ type: 111, name: 'unknown', count: 2, slot: 9 }, { type: 222, name: 'unknown', count: 3, slot: 10 }, { type: 111, name: 'unknown', count: 1, slot: 11 }); b._give('stone', 4)
+  const tot = U.invTotals(b); ok(tot['unknown#111'] === 3 && tot['unknown#222'] === 3 && tot.stone === 4 && !tot.unknown, 'invTotals: item unknown dikelompokkan per id: ' + JSON.stringify(tot))
+  b = mk({ inv: { iron_pickaxe: 1 }, blocks: [mkBlock('stone', 4, 64, 2), mkBlock('chest', 8, 64, 8)] }); r = createRunner(b); o = await r.run('mine.collect', { block: 'stone', count: 1, chest: '8 65 8' }); ok(o.ok && o.data.chest.how === 'terdekat dari koordinat', 'chest "x y z" (string) dibaca sebagai koordinat')
   // runner death
   b = mk({ inv: { iron_pickaxe: 1 }, delay: 300, blocks: [mkBlock('stone', 4, 64, 2), mkBlock('stone', 5, 64, 2)] }); r = createRunner(b); const pr = r.run('mine.collect', { block: 'stone', count: 2 }); setTimeout(() => b.emit('death'), 100); o = await pr; ok(o.code === 'DIED', 'runner: mati saat task -> DIED')
   console.log('\nHASIL: ' + pass + ' lulus, ' + fail + ' gagal'); process.exit(fail ? 1 : 0)
