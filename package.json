@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "node patch-all.js",
     "adapt": "node adapt.js",
-    "start": "node bot.js"
+    "start": "node bot.js",
+    "check": "node contracts/check.js && node skills/check.js"
   },
   "keywords": [],
   "author": "",

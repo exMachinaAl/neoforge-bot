@@ -1,49 +1,63 @@
 # neoforge-bot
+Bot mineflayer (1.21.1, auth offline) yang bisa masuk dan bertahan di server NeoForge bermod, belajar sendiri saat mod berubah (`npm run adapt`),
+dan menjalankan task (jalan, tambang, pancing, panen, berburu) lewat CLI. Konteks lengkap untuk AI agent: `docs/HANDOFF.md`, aturan: `AGENTS.md`, backlog: `TODO.md`.
+
+## Mulai
+```
+git clone https://github.com/exMachinaAl/neoforge-bot && cd neoforge-bot
+npm install          # postinstall memasang 4 patch di node_modules
+npm run check        # validasi kontrak + skill
+npm start
+```
+Server lokal: taruh di `server/` (tidak ikut git), `online-mode=false`. Server lain: buat `mc.local.json` (jangan di-push):
+`{ "host": "IP", "port": 25565, "logCmd": "ssh -p PORT -i ~/.ssh/botlog -o BatchMode=yes USER@IP 'cat /path/ke/logs/latest.log'" }`
+Prioritas konfigurasi: env `MC_HOST`, `MC_PORT`, `MC_LOG`, `MC_LOG_CMD` > `mc.local.json` > bawaan (localhost:25565, `server/logs/latest.log`). Jangan pakai env bernama `HOST`.
+Di Termux, jalankan `termux-wake-lock` sebelum task panjang.
+
+## Perintah CLI (ketik di terminal bot)
+- `!test [nama...]` / `!test list`: uji fungsi (state look walk jump blocks inventory equip modblock chest dig place attack probe); keluaran `SELFTEST_JSON`.
+- `!task list | status | stop`; `!task <skill> k=v ...` atau `!task <skill> {json}`; hasil: baris `SKILLRESULT {...}`.
+- `!channels [kata kunci]`: tabel channel mod masuk/keluar (diagnosis YSM/Epic Fight). `!hit`: serang mob terdekat. `!quit`.
+
+## Skill
+| Skill | Contoh |
+|---|---|
+| `nav.goto` | `!task nav.goto x=20 z=30` (tanpa y) atau `!task nav.goto 20 70 30` |
+| `mine.collect` | `!task mine.collect block=stone count=8` (survival + pickaxe; menembus tanah alami) |
+| `fish.cast` | `!task fish.cast count=3` (dekat air, bawa fishing_rod) |
+| `farm.harvest` | `!task farm.harvest {"crops":["wheat"],"count":6}` |
+| `hunt.kill` | `!task hunt.kill mob=cow count=2` |
+Syarat umum: mode survival, hanya blok/item/entitas vanilla. Kegagalan dijelaskan di `SKILLRESULT.data.reasons`.
+
 ## Menambah mod baru
-
-Prasyarat: `npm install` sudah jalan, dan log server terbaca (lihat "Lokasi log" di bawah).
-
-1. **Hentikan bot** (`Ctrl+C`). Nama BotAlpha tidak boleh sedang online.
-2. **Commit kondisi sekarang**: `git add -A && git commit -m "sebelum mod X"`.
-   Dengan begitu `git diff` nanti menunjukkan persis apa yang diubah `adapt`.
-3. **Pasang mod**: taruh jar di `server/mods/`, restart server, tunggu log memuat `Done`.
-   Cek: `grep -a "Done" server/logs/latest.log | tail -1`
-4. **Belajar**: `npm run adapt`
-   Bisa 1–5 menit (tiap percobaan sampai 25 detik). Berhasil bila berakhir dengan `SELESAI`.
-5. **Uji bot**: `npm start`. Biarkan minimal 1 menit. Sehat bila:
-   - `CHANNELS OK`, `EVENT spawn`, dan `CEK10s` menunjukkan paket ribuan dengan posisi bukan `0,0,0`
-   - log server tidak memuat `Timed out`, `Invalid player data`, atau `Incompatible client`
-6. **Simpan**: `git diff --stat`, lalu `git add -A && git commit -m "tambah mod X" && git push`.
-   File yang berubah biasanya `ids.json flows.json versions.json config.json argtypes.json`.
-
-Mengurangi mod: tidak perlu apa-apa. Entri sisa bersifat opsional dan tidak menggagalkan negosiasi.
-
-Fresh clone di perangkat lain dengan mod yang sama: `git clone`, `npm install`, `npm start`. `adapt` tidak perlu.
-
-## Lokasi log server
-
-Default: `server/logs/latest.log` (relatif ke folder bot).
-Server di folder lain, pilih satu:
-- symlink (paling rapi): `ln -s /path/ke/server server`
-- sekali pakai: `LOG=/path/ke/server/logs/latest.log npm run adapt`
-- permanen: `echo 'export LOG=/path/ke/server/logs/latest.log' >> ~/.bashrc`
-Mencari lokasinya: `find ~ -name latest.log -path "*logs*" 2>/dev/null`
-Cek terbaca: `ls -l $LOG` atau `ls -l server/logs/latest.log`
+1. Hentikan bot. Commit kondisi sekarang: `git add -A && git commit -m "sebelum mod X"`.
+2. Pasang jar, restart server, tunggu log memuat `Done`.
+3. `npm run adapt` (1-5 menit; sukses berakhir `SELESAI`). `adapt` membaca log server (lokal atau `logCmd`) untuk channel opsional.
+4. `npm start` minimal 1 menit. Sehat bila: `CHANNELS OK`, `EVENT spawn`, `CEK10s` paket ribuan dengan posisi bukan `0,0,0`, log server tanpa `Timed out` / `Invalid player data` / `Incompatible client`.
+5. `git diff --stat`, lalu commit + push (`ids.json flows.json versions.json config.json argtypes.json`).
+Mengurangi mod: tidak perlu apa-apa. Fresh clone dengan mod yang sama: `npm install && npm start`.
 
 ## Kalau adapt berhenti
-
 | Pesan | Artinya | Tindakan |
 |---|---|---|
-| `patch-gagal` / `!!! patch GAGAL` | versi dependency berubah, patch tak menemukan titik pasang | kirim pesan error-nya |
-| `MACET: tipe X sudah terdaftar` | tipe argumen command itu punya properti | perlu dibaca dari kode mod |
-| `MACET: X tetap ditolak server` | payload opsional tidak cocok versi/flow | kirim 20 baris log server di sekitarnya |
+| `patch-gagal` | versi dependency berubah | kirim pesan error |
+| `MACET: tipe X sudah terdaftar` | argumen command punya properti | baca dari kode mod |
+| `MACET: X tetap ditolak server` | payload opsional salah versi/flow | kirim 20 baris log server |
 | `MACET: ... fase konfigurasi` | channel konfigurasi tetap hilang | kirim output + `xxd lastfail.bin \| head -40` |
-| `Task ... has not finished yet` di kick | balasan ack (payload kosong) salah | kirim pesannya |
-| `TAK TERBACA` | format pesan server berbeda dari dugaan | kirim barisnya |
-| `PARSE GAGAL` / `SKIP paket gagal` | item bermod tak terbaca, paket dibuang | normal, bukan error |
+| kick `mandatory registry data maps` | channel data map tidak terdaftar | sudah ditangani di `modchannels.js`; pastikan kode terbaru |
+| kick `invalid_player_data` | channel opsional tanpa cek di mod | pastikan log server terbaca; `adapt` mendaftarkannya |
+| `TAK TERBACA` | format pesan server berbeda | kirim barisnya |
+| `PARSE GAGAL` / `SKIP paket gagal` | item bermod tak terbaca, paket dibuang | normal |
 
-## Struktur folder
+## Uji (urut; berhenti dan kirim hasil di langkah yang gagal)
+Siapkan: `/difficulty peaceful`, `/gamemode survival BotAlpha`, lalu `/give BotAlpha minecraft:iron_pickaxe`, `iron_sword`, `fishing_rod`, `wheat_seeds 8`, `bread 8`.
+1. `!test` tanpa FAIL; `walk` >= 4 blok. 2. `nav.goto x=20 z=30` lalu `/data get entity BotAlpha Pos` (ukuran gerak = posisi server, bukan animasi).
+3. `nav.goto 0 70 90` (y di tanah) = OK dengan `note`. 4. `mine.collect block=dirt count=6` dan `block=stone count=8` (cobblestone, `dug` >= 8, blok buatan tidak rusak).
+5. Tanpa pickaxe / di creative = `PRECONDITION_FAILED` jelas. 6. `mine.collect` dengan `chest` = `deposited` benar. 7. `hunt.kill mob=cow count=2`, lalu `/difficulty normal` + zombie.
+8. `farm.harvest` gandum matang. 9. `fish.cast count=3`. 10. `!task stop` = `ABORTED`; `/kill BotAlpha` saat task = `DIED`. 11. Malam + `mine.collect`: `fights` > 0, bot tidak mati.
+12. T-pose: `!channels ysm epicfight yes_steve`; bandingkan `npm start` dengan `ARCADIA_UNKNOWN_EMPTY=1 npm start`.
+Kirim: `grep -a "TASK\|SKILLRESULT\|TEST\|CH \|EVENT\|SKIP\|ERR\|KICK" bot.log`
 
-Server selalu berada di subfolder `server/` di dalam folder proyek bot (root = folder bot).
-`adapt` membaca `server/logs/latest.log` otomatis. Jalankan lewat `npm run adapt`
-dari root proyek (jangan dari folder lain, karena path-nya relatif).
+## Struktur
+`bot.js` (entri) | `modchannels.js channels.js ids/flows/versions/config/argtypes.json` (channel hasil belajar) | `learn.js adapt.js` | `config.js logsrc.js` | `patch-*.js` (postinstall) |
+`selftest.js sniff.js` | `contracts/` (skema + check) | `skills/` (runner + skill) | `unknownblocks.json`. Server selalu di `server/` (tidak ikut git). Jalankan dari root proyek.
