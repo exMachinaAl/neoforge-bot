@@ -1,9 +1,11 @@
 // skills/_util.js - helper bersama (nama berawalan _ = bukan skill)
 const { goals } = require('mineflayer-pathfinder')
+const { Vec3 } = require('vec3')
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 
 const NATURAL = /^(dirt|grass_block|coarse_dirt|rooted_dirt|podzol|mycelium|sand|red_sand|gravel|clay|stone|andesite|diorite|granite|tuff|deepslate|netherrack|snow|snow_block|short_grass|tall_grass|fern|large_fern|dead_bush|vine|moss_block|moss_carpet|dripstone_block|pointed_dripstone|calcite|basalt|blackstone)$|_leaves$|_ore$/
 
+// goto dengan batas waktu; pada timeout pathfinder dihentikan dan error bernama 'Timeout'
 async function gotoTimed (bot, goal, ms, signal) {
   let t
   const timeout = new Promise((resolve, reject) => { t = setTimeout(() => { try { bot.pathfinder.stop() } catch (e) {} reject(Object.assign(new Error('goto melewati batas ' + ms + ' ms'), { name: 'Timeout' })) }, ms) })
@@ -65,6 +67,7 @@ function hostiles (bot, r) {
     .sort((a, b) => a.position.distanceTo(bot.entity.position) - b.position.distanceTo(bot.entity.position))
 }
 
+// Serang entitas sampai hilang/mati atau waktu habis. Mengembalikan {killed, hits, ms}
 async function fight (bot, ctx, target, maxMs = 12000) {
   const t0 = Date.now(); let hits = 0; let dead = false
   const onDead = e => { if (e && e.id === target.id) dead = true }
@@ -91,7 +94,22 @@ async function guard (bot, ctx, opts = {}) {
   return null
 }
 
+
+// Cari wadah (chest/trapped_chest/barrel): tepat di koordinat hint, atau terdekat dari hint (<=6 blok), atau terdekat dari bot.
+function findContainer (bot, mcData, hint, maxDist = 48) {
+  const ids = ['chest', 'trapped_chest', 'barrel'].map(n => mcData.blocksByName[n] && mcData.blocksByName[n].id).filter(x => x != null)
+  const at = hint && typeof hint === 'object' && [hint.x, hint.y, hint.z].every(Number.isFinite) ? hint : null
+  const seen = at ? bot.blockAt(new Vec3(Math.floor(at.x), Math.floor(at.y), Math.floor(at.z))) : null
+  if (seen && ids.includes(seen.type)) return { block: seen, how: 'koordinat', seen: seen.name }
+  const all = bot.findBlocks({ matching: ids, maxDistance: maxDist, count: 40 }) || []
+  const ref = at ? { x: at.x, y: at.y, z: at.z } : bot.entity.position
+  const d2 = q => (q.x - ref.x) ** 2 + (q.y - ref.y) ** 2 + (q.z - ref.z) ** 2
+  const best = all.sort((a, b) => d2(a) - d2(b))[0]
+  if (!best || (at && d2(best) > 36)) return { block: null, seen: seen ? (seen.name || 'modded') : null, nearest: best ? { x: best.x, y: best.y, z: best.z } : null }
+  return { block: bot.blockAt(best), how: at ? 'terdekat dari koordinat' : 'terdekat dari bot', seen: seen ? seen.name : null }
+}
+
 function invTotals (bot) { const m = {}; for (const i of bot.inventory.items()) m[i.name] = (m[i.name] || 0) + i.count; return m }
 function diffTotals (a, b) { const d = {}; for (const k of Object.keys(b)) { const v = b[k] - (a[k] || 0); if (v > 0) d[k] = v } return d }
 
-module.exports = { sleep, NATURAL, gotoTimed, bestTool, movementsFor, equipWeapon, autoEat, hostiles, fight, guard, invTotals, diffTotals, creative }
+module.exports = { sleep, NATURAL, gotoTimed, bestTool, movementsFor, equipWeapon, autoEat, hostiles, fight, guard, invTotals, diffTotals, creative, findContainer }

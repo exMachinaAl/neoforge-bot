@@ -61,3 +61,12 @@ Kirim: `grep -a "TASK\|SKILLRESULT\|TEST\|CH \|EVENT\|SKIP\|ERR\|KICK" bot.log`
 ## Struktur
 `bot.js` (entri) | `modchannels.js channels.js ids/flows/versions/config/argtypes.json` (channel hasil belajar) | `learn.js adapt.js` | `config.js logsrc.js` | `patch-*.js` (postinstall) |
 `selftest.js sniff.js` | `contracts/` (skema + check) | `skills/` (runner + skill) | `unknownblocks.json`. Server selalu di `server/` (tidak ikut git). Jalankan dari root proyek.
+
+## Antrean, API & UI
+- Antrean berprioritas: `!queue add <skill> k=v ...`, `!queue list|clear|pause|resume|cancel <id>|kill`. `!task` tetap menjalankan satu task langsung.
+- Saat `npm start`, bot mencetak `API siap: http://127.0.0.1:8787/?token=...`. Buka URL itu di browser (HP yang sama) untuk UI: status bot, antrean, riwayat, chat, kill switch, form task dari manifest skill.
+- API (header `Authorization: Bearer TOKEN`): `GET /bots`, `GET /bots/me` (BotState), `GET|POST /bots/me/tasks`, `DELETE /bots/me/tasks/<id>`, `POST /bots/me/commands` (enqueue cancel pause resume clear stop say), `GET /skills`, `POST /killswitch`, `GET /events` (SSE).
+- Env: `ARCADIA_TOKEN` (tetap), `ARCADIA_PORT` (8787), `ARCADIA_BIND` (127.0.0.1; 0.0.0.0 membuka ke jaringan, hati-hati), `ARCADIA_API=0` mematikan API.
+- Kegagalan task yang mematikan bot (`DIED`/`INTERRUPTED`) menjeda antrean; lanjutkan manual (`!queue resume` atau tombol Lanjut).
+- `mine.collect ... chest=true` (atau `"chest":"auto"`) menyimpan ke chest/barrel terdekat; `chest` berkoordinat memakai wadah di/dekat koordinat itu.
+- Tes otomatis (bot tiruan): `npm test`.

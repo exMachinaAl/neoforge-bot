@@ -85,6 +85,8 @@ bot.on('login', () => console.log('EVENT login'))
 bot.on('spawn', () => console.log('EVENT spawn'))
 bot.on('end', r => console.log('EVENT end:', r))
 const runner = require('./skills').createRunner(bot)
+const engine = require('./engine').createEngine(bot, runner)
+if (process.env.ARCADIA_API !== '0') require('./control').start({ bot, runner, engine })
 
 
 // ---------- CLI command handling ----------
@@ -111,13 +113,16 @@ function handleInput(line) {
       case 'channels':
         showChannels(args)
         break
+      case 'queue':
+        engine.cli(args)
+        break
       case 'task':
         runner.cli(args)
         break
       case 'hit':
         break // ditangani listener !hit di bawah
       case 'help':
-        console.log('Available commands: !help, !quit, /<mc command>, or plain chat')
+        console.log('Perintah: !help !quit !test [nama] !task <skill> ... !queue add|list|clear|pause|resume|cancel|kill !channels [kata] !hit, atau /<perintah mc>, atau chat biasa')
         break
       default:
         console.log(`Unknown internal command: ${cmd}`)

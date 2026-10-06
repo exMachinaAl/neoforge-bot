@@ -16,16 +16,27 @@ async function run (bot, p, ctx) {
   const hasY = Number.isFinite(p.y)
   const range = Math.max(1, Number(p.range ?? 2))
   if (ctx.signal.aborted) return { ok: false, code: 'ABORTED' }
-  bot.pathfinder.setMovements(ctx.movements('walk'))
   const pos = () => ({ x: +bot.entity.position.x.toFixed(2), y: +bot.entity.position.y.toFixed(2), z: +bot.entity.position.z.toFixed(2) })
   const dist = () => hasY ? bot.entity.position.distanceTo(new Vec3(p.x, p.y, p.z)) : Math.hypot(bot.entity.position.x - p.x, bot.entity.position.z - p.z)
-  const goal = hasY ? new goals.GoalNear(p.x, p.y, p.z, range) : new goals.GoalNearXZ(p.x, p.z, range)
-  let err = null
-  try { await U.gotoTimed(bot, goal, Number(p.thinkMs) || 120000, ctx.signal) } catch (e) { err = e }
+  const dxzNow = () => Math.hypot(bot.entity.position.x - p.x, bot.entity.position.z - p.z)
+  const mkGoal = () => hasY ? new goals.GoalNear(p.x, p.y, p.z, range) : new goals.GoalNearXZ(p.x, p.z, range)
+  let err = null; let used = 'walk'
+  // pathfinder bisa "sampai" tanpa bergerak / NoPath saat terjebak (mis. lubang hasil galian): ulangi, lalu gali keluar (blok alami saja)
+  for (const m of p.escape === false ? ['walk'] : ['walk', 'walk', 'dig']) {
+    used = m
+    bot.pathfinder.setMovements(m === 'dig' ? ctx.movements('mine', { dig: 'natural' }) : ctx.movements('walk'))
+    err = null
+    try { await U.gotoTimed(bot, mkGoal(), Number(p.thinkMs) || 120000, ctx.signal) } catch (e) { err = e }
+    if (ctx.signal.aborted) break
+    if (dist() <= range + 1.5 || (err && !p.strictY && dxzNow() <= range + 1.5)) break
+    if (err && err.name !== 'NoPath') break
+    await U.sleep(300)
+  }
   if (ctx.signal.aborted) return { ok: false, code: 'ABORTED', data: { pos: pos() } }
   const d = dist()
   const dxz = Math.hypot(bot.entity.position.x - p.x, bot.entity.position.z - p.z)
   const data = { pos: pos(), distance: +d.toFixed(2), distanceXZ: +dxz.toFixed(2), mode: hasY ? 'xyz' : 'xz' }
+  if (used === 'dig') data.escaped = 'menggali keluar (blok alami)'
   // pathfinder melapor Timeout/NoPath bila y target tidak terjangkau (mis. di dalam tanah) walau posisi horizontal sudah tepat.
   // Default dianggap sampai; pakai strictY:true untuk menuntut y juga.
   if (d <= range + 1.5) return { ok: true, code: 'OK', data: err ? Object.assign(data, { note: 'dekat target; pathfinder: ' + err.name }) : data }

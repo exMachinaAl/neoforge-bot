@@ -1,0 +1,43 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Arcadia</title>
+<style>
+:root{color-scheme:dark;--bg:#12141a;--card:#1b1e27;--fg:#e6e6e6;--mut:#8a90a0;--ac:#4ea1ff;--bad:#ff6b6b;--ok:#5fd38d}
+*{box-sizing:border-box}body{margin:0 auto;max-width:760px;padding:10px;background:var(--bg);color:var(--fg);font:14px system-ui,sans-serif}
+.card{background:var(--card);border-radius:10px;padding:10px;margin:8px 0}h2{margin:0 0 6px;font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+button,select,input{font:inherit;color:inherit;background:#252a36;border:1px solid #333a4a;border-radius:8px;padding:7px 10px}button{cursor:pointer}
+button.p{background:var(--ac);color:#06101c;border:0}button.k{background:var(--bad);color:#200;border:0;font-weight:700}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.row>*{flex:0 0 auto}.f{display:flex;flex-direction:column;gap:2px;flex:1 1 120px}.f label{font-size:11px;color:var(--mut)}
+pre{margin:0;max-height:220px;overflow:auto;font:12px ui-monospace,monospace;white-space:pre-wrap;word-break:break-word}.mut{color:var(--mut)}.ok{color:var(--ok)}.bad{color:var(--bad)}
+.item{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #2a2f3c}.item:last-child{border:0}
+</style></head><body>
+<div class="card"><h2>Bot <span id="st" class="mut"></span></h2><div id="bot">memuat...</div></div>
+<div class="card"><h2>Kontrol</h2><div class="row"><button id="pz">Jeda</button><button id="rs">Lanjut</button><button id="cl">Kosongkan</button><button id="sp">Stop task</button><button id="kl" class="k">KILL SWITCH</button></div></div>
+<div class="card"><h2>Task baru</h2><div class="row"><select id="sk"></select><div class="f" style="flex:0 0 90px"><label>prioritas</label><input id="pr" type="number" min="0" max="100" value="50"></div></div><div id="fd" class="row" style="margin-top:6px"></div><div class="mut" id="ds" style="margin:6px 0"></div><button class="p" id="ad">Tambah ke antrean</button></div>
+<div class="card"><h2>Antrean</h2><div id="q" class="mut">-</div></div>
+<div class="card"><h2>Riwayat</h2><div id="hs" class="mut">-</div></div>
+<div class="card"><h2>Chat</h2><div class="row"><input id="tx" placeholder="pesan atau /perintah" style="flex:1 1 200px"><button id="sd">Kirim</button></div></div>
+<div class="card"><h2>Log</h2><pre id="lg"></pre></div>
+<script>
+const TOKEN=new URLSearchParams(location.search).get('token')||'';let skills=[];
+const $=id=>document.getElementById(id);
+const h=(t,a,...c)=>{const e=document.createElement(t);for(const k in a||{})e[k]=a[k];for(const x of c)e.append(x);return e};
+async function api(p,o={}){const r=await fetch(p,{...o,headers:{Authorization:'Bearer '+TOKEN,'content-type':'application/json'},body:o.body?JSON.stringify(o.body):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||r.status);return j}
+const log=t=>{const l=$('lg');l.textContent+=t+'\n';l.scrollTop=l.scrollHeight;if(l.textContent.length>20000)l.textContent=l.textContent.slice(-12000)};
+const cmd=(op,payload)=>api('/bots/me/commands',{method:'POST',body:{op,payload}}).catch(e=>log('GALAT '+e.message));
+function renderSkill(){const s=skills.find(x=>x.name===$('sk').value);$('fd').replaceChildren();if(!s)return;$('ds').textContent=s.description;
+ const pr=(s.paramsSchema||{}).properties||{},req=(s.paramsSchema||{}).required||[];
+ for(const k in pr){const d=pr[k];let i;if(d.enum){i=h('select');i.append(h('option',{value:''},'-'));d.enum.forEach(v=>i.append(h('option',{value:v},v)))}else if(d.type==='boolean'){i=h('select');['','true','false'].forEach(v=>i.append(h('option',{value:v},v||'-')))}else i=h('input',{type:(d.type==='number'||d.type==='integer')?'number':'text',step:'any',placeholder:d.default!==undefined?String(d.default):''});
+  i.dataset.k=k;i.dataset.t=JSON.stringify(d.type||'');$('fd').append(h('div',{className:'f'},h('label',{},k+(req.includes(k)?' *':'')),i))}}
+function params(){const p={};for(const i of $('fd').querySelectorAll('[data-k]')){const v=i.value.trim();if(v==='')continue;const t=i.dataset.t;let x=v;
+ if(t.includes('number')||t.includes('integer')){if(!isNaN(Number(v)))x=Number(v)}else if(v==='true')x=true;else if(v==='false')x=false;else if(v[0]==='{'||v[0]==='['){try{x=JSON.parse(v)}catch{}}p[i.dataset.k]=x}return p}
+async function refresh(){try{const [s,l]=await Promise.all([api('/bots/me'),api('/bots/me/tasks')]);$('st').textContent=s.status+(l.paused?' (dijeda)':'');
+ const p=s.pos?s.pos.x+', '+s.pos.y+', '+s.pos.z:'-';$('bot').replaceChildren(h('div',{},s.username+' | pos '+p+' | HP '+(s.health??'-')+' | lapar '+(s.food??'-')),h('div',{className:'mut'},'task: '+(s.currentTaskId||'-')+' | antre '+s.queueLength+' | item '+(s.inventory?s.inventory.items.map(i=>i.name+'x'+i.count).join(', ')||'kosong':'-')));
+ const q=$('q');q.replaceChildren();if(l.running)q.append(h('div',{className:'item'},h('span',{className:'ok'},'jalan: '+l.running.skill+' '+JSON.stringify(l.running.params)),h('button',{onclick:()=>cmd('cancel',{taskId:l.running.id})},'Batal')));
+ l.queue.forEach(t=>q.append(h('div',{className:'item'},h('span',{},'#'+t.priority+' '+t.skill+' '+JSON.stringify(t.params)),h('button',{onclick:()=>cmd('cancel',{taskId:t.id})},'Batal'))));if(!q.children.length)q.textContent='-';
+ const hs=$('hs');hs.replaceChildren();l.history.slice(0,8).forEach(t=>{const r=t.result||{};hs.append(h('div',{className:'item'},h('span',{className:r.ok?'ok':'bad'},t.skill+' '+(r.code||t.status)),h('span',{className:'mut'},(r.durationMs?Math.round(r.durationMs/1000)+'s ':'')+(r.error||JSON.stringify(r.data||{})).slice(0,80))))});if(!hs.children.length)hs.textContent='-'}catch(e){$('st').textContent='terputus: '+e.message}}
+function sse(){const es=new EventSource('/events?token='+encodeURIComponent(TOKEN));es.onmessage=m=>{const e=JSON.parse(m.data);log(new Date(e.ts).toLocaleTimeString()+' '+e.type+' '+JSON.stringify(e.data).slice(0,160));if(e.type.startsWith('task.')||e.type.startsWith('bot.'))refresh()}}
+$('sk').onchange=renderSkill;$('ad').onclick=()=>api('/bots/me/tasks',{method:'POST',body:{skill:$('sk').value,params:params(),priority:Number($('pr').value)||50}}).then(refresh).catch(e=>log('GALAT '+e.message));
+$('pz').onclick=()=>cmd('pause');$('rs').onclick=()=>cmd('resume');$('cl').onclick=()=>cmd('clear');$('sp').onclick=()=>cmd('stop');
+$('kl').onclick=()=>{if(confirm('Hentikan semua task dan jeda antrean?'))api('/killswitch',{method:'POST'}).then(refresh)};
+$('sd').onclick=()=>{const t=$('tx').value.trim();if(t){cmd('say',{text:t});$('tx').value=''}};
+(async()=>{try{skills=await api('/skills');skills.forEach(s=>$('sk').append(h('option',{value:s.name},s.name)));renderSkill()}catch(e){log('GALAT '+e.message)}refresh();sse();setInterval(refresh,3000)})();
+</script></body></html>

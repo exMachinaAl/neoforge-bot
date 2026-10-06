@@ -16,7 +16,7 @@ const manifest = {
       dig: { enum: ['natural', 'any', 'none'], default: 'natural' },
       guard: { type: 'boolean', default: true },
       minHealth: { type: 'number', default: 8 },
-      chest: { type: 'object', properties: { x: { type: 'number' }, y: { type: 'number' }, z: { type: 'number' } } }
+      chest: { type: ['boolean', 'string', 'object'], description: 'true/"auto" = chest/barrel terdekat; {x,y,z} = di/dekat koordinat itu' }
     }
   },
   requires: ['move', 'block.read', 'block.dig', 'inventory.protocol'],
@@ -83,21 +83,22 @@ async function run (bot, p, ctx) {
 
   collected = got()
   let deposited = 0
-  if (p.chest) {
-    const c = p.chest
-    if (![c.x, c.y, c.z].every(Number.isFinite)) return res(false, 'PRECONDITION_FAILED', 'chest butuh x,y,z angka')
-    const cb = bot.blockAt(new Vec3(Math.floor(c.x), Math.floor(c.y), Math.floor(c.z)))
-    if (!cb || cb.name !== 'chest') return res(false, 'TARGET_NOT_FOUND', 'tidak ada chest di koordinat itu (blok: ' + (cb ? (cb.name || 'modded') : 'NULL') + ')')
+  let chestInfo = null
+  if (p.chest && p.chest !== 'false' && p.chest !== '0') {
+    const f = U.findContainer(bot, md, p.chest, 48)
+    if (!f.block) return res(false, 'TARGET_NOT_FOUND', 'tidak ada chest/barrel yang ditemukan' + (f.seen ? ' (blok di koordinat itu: ' + f.seen + ')' : '') + (f.nearest ? '; terdekat di ' + f.nearest.x + ',' + f.nearest.y + ',' + f.nearest.z : ''))
+    const cb = f.block
+    chestInfo = { x: cb.position.x, y: cb.position.y, z: cb.position.z, how: f.how }
     bot.pathfinder.setMovements(ctx.movements('walk'))
-    try { await gotoLook(cb.position) } catch (e) { return res(false, ctx.signal.aborted ? 'ABORTED' : 'NO_PATH', e.message) }
+    try { await gotoLook(cb.position) } catch (e) { return res(false, ctx.signal.aborted ? 'ABORTED' : 'NO_PATH', e.message, { chest: chestInfo }) }
     let w
     try {
       w = await bot.openContainer(cb)
       for (const id of dropIds) { const n = bot.inventory.count(id, null) - startBy[id]; if (n > 0) { await w.deposit(id, null, n); deposited += n } }
       await U.sleep(400)
-    } catch (e) { return res(false, 'UNKNOWN', 'gagal menyimpan ke chest: ' + e.message, { deposited }) } finally { if (w) w.close() }
+    } catch (e) { return res(false, 'UNKNOWN', 'gagal menyimpan ke chest: ' + e.message, { deposited, chest: chestInfo }) } finally { if (w) w.close() }
   }
-  return res(true, 'OK', undefined, { deposited })
+  return res(true, 'OK', undefined, { deposited, chest: chestInfo })
 }
 
 module.exports = { manifest, run, cli: ['block', 'count'] }

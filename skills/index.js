@@ -33,6 +33,7 @@ function createRunner (bot) {
   const movementsFor = (kind, opts) => U.movementsFor(bot, Movements, mcDataOf(), kind || 'walk', opts)
   let current = null
   let seq = 0
+  const events = new (require('events'))()
 
   const finish = (task, t0, out) => {
     const r = { taskId: task.id, skill: task.skill, ok: !!out.ok, code: out.code || (out.ok ? 'OK' : 'UNKNOWN'), durationMs: Date.now() - t0 }
@@ -40,6 +41,7 @@ function createRunner (bot) {
     if (out.error) r.error = String(out.error)
     const bad = checker()('SkillResult', r)
     if (bad) console.log('PERINGATAN: SkillResult melanggar kontrak: ' + bad)
+    events.emit('task.finished', r)
     return r
   }
 
@@ -56,6 +58,7 @@ function createRunner (bot) {
     current = { task, abort: reason => ac.abort(reason) }
     task.status = 'running'
     console.log('TASK mulai ' + task.id + ' ' + name + ' ' + JSON.stringify(params))
+    events.emit('task.started', { id: task.id, skill: name, params })
     let out
     try {
       const mcData = mcDataOf()
@@ -104,7 +107,7 @@ function createRunner (bot) {
     return r
   }
 
-  return { run, cli, skills }
+  return { run, cli, skills, events, parse, abort: r => current && current.abort(r || 'ABORTED'), current: () => current && { id: current.task.id, skill: current.task.skill, params: current.task.params, startedAt: current.task.createdAt } }
 }
 
 module.exports = { createRunner }
