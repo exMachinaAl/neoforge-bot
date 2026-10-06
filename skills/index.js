@@ -28,17 +28,9 @@ function checker () {
 function createRunner (bot) {
   const skills = loadSkills()
   bot.loadPlugin(pathfinder)
-  let movements = null
-  const getMovements = () => {
-    if (!movements) {
-      movements = new Movements(bot)
-      movements.canDig = false // jangan merusak dunia saat berjalan
-      movements.allow1by1towers = false
-      movements.scafoldingBlocks = [] // jangan menaruh blok saat berjalan
-      movements.allowParkour = false
-    }
-    return movements
-  }
+  const U = require('./_util')
+  const mcDataOf = () => require('minecraft-data')(bot.version)
+  const movementsFor = (kind, opts) => U.movementsFor(bot, Movements, mcDataOf(), kind || 'walk', opts)
   let current = null
   let seq = 0
 
@@ -66,7 +58,9 @@ function createRunner (bot) {
     console.log('TASK mulai ' + task.id + ' ' + name + ' ' + JSON.stringify(params))
     let out
     try {
-      out = await skill.run(bot, params, { signal: ac.signal, mcData: require('minecraft-data')(bot.version), movements: getMovements })
+      const mcData = mcDataOf()
+      bot.pathfinder.bestHarvestTool = block => U.bestTool(bot, block, mcData).tool // pemilihan alat yang menghormati harvestTools
+      out = await skill.run(bot, params, { signal: ac.signal, mcData, movements: movementsFor })
     } catch (e) { out = { ok: false, code: 'UNKNOWN', error: e && e.message } }
     clearTimeout(timer)
     try { bot.pathfinder.stop() } catch (e) {}

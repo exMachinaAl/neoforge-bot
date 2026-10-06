@@ -73,6 +73,7 @@ client.on('neoforgeRegistry', r => {
 })
 // ------------------------------
 
+const showChannels = require('./sniff')(client)
 const bot = mineflayer.createBot({ client })
 bot.once('spawn', () => {
   console.log('handshake complete:', client.neoforgeHandshakeComplete)
@@ -106,6 +107,9 @@ function handleInput(line) {
         break
       case 'test':
         require('./selftest')(bot, args)
+        break
+      case 'channels':
+        showChannels(args)
         break
       case 'task':
         runner.cli(args)
