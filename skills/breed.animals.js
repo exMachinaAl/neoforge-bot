@@ -32,6 +32,8 @@ const manifest = {
 const isBaby = e => !!(e.metadata && e.metadata[16] === true) // AgeableMob.DATA_BABY_ID = indeks 16 (1.21.x); BELUM DIUJI di server
 const COOLDOWN_OK_MS = 5 * 60 * 1000 // setelah kawin
 const COOLDOWN_FAIL_MS = 60 * 1000 // mode cinta berakhir ~30 dtk
+const COOLDOWN_MOVE_MS = 30 * 1000 // hewan tak terjangkau: coba hewan lain dulu
+const BABY_GROW_MS = 20 * 60 * 1000 // anak tumbuh dewasa ~20 menit; dicatat dari kemunculan entitas karena metadata bisa gagal diparse
 
 async function run (bot, p, ctx) {
   const md = ctx.mcData
@@ -41,6 +43,10 @@ async function run (bot, p, ctx) {
   const creative = U.creative(bot)
   bot.arcadia = bot.arcadia || {}
   const cd = bot.arcadia.breedCooldown = bot.arcadia.breedCooldown || {}
+  const babyIds = bot.arcadia.breedBabies = bot.arcadia.breedBabies || {}
+  U.traceStops(bot) // catat siapa yang memanggil pathfinder.stop()/setGoal() (diagnosa PathStopped)
+  // jangan mewarisi pengaturan gerak task sebelumnya (mis. mine.collect yang boleh menggali): berjalan saja
+  if (ctx.movements && bot.pathfinder && bot.pathfinder.setMovements) { try { bot.pathfinder.setMovements(ctx.movements('walk')) } catch (e) { /* abaikan */ } }
 
   let sync = { refreshed: false, reason: 'refresh=false' }
   if (p.refresh !== false) {
@@ -52,7 +58,7 @@ async function run (bot, p, ctx) {
 
   const near = e => e.position.distanceTo(bot.entity.position) <= radius
   const all = sp => Object.values(bot.entities).filter(e => e !== bot.entity && e.position && e.name === sp && near(e))
-  const adults = sp => all(sp).filter(e => !isBaby(e) && !(cd[e.id] > Date.now()))
+  const adults = sp => all(sp).filter(e => !isBaby(e) && !(babyIds[e.id] > Date.now()) && !(cd[e.id] > Date.now()))
   const foodFor = sp => (FOOD[sp] || []).map(n => md.itemsByName[n]).filter(Boolean).map(i => ({ name: i.name, id: i.id, n: bot.inventory.count(i.id) })).filter(f => f.n > 0)
   const foodTotal = sp => foodFor(sp).reduce((a, f) => a + f.n, 0)
 
@@ -74,15 +80,18 @@ async function run (bot, p, ctx) {
   if (!creative && foodTotal(species) < 2) return { ok: false, code: 'PRECONDITION_FAILED', error: 'butuh >=2 ' + foodNames + ' di inventory untuk mengawinkan ' + species + ' (ada ' + foodTotal(species) + ')', data: { species, sync } }
 
   const stats = { species, pairs: 0, fed: 0, babies: 0, foodUsed: {}, attempts: [] }
+  const moves = []
   const feed = async e => {
     const food = foodFor(species)[0]
     if (!food && !creative) return { ok: false, why: 'makanan habis' }
     const item = food ? bot.inventory.items().find(i => i.type === food.id) : null
-    if (item) await bot.equip(item, 'hand')
-    if (e.position.distanceTo(bot.entity.position) > 3) await U.gotoTimed(bot, new goals.GoalNear(e.position.x, e.position.y, e.position.z, 2), 15000, ctx.signal)
+    try { if (item) await bot.equip(item, 'hand') } catch (err) { return { ok: false, why: 'gagal memegang makanan: ' + (err && err.message) } }
+    const ap = await U.approachEntity(bot, e, ctx, { reach: 2.6 })
+    if (moves.length < 10) moves.push(ap.ok ? { id: e.id, ok: true, hops: ap.hops, via: ap.via } : { id: e.id, ok: false, hops: ap.hops, via: ap.via, code: ap.code })
+    if (!ap.ok) return { ok: false, move: true, code: ap.code, why: ap.error }
     if (bot.lookAt) { try { await bot.lookAt(e.position.offset(0, (e.height || 1) * 0.5, 0), true) } catch (err) { /* abaikan */ } }
     const before = food ? bot.inventory.count(food.id) : 0
-    await bot.activateEntity(e)
+    try { await bot.activateEntity(e) } catch (err) { return { ok: false, why: 'activateEntity gagal: ' + (err && err.message) } }
     await U.sleep(350)
     const consumed = creative ? true : bot.inventory.count(food.id) < before
     if (consumed && food) stats.foodUsed[food.name] = (stats.foodUsed[food.name] || 0) + 1
@@ -111,34 +120,51 @@ async function run (bot, p, ctx) {
     }
   }
 
-  let stop = null
-  for (let k = 0; k < pairsWanted && !ctx.signal.aborted; k++) {
-    if (!creative && foodTotal(species) < 2) { stop = 'makanan habis'; break }
+  let stop = null; let moveFail = null; let moveFails = 0; let carry = null; let k = 0
+  const nearest = from => (x, y) => x.position.distanceTo(from) - y.position.distanceTo(from)
+  for (let iter = 0; k < pairsWanted && !ctx.signal.aborted && iter < pairsWanted * 3 + 3; iter++) {
+    if (!creative && foodTotal(species) < (carry ? 1 : 2)) { stop = 'makanan habis'; break }
     const list = adults(species)
-    if (list.length < 2) { stop = 'kurang dari 2 ' + species + ' dewasa (di luar cooldown) dalam ' + radius + ' blok'; break }
-    const A = list.sort((x, y) => x.position.distanceTo(bot.entity.position) - y.position.distanceTo(bot.entity.position))[0]
-    const B = list.filter(e => e !== A).sort((x, y) => x.position.distanceTo(A.position) - y.position.distanceTo(A.position))[0]
+    if (carry && !list.some(e => e.id === carry.id)) carry = null
+    if (!carry && list.length < 2) { stop = 'kurang dari 2 ' + species + ' dewasa (di luar cooldown) dalam ' + radius + ' blok'; break }
+    const A = carry ? list.find(e => e.id === carry.id) : list.sort(nearest(bot.entity.position))[0]
+    const B = list.filter(e => e.id !== A.id).sort(nearest(A.position))[0]
+    if (!B) { stop = 'kurang dari 2 ' + species + ' dewasa (di luar cooldown) dalam ' + radius + ' blok'; break }
     const sp = watchSpawns()
     let baby = null
     let fa; let fb
     try {
-      fa = await feed(A)
-      if (fa.ok) stats.fed++
-      fb = fa.ok ? await feed(B) : { ok: false, why: fa.why }
+      if (carry) fa = { ok: true } // A sudah diberi makan pada putaran sebelumnya (mode cinta ~30 dtk)
+      else { fa = await feed(A); if (fa.ok) stats.fed++ }
+      fb = fa.ok ? await feed(B) : { ok: false, why: fa.why, move: fa.move, code: fa.code }
       if (fb.ok) stats.fed++
-      stats.pairs++
+      if (!fa.move && !fb.move) stats.pairs++
       if (fa.ok && fb.ok) baby = await sp.wait(A.position, waitMs)
     } finally { sp.stop() }
+    if (fa.move || fb.move) { // hewan tak terjangkau: bukan salah makanan, coba hewan lain (maks 3 kali)
+      const bad = fa.move ? fa : fb
+      cd[(fa.move ? A : B).id] = Date.now() + COOLDOWN_MOVE_MS
+      moveFail = { code: bad.code || 'UNKNOWN', error: bad.why }
+      moveFails++
+      stats.attempts.push({ a: A.id, b: B.id, result: 'tidak terjangkau: ' + bad.why })
+      carry = fa.ok ? A : null
+      if (moveFails >= 3) { stop = bad.why; break }
+      continue
+    }
+    carry = null; moveFail = null
     if (!fa.ok || !fb.ok) { cd[A.id] = Date.now() + COOLDOWN_FAIL_MS; cd[B.id] = Date.now() + COOLDOWN_FAIL_MS; stats.attempts.push({ a: A.id, b: B.id, result: 'gagal memberi makan: ' + (fb.why || fa.why) }); stop = fb.why || fa.why; break }
-    if (baby) { stats.babies++; cd[A.id] = Date.now() + COOLDOWN_OK_MS; cd[B.id] = Date.now() + COOLDOWN_OK_MS; stats.attempts.push({ a: A.id, b: B.id, result: 'anak lahir' }) } else {
+    if (baby) { stats.babies++; if (baby.id != null) babyIds[baby.id] = Date.now() + BABY_GROW_MS; cd[A.id] = Date.now() + COOLDOWN_OK_MS; cd[B.id] = Date.now() + COOLDOWN_OK_MS; stats.attempts.push({ a: A.id, b: B.id, result: 'anak lahir' }) } else {
       cd[A.id] = Date.now() + COOLDOWN_FAIL_MS; cd[B.id] = Date.now() + COOLDOWN_FAIL_MS; stats.attempts.push({ a: A.id, b: B.id, result: 'tidak ada anak dalam ' + waitMs + ' ms' }); stop = 'tidak ada anak lahir'
     }
+    k++
   }
   if (ctx.signal.aborted) stop = 'dihentikan'
-  const data = { ...stats, requestedPairs: pairsWanted, stoppedBy: stop, babyDetection: 'kemunculan entitas baru sejenis (anak) dekat pasangan', sync }
+  const data = { ...stats, requestedPairs: pairsWanted, stoppedBy: stop, babyDetection: 'kemunculan entitas baru sejenis (anak) dekat pasangan', sync, moves }
+  const ps = U.pathDiag(bot, 10 * 60 * 1000).slice(-5); if (ps.length) data.pathStops = ps
   if (stats.fed > 0 && p.refresh !== false && !ctx.signal.aborted) await I.attachRefresh(bot, ctx, p, { data })
   if (stats.babies > 0) return { ok: true, code: 'OK', data: { ...data, partial: stats.babies < pairsWanted } }
   if (ctx.signal.aborted) return { ok: false, code: 'ABORTED', error: 'dihentikan', data }
+  if (moveFail) return { ok: false, code: moveFail.code, error: 'tidak bisa mendekati ' + species + ': ' + moveFail.error + (stats.fed ? ' (sempat memberi makan ' + stats.fed + ' hewan)' : ''), data }
   if (stats.fed > 0) return { ok: false, code: 'TIMEOUT', error: 'hewan diberi makan tetapi tidak ada anak lahir dalam ' + waitMs + ' ms (cooldown 5 menit setelah kawin, jarak antar hewan, atau tidak keduanya masuk mode cinta)', data }
   if (stop && /dewasa/.test(stop)) return { ok: false, code: 'TARGET_NOT_FOUND', error: stop, data }
   return { ok: false, code: 'PRECONDITION_FAILED', error: stop || 'tidak ada yang dikawinkan', data }

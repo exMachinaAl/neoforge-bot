@@ -100,6 +100,39 @@ const babies = b => Object.values(b.entities).filter(e => e.id >= 1000).length
   b = mk({ inv: { 9: ['wheat', 4] } }); b.addAnimal(1, 'cow', 3, 2); b.addAnimal(2, 'cow', 4, 2); r = createRunner(b); o = await r.run('breed.animals', { species: 'cow', refresh: false })
   ok(o.ok && !(b.sent || []).length, 'breed: refresh=false -> tanpa perintah /data')
 
+  // gerak: PathStopped, hewan tak terjangkau, anak tidak dihitung dewasa
+  const stopped = () => Object.assign(new Error('Path was stopped before it could be completed! Thus, the desired goal was not reached.'), { name: 'PathStopped' })
+  const noPath = () => Object.assign(new Error('No path to the goal!'), { name: 'NoPath' })
+  const hook = (bot, fn) => { const orig = bot.pathfinder.goto; let n = 0; bot.pathfinder.goto = g => { const e = fn(g, ++n); return e ? Promise.reject(e) : orig(g) }; return () => n }
+
+  b = mk({ inv: { 9: ['wheat', 4] } }); b.addAnimal(1, 'cow', 10, 2); b.addAnimal(2, 'cow', 11, 2); r = createRunner(b)
+  const calls = hook(b, (g, n) => n <= 2 ? stopped() : null)
+  o = await r.run('breed.animals', { species: 'cow' })
+  ok(o.ok && o.data.babies === 1 && calls() === 3 && o.data.moves[0].via === 'pathfinder', 'breed gerak: PathStopped dari luar 2x saat mendekat -> dicoba ulang lalu berhasil (goto ' + calls() + 'x)')
+
+  b = mk({ inv: { 9: ['wheat', 4] }, mk: { gotoErr: 'PathStopped' } }); b.addAnimal(1, 'cow', 14, 2); b.addAnimal(2, 'cow', 15, 2); r = createRunner(b)
+  o = await r.run('breed.animals', { species: 'cow' })
+  ok(!o.ok && o.code === 'INTERRUPTED' && /asal:/.test(o.error) && b.activations.length === 0 && cnt(b, 'wheat') === 4, 'breed gerak: PathStopped terus-menerus -> INTERRUPTED (bukan UNKNOWN), asal disebut, makanan tidak terbuang -> ' + o.code)
+
+  b = mk({ inv: { 9: ['wheat', 4] } }); b.addAnimal(1, 'cow', 14, 2); b.addAnimal(2, 'cow', 16, 2); b.addAnimal(3, 'cow', 18, 2); r = createRunner(b)
+  hook(b, g => g.x === 14 ? noPath() : null)
+  o = await r.run('breed.animals', { species: 'cow' })
+  ok(o.ok && o.data.babies === 1 && b.activations.join() === '2,3' && o.data.attempts.some(a => /tidak terjangkau/.test(a.result)), 'breed gerak: sapi terdekat NoPath -> dilewati, pasangan lain dikawinkan (' + b.activations.join() + ')')
+
+  b = mk({ inv: { 9: ['wheat', 4] } }); b.addAnimal(1, 'cow', 12, 1); b.addAnimal(2, 'cow', 24, 2); b.addAnimal(3, 'cow', -14, 2); r = createRunner(b)
+  hook(b, g => g.x === 24 ? noPath() : null)
+  o = await r.run('breed.animals', { species: 'cow', radius: 30 })
+  ok(o.ok && o.data.babies === 1 && b.activations.join() === '1,3' && cnt(b, 'wheat') === 2, 'breed gerak: pasangan tak terjangkau setelah hewan pertama diberi makan -> hewan pertama dipasangkan dengan yang lain, makanan tidak terbuang (' + b.activations.join() + ')')
+
+  b = mk({ inv: { 9: ['wheat', 4] }, mk: { gotoErr: 'NoPath' } }); b.addAnimal(1, 'cow', 14, 2); b.addAnimal(2, 'cow', 15, 2); r = createRunner(b)
+  o = await r.run('breed.animals', { species: 'cow' })
+  ok(!o.ok && o.code === 'NO_PATH' && b.activations.length === 0, 'breed gerak: semua hewan tak terjangkau -> NO_PATH, bukan UNKNOWN (' + o.code + ')')
+
+  b = mk({ inv: { 9: ['wheat', 8] } }); b.addAnimal(1, 'cow', 3, 2); b.addAnimal(2, 'cow', 4, 2); b.addAnimal(3, 'cow', 5, 2); r = createRunner(b)
+  o = await r.run('breed.animals', { species: 'cow' })
+  const o2 = await r.run('breed.animals', { species: 'cow' })
+  ok(o.ok && !o2.ok && o2.code === 'TARGET_NOT_FOUND' && cnt(b, 'wheat') === 6, 'breed: anak yang lahir (metadata tak terbaca) tidak dihitung dewasa pada task berikutnya, gandum tidak terbuang (' + o2.code + ')')
+
   // daftar makanan sah di minecraft-data
   const md = require('./mock').mcData
   ok(Object.values(FOOD).flat().every(n => md.itemsByName[n]) && Object.keys(FOOD).every(n => md.entitiesByName[n]), 'breed: semua nama makanan & hewan di tabel FOOD ada di minecraft-data 1.21.1')

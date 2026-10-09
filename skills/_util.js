@@ -5,13 +5,121 @@ const sleep = ms => new Promise(r => setTimeout(r, ms))
 
 const NATURAL = /^(dirt|grass_block|coarse_dirt|rooted_dirt|podzol|mycelium|sand|red_sand|gravel|clay|stone|andesite|diorite|granite|tuff|deepslate|netherrack|snow|snow_block|short_grass|tall_grass|fern|large_fern|dead_bush|vine|moss_block|moss_carpet|dripstone_block|pointed_dripstone|calcite|basalt|blackstone)$|_leaves$|_ore$/
 
-// goto dengan batas waktu; pada timeout pathfinder dihentikan dan error bernama 'Timeout'
-async function gotoTimed (bot, goal, ms, signal) {
-  let t
-  const timeout = new Promise((resolve, reject) => { t = setTimeout(() => { try { bot.pathfinder.stop() } catch (e) {} reject(Object.assign(new Error('goto melewati batas ' + ms + ' ms'), { name: 'Timeout' })) }, ms) })
-  const onAbort = () => { try { bot.pathfinder.stop() } catch (e) {} }
-  if (signal) signal.addEventListener('abort', onAbort, { once: true })
-  try { await Promise.race([bot.pathfinder.goto(goal), timeout]) } finally { clearTimeout(t); if (signal) signal.removeEventListener('abort', onAbort) }
+// Jejak siapa yang memanggil pathfinder.stop()/setGoal() (diagnosa "Path was stopped ..."). Aman dipanggil berulang.
+// Hasil: bot.arcadia.pathLog = [{t, kind, by}] (12 terakhir). Hentian dari DALAM pathfinder tidak lewat stop() dan tidak tercatat.
+function traceStops (bot) {
+  const pf = bot.pathfinder
+  if (!pf || pf.__traced) return
+  pf.__traced = true
+  bot.arcadia = bot.arcadia || {}
+  const log = bot.arcadia.pathLog = bot.arcadia.pathLog || []
+  const who = () => {
+    const fr = String(new Error().stack).split('\n').slice(3).map(x => x.trim().replace(/^at /, ''))
+    const mine = fr.filter(x => !/node:internal|node_modules/.test(x))
+    return String(mine[0] || fr[0] || '?').replace(/\\/g, '/').slice(-80)
+  }
+  const wrap = (name, label) => {
+    const orig = pf[name]
+    if (typeof orig !== 'function') return
+    pf[name] = function (...a) {
+      log.push({ t: Date.now(), kind: label(a), by: who() })
+      if (log.length > 12) log.shift()
+      return orig.apply(this, a)
+    }
+  }
+  wrap('stop', () => 'stop')
+  wrap('setGoal', a => 'setGoal(' + (a[0] ? a[0].constructor.name : 'null') + ')')
+}
+function pathDiag (bot, sinceMs = 5000) {
+  const log = (bot.arcadia && bot.arcadia.pathLog) || []
+  return log.filter(r => Date.now() - r.t < sinceMs).map(r => ({ agoMs: Date.now() - r.t, kind: r.kind, by: r.by }))
+}
+
+// goto dengan batas waktu (total, termasuk percobaan ulang). Pada timeout pathfinder dihentikan dan error bernama 'Timeout'.
+// 'PathStopped' yang BUKAN karena timeout/abort kita (mis. ada pihak lain memanggil stop()) dicoba ulang (opts.retries, bawaan 2);
+// bila tetap gagal, error membawa asal-usulnya (err.stoppedBy) supaya penyebabnya terlihat di log.
+async function gotoTimed (bot, goal, ms, signal, opts = {}) {
+  traceStops(bot)
+  const retries = opts.retries ?? 2
+  const t0 = Date.now()
+  for (let attempt = 0; ; attempt++) {
+    const left = ms - (Date.now() - t0)
+    if (left < 400) throw Object.assign(new Error('goto melewati batas ' + ms + ' ms'), { name: 'Timeout' })
+    let t; let timedOut = false
+    // reject() DULU baru stop(): stop() membuat goto menolak 'PathStopped'; jangan sampai itu yang menang di Promise.race (Timeout tersamar jadi PathStopped)
+    const timeout = new Promise((resolve, reject) => { t = setTimeout(() => { timedOut = true; reject(Object.assign(new Error('goto melewati batas ' + ms + ' ms'), { name: 'Timeout' })); try { bot.pathfinder.stop() } catch (e) {} }, left) })
+    const onAbort = () => { try { bot.pathfinder.stop() } catch (e) {} }
+    if (signal) signal.addEventListener('abort', onAbort, { once: true })
+    try {
+      await Promise.race([bot.pathfinder.goto(goal), timeout])
+      return
+    } catch (e) {
+      if (!e || e.name !== 'PathStopped') throw e
+      const aborted = !!(signal && signal.aborted)
+      if (!timedOut && !aborted && attempt < retries) { /* dicoba ulang di bawah */ } else {
+        const src = pathDiag(bot, 2000).slice(-3).map(r => r.kind + '@' + r.by).join(' | ') || 'dalam pathfinder (bukan lewat stop()/setGoal())'
+        e.stoppedBy = src
+        e.message = String(e.message) + ' [asal: ' + src + ']'
+        throw e
+      }
+    } finally { clearTimeout(t); if (signal) signal.removeEventListener('abort', onAbort) }
+    await sleep(120 * (attempt + 1))
+  }
+}
+
+// Jalan lurus ke posisi (tanpa pathfinder). Hanya untuk jarak pendek di area terbuka; berhenti saat dalam reach, waktu habis, atau abort.
+// getPos() dipanggil ulang tiap langkah (target bergerak). Mengembalikan jarak akhir (Infinity bila target hilang).
+async function steerTo (bot, getPos, reach, ms, signal) {
+  const t0 = Date.now()
+  try {
+    while (Date.now() - t0 < ms && !(signal && signal.aborted)) {
+      const p = getPos()
+      if (!p) return Infinity
+      if (bot.entity.position.distanceTo(p) <= reach) break
+      try { await bot.lookAt(new Vec3(p.x, bot.entity.position.y + 1.6, p.z), true) } catch (e) { /* abaikan */ }
+      bot.setControlState('forward', true)
+      bot.setControlState('jump', !!(bot.entity.isCollidedHorizontally && bot.entity.onGround))
+      await sleep(80)
+    }
+  } finally { try { bot.setControlState('forward', false); bot.setControlState('jump', false) } catch (e) {} }
+  const p = getPos()
+  return p ? bot.entity.position.distanceTo(p) : Infinity
+}
+
+// Mendekati entitas yang bergerak sampai dalam reach blok: lompatan pendek lewat pathfinder dengan posisi dihitung ulang tiap lompatan;
+// bila pathfinder tidak berhasil dan jaraknya pendek, jalan lurus. Mengembalikan {ok, code?, error?, hops, via, dist}.
+async function approachEntity (bot, entity, ctx, opts = {}) {
+  const reach = opts.reach ?? 2.6
+  const tries = opts.tries ?? 4
+  const hopMs = opts.hopMs ?? 8000
+  const signal = ctx && ctx.signal
+  const info = { hops: 0, via: 'none' }
+  const cur = () => bot.entities[entity.id]
+  const dist = () => { const e = cur(); return e && e.position ? bot.entity.position.distanceTo(e.position) : Infinity }
+  let code = null; let last = ''
+  for (let i = 0; i < tries; i++) {
+    if (signal && signal.aborted) return { ok: false, code: 'ABORTED', error: 'dihentikan', ...info }
+    const e = cur()
+    if (!e || !e.position) return { ok: false, code: 'TARGET_NOT_FOUND', error: 'entitas hilang saat didekati', ...info }
+    if (dist() <= reach) return { ok: true, dist: +dist().toFixed(2), ...info }
+    info.hops++
+    try {
+      await gotoTimed(bot, new goals.GoalNear(e.position.x, e.position.y, e.position.z, Math.max(1, reach - 1)), hopMs, signal)
+      info.via = 'pathfinder'
+    } catch (err) {
+      if (signal && signal.aborted) return { ok: false, code: 'ABORTED', error: 'dihentikan', ...info }
+      last = (err && err.name) + ': ' + String(err && err.message).slice(0, 260)
+      code = err.name === 'NoPath' ? 'NO_PATH' : err.name === 'Timeout' ? 'TIMEOUT' : err.name === 'PathStopped' ? 'INTERRUPTED' : 'UNKNOWN'
+      if (opts.steer !== false && dist() < 10) {
+        const d = await steerTo(bot, () => { const x = cur(); return x && x.position }, reach, 3500, signal)
+        info.via = 'steer'
+        if (d <= reach) return { ok: true, dist: +d.toFixed(2), ...info }
+      }
+    }
+  }
+  const d = dist()
+  if (d <= reach) return { ok: true, dist: +d.toFixed(2), ...info }
+  return { ok: false, code: code || 'TIMEOUT', error: 'tidak bisa mendekati dalam ' + tries + ' langkah (jarak ' + (Number.isFinite(d) ? d.toFixed(1) : '?') + ' > ' + reach + ')' + (last ? '; ' + last : ''), ...info }
 }
 
 
@@ -126,4 +234,4 @@ const itemKey = i => { if (i.name && i.name !== 'unknown') return i.name; const 
 function invTotals (bot) { const m = {}; for (const i of bot.inventory.items()) { const k = itemKey(i); m[k] = (m[k] || 0) + i.count } return m }
 function diffTotals (a, b) { const d = {}; for (const k of Object.keys(b)) { const v = b[k] - (a[k] || 0); if (v > 0) d[k] = v } return d }
 
-module.exports = { sleep, NATURAL, gotoTimed, bestTool, movementsFor, equipWeapon, autoEat, hostiles, fight, guard, invTotals, diffTotals, creative, findContainer, approach, itemKey }
+module.exports = { sleep, NATURAL, gotoTimed, traceStops, pathDiag, steerTo, approachEntity, bestTool, movementsFor, equipWeapon, autoEat, hostiles, fight, guard, invTotals, diffTotals, creative, findContainer, approach, itemKey }

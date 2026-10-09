@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/skills.test.js && node tests/engine.test.js && node tests/inv.test.js && node tests/craft.test.js && node tests/breed.test.js",
+    "test": "node tests/skills.test.js && node tests/engine.test.js && node tests/inv.test.js && node tests/craft.test.js && node tests/breed.test.js && node tests/path.test.js",
     "postinstall": "node patch-all.js",
     "adapt": "node adapt.js",
     "start": "node bot.js",

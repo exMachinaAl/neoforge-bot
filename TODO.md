@@ -89,3 +89,55 @@ Legenda: [x] TERBUKTI (log/!test) | [~] TERUJI TIRUAN / sebagian | [ ] belum
 - [ ] breeding: deteksi mode cinta/anak yang lebih tepat, penyimpanan cooldown antar restart
 - [ ] Mekanik hidup (Director non-LLM + cyclebook JSON + persona + plugin planner LLM) setelah fungsi vanilla lengkap
 - [ ] Skema SlotComponent untuk komponen item modded (opsi 2) agar item bermuatan komponen terbaca penuh
+## Batch 10 — Verifikasi & stabilitas (rencana 2026-10-09)
+
+Status masuk
+- TERBUKTI (log pemilik, terpotong): breed.animals species=auto pairs=2 lewat API/antrean -> OK 7,7 dtk;
+  antrean engine queued -> started -> finished berjalan. Jumlah anak tidak terlihat di log.
+- Perbaikan 09-10 (fix-breed-v2): gotoTimed tidak lagi menyamarkan Timeout sebagai PathStopped;
+  PathStopped dari luar dicoba ulang dan membawa "[asal: ...]"; approachEntity; anak dilacak dari entitySpawn.
+- Belum terjelaskan: PathStopped seketika (88 ms, 3,4 dtk) sebelum perbaikan. Jika muncul lagi, baca
+  "[asal: ...]" dan data.pathStops pada SKILLRESULT.
+
+Urutan: B10-1 -> (B10-2, B10-4, B10-5 bebas) -> B10-3 (butuh B10-1) -> B10-6 terakhir.
+
+### B10-1 Keamanan jaringan  [Pemilik, S] — DULU
+- Langkah: cek router tidak mem-forward 25565; firewall/bind server; API kontrol tetap 127.0.0.1 + token;
+  git rm --cached mc.local.json.bp, tambah *.bp ke .gitignore. Konsol: whitelist on, whitelist add BotAlpha
+  (pelengkap saja; nama BotAlpha tetap bisa dipalsukan di offline-mode).
+- Selesai bila: dari jaringan luar (data seluler) ping ke server gagal; repo tidak memuat berkas lokal.
+
+### B10-2 Konfirmasi breed.animals  [Pemilik, S]
+- Langkah: 3 skenario dengan hewan baru tiap uji (cooldown 5 menit): pairs=1 sapi dekat; pairs=2 sapi
+  bergerak; tanpa gandum. Kirim SKILLRESULT UTUH dari CLI (UI memotong hasil).
+- Selesai bila: data.babies = pairs, semua data.moves ok, pathStops kosong, tanpa PathStopped seketika
+  dalam 10 percobaan berurutan; tanpa gandum -> PRECONDITION_FAILED.
+
+### B10-3 Uji server skill yang baru "teruji tiruan"  [Pemilik, M] — setelah B10-1
+- Cakupan: craft.item (2x2 lalu meja), inv.snapshot/view/store/take, farm.harvest (pascaperbaikan approach),
+  mine.collect (dirt/stone + anomali nav.goto sesudah menggali lubang), guard.
+- Langkah: op BotAlpha + gamerule sendCommandFeedback true hanya selama sesi, lalu deop BotAlpha.
+  Parameter tiap skill lewat !task list. Satu sesi, satu log.
+- Selesai bila: tabel PASS/FAIL/SKIP per skill masuk HANDOFF (label TERBUKTI atau DILAPORKAN).
+
+### B10-4 Diagnosa T-pose A/B  [Pemilik, M]
+- Langkah: (1) ukur gerak di server: data get entity BotAlpha Pos dua kali berselang 2 dtk (animasi bukan
+  bukti gerak); (2) jalankan dengan ARCADIA_UNKNOWN_EMPTY=1 lawan bawaan, amati dari klien pemain saat bot
+  diam dan berjalan; (3) simpan keluaran !channels ysm epicfight; (4) catat apakah klien pengamat
+  memakai YSM/Epic Fight dan apakah pemain biasa tampil normal.
+- Selesai bila: tabel A/B terisi, hipotesis patch-blocks dikonfirmasi atau disanggah, dan ada keputusan
+  (lanjut tangkap paket pilih-model YSM, atau tutup).
+
+### B10-5 Spike statistik paket gagal parse  [Pemilik, S, hanya baca log]
+- Langkah: setelah 30 menit aktivitas, grep -a "PARSE GAGAL" bot.log | sed -E 's/.*paket: ([a-z_]+).*/\1/' | sort | uniq -c | sort -rn
+- Selesai bila: ada peringkat paket gagal; keputusan: skema SlotComponent sendiri layak (window_items/set_slot
+  sering) atau tidak (didominasi entity_equipment/metadata mob lain).
+
+### B10-6 Penutupan batch  [Pemilik + Agen, S]
+- npm test dijalankan di lingkungan sebenarnya (path.test.js dan 6 kasus baru di breed.test.js belum pernah
+  dijalankan di sana), commit, HANDOFF checkpoint #10 berisi hasil B10-1..5, MAP.md dibangkitkan ulang, tag prestable-1.
+
+### Ditunda (dengan alasan)
+- Skema SlotComponent sendiri: tunggu B10-5.   - PvP / damage Epic Fight: butuh HP mob terbaca.
+- Upgrade pathfinder: risiko regresi, tunggu semua skill terbukti.   - Persona / planner LLM / multi-bot: tunggu stabil.
+- Pilih-model YSM: tunggu B10-4.   - Format ack TaCZ selain kosong: hanya bila kick muncul.
