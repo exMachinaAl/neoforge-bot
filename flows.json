@@ -343,5 +343,16 @@
  "irons_spellbooks:sync_mana": "CLIENTBOUND",
  "irons_spellbooks:sync_all_camera_shake": "CLIENTBOUND",
  "tenshilib:s2c_animation_data_sync": "CLIENTBOUND",
- "jade:server_ping_v1": "CLIENTBOUND"
+ "jade:server_ping_v1": "CLIENTBOUND",
+ "apothic_attributes:config": "CLIENTBOUND",
+ "apotheosis:config": "CLIENTBOUND",
+ "apothic_enchanting:enchantment_info": "CLIENTBOUND",
+ "apotheosis:reroll_result": "CLIENTBOUND",
+ "apotheosis:boss_spawn": "CLIENTBOUND",
+ "apothic_attributes:crit_particle": "CLIENTBOUND",
+ "apothic_enchanting:stats": "CLIENTBOUND",
+ "apothic_enchanting:set_raven_stats": "SERVERBOUND",
+ "apothic_enchanting:clue": "CLIENTBOUND",
+ "apotheosis:link_item_to_chat": "SERVERBOUND",
+ "neoforge:sync_attachments": "CLIENTBOUND"
 }
