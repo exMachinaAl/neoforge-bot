@@ -63,3 +63,29 @@ Legenda: [x] TERBUKTI (log/!test) | [~] TERUJI TIRUAN / sebagian | [ ] belum
 - [ ] Verifikasi inventory: skill inv.snapshot (/data get entity <bot> Inventory, parser SNBT) dibanding bot.inventory; butuh bot op
 - [ ] craft.item: resep vanilla ada di minecraft-data (782 item); alur crafting table + window click BELUM diuji; hanya bahan vanilla
 - [ ] Uji ulang farm.harvest di server; kirim tail -n 3 tasks.log bila gagal
+## Pembaruan #7 (inventory)
+- [~] inv.snapshot: bandingkan bot.inventory dengan /data get entity <bot> Inventory (butuh op); belajar nama item modded; state.inventory jadi source=snbt/accurate=true bila snapshot cocok dan <30 dtk - TERUJI TIRUAN, BELUM DIUJI di server
+- [~] inv.view / inv.store / inv.take: lihat, simpan, ambil dari chest dengan verifikasi /data get block Items; item modded dilewati kecuali includeModded - TERUJI TIRUAN, BELUM DIUJI di server
+- [~] Nama item modded dari registri minecraft:item (log "ITEM NAMES: n id"); bila tidak muncul, nama dipelajari dari inv.snapshot (itemmap.json)
+- [ ] Format keluaran /data get di server asli belum pernah dilihat: bila PROTOCOL_UNSUPPORTED, kirim snapshot_raw.txt
+- [ ] View 3D (prismarine-viewer) untuk UI - BELUM dikerjakan, lihat catatan kelayakan
+## Pembaruan #8 (inventory tahan banting, v2.3)
+- [~] Jendela chest tak terbaca (window_items dibuang karena komponen item modded): openChest memantau open_window sendiri, lanjut mode degraded (isi dari /data get block, pindah lewat shift-click berbasis slot), SELALU menutup jendela (close_window mentah) - TERUJI TIRUAN, BELUM DIUJI di server
+- [~] inv.store/inv.take: hasil dihitung dari isi chest di server (tidak lagi salah menilai gagal saat server lag); item vanilla yang tak terbaca bot ikut dipindah; item modded dengan includeModded=true dan bot op; inv.take item=all
+- [~] inv.snapshot hydrate: item polos (tanpa komponen) yang dibawa sebelum spawn dipulihkan ke tampilan bot; state.inventory memakai daftar kebenaran server selama snapshot <30 dtk
+- [ ] Item BERMUATAN komponen modded tetap tak terbaca bot (butuh skema SlotComponent: opsi 2)
+- [ ] craft.item dan breed.animals belum dikerjakan (craft memakai jendela yang sama; 2x2 lewat inventory tidak butuh jendela chest)
+## Pembaruan #9 (v2.4: crafting, breeding, catatan inventory)
+- [~] craft.item: resep 2x2 lewat inventory (tanpa jendela chest), resep meja lewat meja crafting terdekat/koordinat; jendela meja yang tak terbaca (degraded) ditolak jelas; bahan diperiksa lewat sinkron server (butuh op) - TERUJI TIRUAN, BELUM DIUJI di server
+- [~] breed.animals: cow/sheep/goat/mooshroom/pig/chicken/horse/donkey/llama/rabbit/fox; anak lahir diukur dari event entitySpawn (bukan metadata); cooldown 5 menit disimpan di memori proses - TERUJI TIRUAN. Deteksi anak lewat metadata[16] (AgeableMob) BELUM DIUJI
+- [~] Catatan inventory (BotState) disamakan dengan server setelah inv.store/inv.take/craft.item/breed.animals (reconcile: pulihkan item polos, hapus item hantu, koreksi jumlah)
+- [ ] ChestBook (inventory eksternal): catat isi tiap chest per koordinat (item, jumlah, waktu lihat) ke chests.json agar Director bisa memutuskan "ambil dari chest X"; data sudah tersedia dari inv.view/store/take, tinggal dicatat
+- [ ] Perintah guard: jaga pos (x,y,z) dalam radius R; serang mob hostile yang masuk radius, kembali ke pos; berhenti saat HP rendah; parameter pos/radius/mode dari UI dan chat
+- [ ] Perintah follow-as-guard: ikuti pemain pemilik, jaga jarak, lindungi dari mob (memakai logika guard di sekitar pemilik), makan/istirahat sesuai kebutuhan; tiap petualangan bersama menaikkan affection persona
+- [ ] Persona: nilai affection (disimpan JSON), dipengaruhi follow-as-guard, hadiah item, waktu bersama; mempengaruhi bobot Director (kontrak Persona.traits sudah ada)
+- [ ] Perintah di dalam game: pemilik mengetik "!bot guard/follow/stop/craft ..." di chat -> masuk antrean engine (hanya dari pemain yang diizinkan)
+- [ ] WebUI: tombol cepat guard/follow/stop, kartu Inventory (akurat/tidak, tombol Snapshot), kartu chest, form craft/breed; peta 2D lalu opsional viewer 3D
+- [ ] craft: menaruh meja crafting bila tidak ada, tungku (smelting), resep dengan bahan modded
+- [ ] breeding: deteksi mode cinta/anak yang lebih tepat, penyimpanan cooldown antar restart
+- [ ] Mekanik hidup (Director non-LLM + cyclebook JSON + persona + plugin planner LLM) setelah fungsi vanilla lengkap
+- [ ] Skema SlotComponent untuk komponen item modded (opsi 2) agar item bermuatan komponen terbaca penuh

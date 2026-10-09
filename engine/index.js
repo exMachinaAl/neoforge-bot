@@ -75,7 +75,14 @@ function createEngine (bot, runner) {
     if (bot.game && bot.game.dimension) st.dimension = String(bot.game.dimension)
     if (typeof bot.health === 'number') st.health = bot.health
     if (typeof bot.food === 'number') st.food = bot.food
-    if (bot.inventory) st.inventory = { items: bot.inventory.items().map(i => ({ name: i.name === 'unknown' || !i.name ? 'unknown#' + i.type : i.name, count: i.count, slot: i.slot })), source: 'protocol', accurate: false }
+    if (bot.inventory) {
+      const T = bot.arcadia && bot.arcadia.inventoryTruth
+      const fresh = !!(T && T.accurate && Date.now() - T.ts < 30000) // snapshot segar (<30 dtk): daftar = kebenaran server
+      const shortName = id => String(id).replace(/^minecraft:/, '')
+      st.inventory = fresh
+        ? { items: T.items.map(i => ({ name: shortName(i.id), count: i.count, slot: i.slot })), source: 'snbt', accurate: true }
+        : { items: bot.inventory.items().map(i => ({ name: require('../skills/_util').itemKey(i), count: i.count, slot: i.slot })), source: 'protocol', accurate: false }
+    }
     return st
   }
 

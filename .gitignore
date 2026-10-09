@@ -9,4 +9,6 @@ status.json
 .env
 old-v/
 mc.local.json
+snapshot.json
+snapshot_raw.txt
 

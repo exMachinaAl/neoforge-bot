@@ -278,5 +278,7 @@
  "irons_spellbooks:sync_recasts": "1.0.0",
  "irons_spellbooks:sync_player_data": "1.0.0",
  "irons_spellbooks:sync_mana": "1.0.0",
- "irons_spellbooks:sync_all_camera_shake": "1.0.0"
+ "irons_spellbooks:sync_all_camera_shake": "1.0.0",
+ "tenshilib:s2c_animation_data_sync": "tenshilib",
+ "jade:server_ping_v1": "5"
 }

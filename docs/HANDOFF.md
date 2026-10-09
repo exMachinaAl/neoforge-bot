@@ -111,3 +111,20 @@ Akar masalah (TERBUKTI dari source): world.raycast memakai block.shapes; tanaman
 Params skill dari UI bisa berupa string ("wheat"); farm.harvest kini menerima daftar dipisah koma. Engine memvalidasi params terhadap paramsSchema (HTTP 400). ABORTED membawa alasan (USER_STOP, USER_CANCEL, KILLSWITCH, DIED, TIMEOUT).
 Inventory: item modded tak dikenal bernama "unknown" oleh prismarine-item; dikelompokkan per id numerik (unknown#<id>); komponen item tidak terbaca (dua item berbeda komponen dengan id sama tampak sama).
 Paket yang memuat komponen modded gagal parse dan dibuang (PARSE GAGAL window_items/set_slot) sehingga bot.inventory dapat tertinggal dari server. Belum ada pemeriksaan silang; rencana: inv.snapshot via /data get entity.
+## 13. Pembaruan checkpoint #7
+- Skill baru: inv.snapshot, inv.view, inv.store, inv.take (+ pembantu skills/_snbt.js, _names.js, _inv.js; tes tests/inv.test.js, 58 kasus). Semuanya TERUJI TIRUAN, BELUM DIUJI di server.
+- Kebenaran inventory/chest = /data get ... (bot harus op, gamerule sendCommandFeedback true). Jendela chest dan inventory protokol bisa tertinggal karena paket bermuatan komponen modded gagal parse.
+- BotState.inventory: source=snbt, accurate=true hanya bila snapshot terakhir cocok dan berumur <30 dtk; selain itu protocol/false.
+- Item modded: nama dari registri sinkronisasi (ITEM NAMES di log) atau hasil snapshot (itemmap.json). inv.store/inv.take melewati item modded kecuali includeModded=true (serialisasi komponen item belum terbukti).
+## 14. Pembaruan checkpoint #8
+- Akar masalah inv.view/take "chest tidak terbuka": mineflayer baru memancarkan windowOpen setelah window_items diparse, dan paket itu memuat isi chest + seluruh inventory pemain; satu item bermuatan komponen modded -> paket dibuang -> openContainer menggantung dan jendela tertinggal terbuka di server. Perbaikan: skills/_inv.js openChest (mode degraded, ensureClosed, reset saat respawn).
+- Akar masalah "snapshot hanya membaca item setelah spawn": window_items(0) saat join dibuang utuh bila satu item bermuatan komponen modded -> semua item yang sudah dibawa tak terbaca. snapshot hydrate memulihkan item polos; item bermuatan komponen tetap tak terbaca.
+- Akar masalah inv.store "gagal padahal item vanilla terpindah": hasil dihitung dari inventory bot 150 ms setelah deposit sementara konfirmasi server lambat saat server lag. Kini dihitung dari isi chest di server (/data get block) bila bot op, atau menunggu stabil (settle).
+- deposit(type) menolak item modded ("Invalid itemType"); item modded dipindah lewat window_click mode 1 (shift-click) per nomor slot: server menerapkan klik walau stateId tidak cocok (dugaan dari kode vanilla; BELUM DIUJI di server).
+- Variabel lingkungan uji: ARCADIA_OPEN_MS, ARCADIA_OPEN_GRACE_MS (batas tunggu open_window), ARCADIA_DATA_DIR.
+## 15. Pembaruan checkpoint #9
+- Skill baru: craft.item dan breed.animals (skills/craft.item.js, skills/breed.animals.js; tes tests/craft.test.js 26 kasus, tests/breed.test.js 25 kasus; mock bersama tests/invmock.js). Total tes: 45 + 29 + 91 + 26 + 25. Semua TERUJI TIRUAN, BELUM DIUJI di server.
+- craft.item memakai Recipe.find (prismarine-recipe) dan bot.craft mineflayer. Resep 2x2 tidak membuka jendela apa pun (aman walau inventory berisi item bermuatan komponen modded); resep meja membuka jendela lewat I.openWindowAt dan menolak bila mode degraded.
+- breed.animals: pendengar entitySpawn dipasang SEBELUM memberi makan (anak bisa lahir saat hewan kedua masih diberi makan; sebelumnya race). Deteksi dewasa lewat metadata[16] (AgeableMob.DATA_BABY_ID, 1.21.x) BELUM DIUJI.
+- Catatan inventory: I.reconcile / I.refreshInventory menyamakan tampilan bot dengan /data get entity (butuh op) lalu memperbarui bot.arcadia.inventoryTruth; dipanggil di akhir inv.store, inv.take, craft.item, breed.animals (kecuali verify/refresh=false).
+- Cara menyerahkan kode: paket .zip + skrip pemasangan beranchor (install/fix-inv.js) yang aman diulang dan diuji pada klon bersih; salin-tempel EOF hanya untuk perubahan satu file kecil.

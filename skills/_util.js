@@ -121,7 +121,8 @@ function findContainer (bot, mcData, hint, maxDist = 48) {
 }
 
 // item modded tak dikenal bernama 'unknown': dibedakan per id numerik (unknown#<id>) supaya bisa dikelompokkan; komponen item tidak terbaca
-const itemKey = i => i.name === 'unknown' || !i.name ? 'unknown#' + i.type : i.name
+// nama item modded: dari registri sinkronisasi / hasil snapshot bila ada ('ns:path'), kalau tidak 'unknown#<id>'
+const itemKey = i => { if (i.name && i.name !== 'unknown') return i.name; const n = require('./_names').nameOf(i.type); return n || 'unknown#' + i.type }
 function invTotals (bot) { const m = {}; for (const i of bot.inventory.items()) { const k = itemKey(i); m[k] = (m[k] || 0) + i.count } return m }
 function diffTotals (a, b) { const d = {}; for (const k of Object.keys(b)) { const v = b[k] - (a[k] || 0); if (v > 0) d[k] = v } return d }
 

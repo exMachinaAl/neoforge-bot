@@ -73,6 +73,9 @@ client.on('neoforgeRegistry', r => {
 })
 // ------------------------------
 
+// nama item modded dari registri sinkronisasi (unknown#<id> -> ns:path)
+client.on('neoforgeRegistry', r => { if (r.name === 'minecraft:item') console.log('ITEM NAMES: ' + require('./skills/_names').load(r.ids) + ' id dimuat dari registri sinkronisasi') })
+
 const showChannels = require('./sniff')(client)
 const bot = mineflayer.createBot({ client })
 bot.once('spawn', () => {

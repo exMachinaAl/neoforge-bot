@@ -341,5 +341,7 @@
  "irons_spellbooks:sync_recasts": "CLIENTBOUND",
  "irons_spellbooks:sync_player_data": "CLIENTBOUND",
  "irons_spellbooks:sync_mana": "CLIENTBOUND",
- "irons_spellbooks:sync_all_camera_shake": "CLIENTBOUND"
+ "irons_spellbooks:sync_all_camera_shake": "CLIENTBOUND",
+ "tenshilib:s2c_animation_data_sync": "CLIENTBOUND",
+ "jade:server_ping_v1": "CLIENTBOUND"
 }
