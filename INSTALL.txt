@@ -1,14 +1,1 @@
-Paket v2.4 - inventory tahan banting + crafting + breeding
-Bisa dipasang di atas repo asli, v2.2, atau v2.3.
-
-  unzip -o arcadia-v2-4.zip
-  node install/fix-inv.js      # edit file lama dengan anchor, aman diulang
-  npm test && npm run check    # 45 + 29 + 91 + 26 + 25 kasus; 11 skill sesuai kontrak
-  npm start
-
-Skill baru (muncul otomatis di form WebUI dari manifest):
-  craft.item      item=stick count=4            (2x2 tanpa meja)  |  item=iron_pickaxe table=true
-  breed.animals   species=cow pairs=1           (butuh makanan yang sesuai di inventory)
-Syarat uji di server: bot op (/op BotAlpha), gamerule sendCommandFeedback true.
-Semua TERUJI TIRUAN, BELUM DIUJI di server. Bila gagal, kirim: tail -n 3 tasks.log dan
-  grep -a "SKIP\|PARSE GAGAL\|ITEM NAMES" bot.log
+unzip -o arcadia-sleep.zip && node install/fix-sleep.js && node tests/sleep.test.js && npm run check
