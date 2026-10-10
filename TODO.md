@@ -89,6 +89,15 @@ Legenda: [x] TERBUKTI (log/!test) | [~] TERUJI TIRUAN / sebagian | [ ] belum
 - [ ] breeding: deteksi mode cinta/anak yang lebih tepat, penyimpanan cooldown antar restart
 - [ ] Mekanik hidup (Director non-LLM + cyclebook JSON + persona + plugin planner LLM) setelah fungsi vanilla lengkap
 - [ ] Skema SlotComponent untuk komponen item modded (opsi 2) agar item bermuatan komponen terbaca penuh
+## Hasil uji lapangan: sleep.auto dan guard (Okt 2026; detail di docs/FIELD_TESTS.md)
+- [~] guard.post: DILAPORKAN selesai OK tepat durasi (30 dtk); statistik tidak terlihat (log CLI terpotong); akurasi panah dan guard.follow BELUM DIUJI
+- [ ] UI/CLI: tampilkan `data` penuh hasil task (kills/shots/hits dst.); log CLI memotong objek hasil
+- [ ] sleep.auto: bot terbangun 3-5 dtk setelah tidur ("1/2" -> "0/2 players sleeping") pada bed ditaruh DAN bed yang ada, tanpa mob (fights 0); selidiki pose tidur (entity_metadata gagal parse?), paket gerak saat tidur, bed hilang (warning q1)
+- [ ] sleep.auto: malam terlewati (hari 1, "Sleeping through this night") tetapi dicatat SERVER_REJECTED -> anggap sukses bila hari berganti selama/sesudah percobaan
+- [ ] engine: INTERRUPTED menjeda antrean walau bot tidak terkena damage -> jeda hanya bila ada damage/serangan, atau kode lain untuk bangun non-bahaya
+- [ ] sleep.auto multi-pemain: playersSleepingPercentage ("1/2"): laporkan "pemain lain belum tidur" alih-alih gagal
+- [ ] bot.died 8 dtk setelah guard.post selesai: penyebab belum diketahui
+
 ## Batch 10 — Verifikasi & stabilitas (rencana 2026-10-09)
 
 Status masuk

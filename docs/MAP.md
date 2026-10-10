@@ -17,6 +17,8 @@ Tujuan dokumen: orang/AI yang melanjutkan proyek cukup membaca berkas ini (dan `
 
 | Keperluan | Berkas |
 |---|---|
+| Hasil uji lapangan, diagnosis terbuka (sleep, guard) | `docs/FIELD_TESTS.md` |
+| Bahan awal chat baru (UI / Lifecycle) | `docs/NEXT_CHAT.md` |
 | Tambah skill baru | `skills/<ns>.<nama>.js` (manifest + run), tes di `tests/`, tambahkan ke skrip `test` di `package.json`, perbarui hitungan skill di `tests/engine.test.js` |
 | Parameter muncul di form UI | cukup `paramsSchema.properties` pada manifest (UI membaca dari `/skills`) |
 | Channel mod baru ditolak server | jalankan `npm run adapt`; bila macet lihat `learn.js`, `modchannels.js` |
@@ -97,6 +99,7 @@ Tujuan dokumen: orang/AI yang melanjutkan proyek cukup membaca berkas ini (dan `
 | `inv.view` | chest, verify, waitMs | move, block.read, inventory.protocol, chat | Buka chest/barrel dan daftar isinya. Bila jendela tak terbaca bot (item modded), isi diambil dari /data get block (butuh bot op); verify=true membandi |
 | `mine.collect` | block, item, count, maxDistance, dig, guard, minHealth, chest | move, block.read, block.dig, inventory.protocol | Menambang blok terdekat sampai terkumpul count item hasil (drop otomatis dari data blok); menggali menembus tanah/batu alami bila perlu; opsional simp |
 | `nav.goto` | x, y, z, range | move, block.read | Berjalan ke x,z (y opsional) sampai dalam jarak range blok; tanpa merusak/menaruh blok. Tanpa y: hanya jarak horizontal dihitung |
+| `sleep.auto` | radius, place, breakAfter, waitForNight, retries, force, maxWaitMs, pollMs, stallMs | move, block.read, block.dig, block.place, inventory.protocol | Tidur sampai pagi: bed terdekat atau taruh bed lalu hancurkan setelah bangun; hanya overworld, malam/badai. Status uji: lihat docs/FIELD_TESTS.md |
 
 ### tests/
 | Berkas | Baris | Tujuan |
