@@ -42,13 +42,14 @@ function mk (o = {}) {
     const d = Math.abs(fw[0]) > Math.abs(fw[1]) ? [Math.sign(fw[0]), 0] : [0, Math.sign(fw[1])]
     const h = f.offset(d[0], 0, d[1])
     if (!['air', 'short_grass'].includes(bot.blockAt(h).name)) throw new Error('kepala bed terhalang')
-    bot._lastPlace = { f, h, d }; bed(bot.heldItem.name, f.x, f.y, f.z, d[0], d[1], false)
+    bot._lastPlace = { f, h, d }; const nm = bot.heldItem.name; const fc = FACING[d[0] + ',' + d[1]]
+    if (o.headDelay) { set(nm, f.x, f.y, f.z, { facing: fc, occupied: false, part: 'foot' }); setTimeout(() => set(nm, h.x, h.y, h.z, { facing: fc, occupied: false, part: 'head' }), o.headDelay) } else bed(nm, f.x, f.y, f.z, d[0], d[1], false)
     bot.heldItem.count--
   }
   bot._drops = []
   bot.dig = async b => { if (!isBedName(b.name)) throw new Error('bukan bed'); const q = [...world.values()].filter(x => isBedName(x.name) && x.position.distanceTo(b.position) <= 1.01); for (const x of q) set('air', x.position.x, x.position.y, x.position.z); if (bot.game.gameMode !== 'creative') bot._drops.push({ name: b.name, pos: b.position.clone() }) }
-  bot._gotos = []
-  bot.pathfinder = { setMovements () {}, stop () {}, setGoal () {}, goto: async goal => { bot._gotos.push(goal.constructor.name); await sleep(2); if (o.gotoErr) throw Object.assign(new Error('x'), { name: o.gotoErr }); bot.entity.position = new Vec3(goal.x + 0.5, goal.y, goal.z + 0.5); for (let i = bot._drops.length - 1; i >= 0; i--) if (bot._drops[i].pos.distanceTo(bot.entity.position) <= 2.5) { bot._give(bot._drops[i].name, 1); bot._drops.splice(i, 1) } } }
+  bot._gotos = []; bot._partial = o.partial || 0
+  bot.pathfinder = { setMovements () {}, stop () {}, setGoal (g) { if (g && g.entity && g.entity.position) bot.entity.position = g.entity.position.offset(-2, 0, 0) }, goto: async goal => { bot._gotos.push(goal.constructor.name); await sleep(2); if (o.failNear && goal.constructor.name === 'GoalNear') throw Object.assign(new Error('x'), { name: 'NoPath' }); if (bot._partial > 0 && goal.constructor.name === 'GoalNear') { bot._partial--; const tg = new Vec3(goal.x + 0.5, goal.y, goal.z + 0.5); bot.entity.position = bot.entity.position.plus(tg.minus(bot.entity.position).scaled(0.5)); throw Object.assign(new Error('x'), { name: 'Timeout' }) } if (o.gotoErr) throw Object.assign(new Error('x'), { name: o.gotoErr }); bot.entity.position = new Vec3(goal.x + 0.5, goal.y, goal.z + 0.5); for (let i = bot._drops.length - 1; i >= 0; i--) if (bot._drops[i].pos.distanceTo(bot.entity.position) <= 2.5) { bot._give(bot._drops[i].name, 1); bot._drops.splice(i, 1) } } }
   // model server untuk tidur
   const setOcc = (pos, occ) => { for (const x of [...world.values()].filter(x => isBedName(x.name) && x.position.distanceTo(pos) <= 1.01)) { const pr = x.getProperties(); set(x.name, x.position.x, x.position.y, x.position.z, { ...pr, occupied: occ }) } }
   let ticker = setInterval(() => { if (!o.frozen) { bot.time.timeOfDay = (bot.time.timeOfDay + 40) % 24000; bot.time.isDay = bot.time.timeOfDay < 13000 } }, 20)
@@ -60,12 +61,15 @@ function mk (o = {}) {
     const t = bot.time.timeOfDay
     if (!(t >= 12541 && t <= 23458)) throw new Error("it's not night and it's not a thunderstorm")
     if (b.getProperties().occupied) throw new Error('the bed is occupied')
+    if (![...world.values()].some(x => isBedName(x.name) && x.name === b.name && x !== b && x.position.distanceTo(b.position) <= 1.01)) throw new Error("there's only half bed")
+    if (Object.values(bot.entities).some(e => e.kind === 'Hostile mobs' && Math.abs(e.position.x - b.position.x) <= 8 && Math.abs(e.position.z - b.position.z) <= 8)) throw new Error('there are monsters nearby')
     if (bot._monsterThrows > 0) { bot._monsterThrows--; throw new Error('there are monsters nearby') }
     if (bot.entity.position.distanceTo(b.position) > 4) throw new Error('the bed is too far')
     bot._bedHeldDuringSleep = [...world.values()].some(x => isBedName(x.name)); setOcc(b.position, true)
     if (o.dropSleepEvent) { await sleep(40); bot._sleepSilent = true; throw new Error('bot is not sleeping') }
     bot.isSleeping = true; bot.emit('sleep')
-    bot._wakeTimer = setTimeout(() => { if (!o.stayAsleep) { if (!o.earlyWake) { bot.time.timeOfDay = 100; bot.time.isDay = true } wakeNow(b.position) } }, o.wakeAfter ?? 120)
+    const early = o.earlyWakeOnce && !bot._earlyDone; if (early) bot._earlyDone = true
+    bot._wakeTimer = setTimeout(() => { if (!o.stayAsleep) { if (!o.earlyWake && !early) { bot.time.timeOfDay = 100; bot.time.isDay = true } wakeNow(b.position) } }, o.wakeAfter ?? 120)
     if (o.dropSleepEvent) bot.isSleeping = false
   }
   bot.wake = async () => { if (!bot.isSleeping) throw new Error('already awake'); bot._wakeCalls++; clearTimeout(bot._wakeTimer); const b = [...world.values()].find(x => isBedName(x.name) && x.getProperties().occupied); wakeNow(b ? b.position : new Vec3(0, 64, 0)) }
@@ -110,7 +114,7 @@ const bedBlocks = bot => [...bot._world.values()].filter(b => isBedName(b.name))
   b = mk({ wakeAfter: 60000 }); b._give('green_bed', 1); const ac = new AbortController(); const pr = sk.run(b, { ...P }, ctxOf(ac.signal)); await sleep(300); ac.abort('USER_STOP'); o = await pr
   ok(!o.ok && o.code === 'ABORTED' && b._wakeCalls === 1 && bedBlocks(b).length === 0 && o.data.recovered === true && b.inventory.items().find(i => i.name === 'green_bed').count === 1, 'abort saat tidur: bangun, bed dihancurkan dan dikembalikan'); b._stop()
   // 11 bangun sebelum pagi
-  b = mk({ earlyWake: true }); b._give('green_bed', 1); o = await sk.run(b, { ...P }, ctxOf()); ok(!o.ok && o.code === 'INTERRUPTED' && /sebelum pagi/.test(o.error) && o.data.broke, 'bangun malam hari -> INTERRUPTED, bed tetap dibersihkan'); b._stop()
+  b = mk({ earlyWake: true }); b._give('green_bed', 1); o = await sk.run(b, { ...P }, ctxOf()); ok(!o.ok && o.code === 'INTERRUPTED' && /sebelum pagi/.test(o.error) && o.data.broke && o.data.resleeps === 2 && b._sleepCalls === 3, 'bangun malam terus-menerus -> tidur lagi 2x lalu INTERRUPTED, bed tetap dibersihkan'); b._stop()
   // 12 waktu beku saat tidur
   b = mk({ frozen: true, stayAsleep: true }); b._bed('red_bed', 3, 64, 0, 1, 0); o = await sk.run(b, { ...P, stallMs: 400 }, ctxOf()); ok(!o.ok && o.code === 'TIMEOUT' && /tidak bergerak/.test(o.error) && b._wakeCalls === 1, 'waktu tidak bergerak -> TIMEOUT dan bot dibangunkan'); b._stop()
   // 13 penaruhan ditolak sekali -> coba tempat lain; ditolak semua -> SERVER_REJECTED
@@ -119,7 +123,18 @@ const bedBlocks = bot => [...bot._world.values()].filter(b => isBedName(b.name))
   // 14 tak ada tempat (dunia sempit penuh batu)
   b = mk({ size: 1 }); b._give('green_bed', 1); for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++) { b._set('stone', x, 65, z); if (!(x === 0 && z === 0)) b._set('stone', x, 64, z) } o = await sk.run(b, { ...P }, ctxOf()); ok(!o.ok && o.code === 'TARGET_NOT_FOUND' && /tempat datar/.test(o.error), 'tak ada tempat 3 sel -> TARGET_NOT_FOUND'); b._stop()
   // 15 bed jauh tak terjangkau -> pakai inventory
-  b = mk({ gotoErr: undefined }); b._bed('red_bed', 8, 64, 8, 1, 0); b._give('green_bed', 1); let calls = 0; const og = b.pathfinder.goto; b.pathfinder.goto = async g => { calls++; if (calls === 1) throw Object.assign(new Error('x'), { name: 'NoPath' }); return og(g) }; o = await sk.run(b, { ...P }, ctxOf()); ok(o.ok && o.data.mode === 'placed' && o.data.reasons.some(r => /jalan ke bed/.test(r)), 'bed ada tapi tak terjangkau -> jatuh ke bed inventory'); b._stop()
+  b = mk({ failNear: true }); b._bed('red_bed', 8, 64, 8, 1, 0); b._give('green_bed', 1); const mvs = []; const c15 = { ...ctxOf(), movements: () => { const m = {}; mvs.push(m); return m } }; o = await sk.run(b, { ...P }, c15)
+  ok(o.ok && o.data.mode === 'placed' && o.data.reasons.some(r => /belum sampai/.test(r)) && mvs.some(m => m.canOpenDoors === true) && mvs.some(m => !m.canOpenDoors), 'bed tak terjangkau: coba tanpa lalu dengan buka pintu, baru jatuh ke bed inventory'); b._stop()
+  // v2: bed jauh, jalur sebagian (Timeout berulang) -> tetap didekati dan dipakai
+  b = mk({ partial: 2 }); b._bed('red_bed', 14, 64, 0, 1, 0); b._give('green_bed', 1); o = await sk.run(b, { ...P }, ctxOf()); ok(o.ok && o.data.mode === 'existing' && b._places === 0 && o.data.approach.rounds >= 3 && b._bed && b._gotos.filter(g => g === 'GoalNear').length >= 3, 'bed 14 blok dengan Timeout sebagian: didekati ulang sampai dekat, bed inventory tidak ditaruh (putaran ' + (o.data.approach && o.data.approach.rounds) + ')'); b._stop()
+  // v2: kepala bed terlambat muncul -> ditunggu, tidak ada klik dini
+  b = mk({ headDelay: 700 }); b._give('green_bed', 1); o = await sk.run(b, { ...P }, ctxOf()); ok(o.ok && o.data.mode === 'placed' && b._sleepCalls === 1 && !o.data.reasons.some(r => /setengah/.test(r)), 'taruh bed: menunggu kepala muncul sebelum mengklik (sleep dipanggil ' + b._sleepCalls + 'x)'); b._stop()
+  // v2: bed ada tapi kepala belum terbaca -> ulang, bukan gagal
+  b = mk(); b._bed('red_bed', 3, 64, 0, 1, 0); b._set('air', 4, 64, 0); setTimeout(() => b._set('red_bed', 4, 64, 0, { facing: 'east', occupied: false, part: 'head' }), 900); o = await sk.run(b, { ...P }, ctxOf()); ok(o.ok && o.data.reasons.some(r => /setengah/.test(r)), 'error "only half bed" -> ditunggu dan diulang, lalu tidur'); b._stop()
+  // v2: mob di area bed dihajar SEBELUM klik tidur
+  b = mk(); b._bed('red_bed', 3, 64, 0, 1, 0); b.entities[9] = { id: 9, type: 'hostile', kind: 'Hostile mobs', name: 'zombie', position: new Vec3(7.5, 64, 0.5), height: 1.9 }; o = await sk.run(b, { ...P }, ctxOf()); ok(o.ok && o.data.fights === 1 && b._hits >= 2 && b._sleepCalls === 1, 'mob di area bed: dihajar dulu, sleep dipanggil sekali (fights ' + o.data.fights + ', pukulan ' + b._hits + ')'); b._stop()
+  // v2: terbangun sekali oleh gangguan -> tidur lagi
+  b = mk({ earlyWakeOnce: true }); b._bed('red_bed', 3, 64, 0, 1, 0); o = await sk.run(b, { ...P }, ctxOf()); ok(o.ok && b._sleepCalls === 2 && o.data.resleeps === 1, 'terbangun malam hari sekali -> tidur lagi sampai pagi')
   // 16 kontrak
   ok(!validate('SkillManifest', sk.manifest), 'manifest valid kontrak'); const chk = compile(sk.manifest.paramsSchema); ok(chk({}) === null && chk({ radius: 10, place: false }) === null && chk({ radius: 'jauh' }) !== null && chk({ retries: 9 }) !== null, 'paramsSchema: menerima parameter sah, menolak yang salah')
   console.log('\nHASIL: ' + pass + ' lulus, ' + fail + ' gagal'); process.exit(fail ? 1 : 0)

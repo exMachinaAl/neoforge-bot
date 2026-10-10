@@ -128,3 +128,9 @@ Paket yang memuat komponen modded gagal parse dan dibuang (PARSE GAGAL window_it
 - breed.animals: pendengar entitySpawn dipasang SEBELUM memberi makan (anak bisa lahir saat hewan kedua masih diberi makan; sebelumnya race). Deteksi dewasa lewat metadata[16] (AgeableMob.DATA_BABY_ID, 1.21.x) BELUM DIUJI.
 - Catatan inventory: I.reconcile / I.refreshInventory menyamakan tampilan bot dengan /data get entity (butuh op) lalu memperbarui bot.arcadia.inventoryTruth; dipanggil di akhir inv.store, inv.take, craft.item, breed.animals (kecuali verify/refresh=false).
 - Cara menyerahkan kode: paket .zip + skrip pemasangan beranchor (install/fix-inv.js) yang aman diulang dan diuji pada klon bersih; salin-tempel EOF hanya untuk perubahan satu file kecil.
+
+## 16. Pembaruan: guard (v2.5)
+- Skill baru: guard.post (jaga titik) dan guard.follow (ikuti pemain sebagai pengawal); modul bersama skills/_combat.js (pilih ancaman, melee, memanah). Tes tests/guard.test.js (26 kasus). TERUJI TIRUAN, BELUM DIUJI di server.
+- Memanah: tarik busur penuh 1050 ms sambil membidik terus, lalu lepas (activateItem/deactivateItem). Titik bidik memakai fisika panah vanilla (3 blok/tick, gravitasi 0.05, hambatan 0.99) dan lead dari kecepatan yang diukur dari perubahan posisi. Akurasi di server BELUM DIUJI. Crossbow belum.
+- Durasi: durationMs (default timeoutMs - 8 dtk); runner membatasi timeoutMs default 300000, maks 1800000: isi timeoutMs untuk jaga lama.
+- Enderman/piglin/iron_golem dilewati kecuali disebut di targets. HP di bawah minHealth: tidak menyerang, kembali ke pos/pemain, makan.

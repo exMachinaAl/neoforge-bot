@@ -75,6 +75,7 @@ Tujuan dokumen: orang/AI yang melanjutkan proyek cukup membaca berkas ini (dan `
 ### skills/ pembantu (diawali _)
 | Berkas | Baris | Tujuan |
 |---|---|---|
+| `skills/_combat.js` | 130 | pertarungan guard: pilih ancaman, melee, memanah (lintasan panah vanilla) — ekspor: `guardLoop, aimPoint, launchAngle, flight, threats, shoot` |
 | `skills/_inv.js` | 260 | skills/_inv.js - pembantu inventory/chest: kueri perintah via chat, data kebenaran server, pembanding, buka chest. — ekspor: `attachRefresh, reconcile, refreshInventory, openWindowAt, shortId, watch, ensureClosed, quickMove, invToWindow, settle, rawClose, fullId, isModdedId, ` |
 | `skills/_names.js` | 50 | skills/_names.js - nama item modded. — ekspor: `load, loadFile, learn, save, nameOf, idOf, stats` |
 | `skills/_snbt.js` | 155 | skills/_snbt.js - parser SNBT (teks NBT Minecraft) untuk keluaran /data get ... dan pemetaan slot inventory. — ekspor: `parse, extract, nbtSlotToMc, inventoryItems, containerItems` |
@@ -87,6 +88,8 @@ Tujuan dokumen: orang/AI yang melanjutkan proyek cukup membaca berkas ini (dan `
 | `craft.item` | item, count, table, refresh, waitMs | move, block.read, inventory.protocol | Buat item vanilla dari bahan di inventory: tanpa meja bila resep muat di grid 2x2 (tidak butuh jendela chest), dengan meja crafting (terdekat/koordina |
 | `farm.harvest` | crops, count, maxDistance, replant, guard, minHealth | move, block.read, block.dig, block.place, inventory.protocol | Panen tanaman matang (wheat, carrots, potatoes, beetroots) di sekitar dan tanam ulang bila punya bibit |
 | `fish.cast` | count, maxDistance, biteTimeoutMs, guard, minHealth | move, block.read, inventory.protocol | Memancing: cari air terdekat, pegang joran, lempar dan tarik sampai count tangkapan (diukur dari penambahan inventory) |
+| `guard.follow` | player, distance, radius, leash, ranged, targets, minHealth, lostTimeoutMs, durationMs, timeoutMs | move, combat.vanilla | Ikuti pemain sebagai pengawal: serang hostile di sekitar pemain (pedang/panah), berhenti bila pemain hilang |
+| `guard.post` | x, y, z, radius, leash, ranged, targets, minHealth, durationMs, timeoutMs | move, combat.vanilla | Jaga titik tetap: serang hostile dalam radius (pedang/panah), kembali ke pos, mundur saat HP rendah |
 | `hunt.kill` | mob, count, maxDistance, minHealth | move, combat.vanilla | Mengejar dan membunuh count entitas bernama mob (mis. cow, zombie) atau bertipe animal/hostile, dalam maxDistance |
 | `inv.snapshot` | waitMs, save, hydrate | inventory.protocol, inventory.snbt, chat | Bandingkan inventory bot (protokol) dengan data server (/data get entity Inventory), samakan tampilan bot (pulihkan item polos, hapus item hantu), bel |
 | `inv.store` | chest, items, keep, keepTools, includeModded, source, verify, waitMs | move, block.read, inventory.protocol, chat | Pindahkan item inventory ke chest/barrel (default: semua item vanilla kecuali alat/senjata), lalu laporkan isi chest. Item modded hanya dengan include |
@@ -101,6 +104,7 @@ Tujuan dokumen: orang/AI yang melanjutkan proyek cukup membaca berkas ini (dan `
 | `tests/breed.test.js` | 111 | tests/breed.test.js - breed.animals (bot tiruan: hewan, pemberian makan, anak lahir lewat event entitySpawn) |
 | `tests/craft.test.js` | 119 | tests/craft.test.js - craft.item (bot tiruan; resep vanilla asli dari minecraft-data/prismarine-recipe) |
 | `tests/engine.test.js` | 74 | enqueue prioritas: nav (50), lalu mine (90) harus jalan lebih dulu setelah task pertama berjalan |
+| `tests/guard.test.js` | 100 | guard.post, guard.follow, lintasan panah (26 kasus) |
 | `tests/inv.test.js` | 252 | tests/inv.test.js - SNBT, nama item, inv.snapshot / inv.view / inv.store / inv.take (bot tiruan, tanpa server) |
 | `tests/invmock.js` | 139 | tests/invmock.js - bot tiruan dengan model server tunggal (inventory + chest) untuk uji inventory/crafting/breeding. — ekspor: `mkInv, inv, srvInvCount, chestCount, chestIdCount, mcToNbt` |
 | `tests/mock.js` | 40 | - — ekspor: `mk, mkBlock, mcData, bi, it` |

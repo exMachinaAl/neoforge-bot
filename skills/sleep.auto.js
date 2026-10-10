@@ -1,14 +1,13 @@
 // skills/sleep.auto.js - tidur otomatis sampai pagi.
-// Urutan: bed terdekat (radius) -> bed dari inventory (ditaruh, lalu dihancurkan setelah bangun) -> gagal jelas.
-// Mandiri: hanya memakai mineflayer + pathfinder; helper _util dipakai secara opsional (hostiles/fight) bila ada.
+// Urutan: bed terdekat (didekati sampai benar-benar dekat) -> bed dari inventory (ditaruh, lalu dihancurkan setelah bangun) -> gagal jelas.
+// Tidak menunggu pemain lain. Mob hostile di area bed dihajar dulu. Mandiri: hanya mineflayer + pathfinder.
 const { goals } = require('mineflayer-pathfinder')
 const { Vec3 } = require('vec3')
-let U = {}; try { U = require('./_util') } catch (e) { U = {} }
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 
 const manifest = {
   name: 'sleep.auto',
-  description: 'Tidur sampai pagi: bed terdekat; bila tidak ada, taruh bed dari inventory lalu hancurkan setelah bangun (breakAfter). Hanya overworld, hanya malam/badai petir.',
+  description: 'Tidur sampai pagi: bed terdekat (didekati sampai dekat); bila tak terjangkau/tidak ada, taruh bed dari inventory lalu hancurkan setelah bangun. Mob di area bed dihajar dulu. Hanya overworld, hanya malam/badai petir.',
   paramsSchema: {
     type: 'object',
     properties: {
@@ -16,7 +15,8 @@ const manifest = {
       place: { type: 'boolean', default: true, description: 'boleh menaruh bed dari inventory bila tak ada bed' },
       breakAfter: { type: 'boolean', default: true, description: 'hancurkan bed yang ditaruh sendiri setelah bangun (dan ambil kembali)' },
       waitForNight: { type: 'boolean', default: false, description: 'siang hari: tunggu sampai malam (butuh timeoutMs besar)' },
-      retries: { type: 'integer', minimum: 0, maximum: 5, default: 2, description: 'ulang bila ada monster dekat bed' },
+      retries: { type: 'integer', minimum: 0, maximum: 5, default: 2, description: 'ulang bila server menolak (monster dekat bed)' },
+      resleep: { type: 'integer', minimum: 0, maximum: 5, default: 2, description: 'tidur lagi bila terbangun sebelum pagi (mis. diserang mob)' },
       force: { type: 'boolean', default: false, description: 'abaikan doDaylightCycle=false' },
       maxWaitMs: { type: 'integer', minimum: 10000, default: 900000, description: 'batas menunggu pagi (runner membatasi lewat timeoutMs, mis. 900000)' },
       pollMs: { type: 'integer', minimum: 50, default: 1000 },
@@ -31,6 +31,7 @@ const manifest = {
 const AIR = new Set(['air', 'cave_air', 'void_air'])
 const REPL = new Set(['air', 'cave_air', 'void_air', 'short_grass'])
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]] // utara, timur, selatan, barat
+const WEAPONS = ['netherite_sword', 'diamond_sword', 'iron_sword', 'stone_sword', 'golden_sword', 'wooden_sword', 'netherite_axe', 'diamond_axe', 'iron_axe', 'stone_axe', 'wooden_axe']
 const key = v => v.x + ',' + v.y + ',' + v.z
 const isNight = bot => { const t = bot.time.timeOfDay; return (bot.isRaining && bot.thunderState > 0) || (t >= 12541 && t <= 23458) }
 const props = b => { try { return b.getProperties() || {} } catch (e) { return {} } }
@@ -54,8 +55,10 @@ function bedsAround (bot, ids, center, radius) {
 }
 const bedAt = (bot, ids, pos) => bedsAround(bot, ids, pos, 3).find(b => b.position.distanceTo(pos) <= 1.5) || null
 const anyOccupied = (bot, ids, pos) => bedsAround(bot, ids, pos, 3).some(b => b.position.distanceTo(pos) <= 1.5 && occupied(b))
+// kepala bed = bagian bed bernama sama yang bersebelahan dengan kaki
+const headOf = (bot, foot) => DIRS.map(([x, z]) => bot.blockAt(foot.position.offset(x, 0, z))).find(b => b && bot.isABed(b) && b.name === foot.name) || null
 
-// Tempat menaruh bed: A (berdiri) - F (kaki bed) - H (kepala bed) segaris; F dan H harus kosong/rumput pendek di atas kubus penuh.
+// Tempat menaruh bed: A (berdiri) - F (kaki bed) - H (kepala bed) segaris; F dan H kosong/rumput pendek di atas kubus penuh.
 function findSpots (bot, r) {
   const base = bot.entity.position.floored(); const out = []
   const name = p => { const b = bot.blockAt(p); return b ? b.name : null }
@@ -81,17 +84,19 @@ async function wakeUp (bot, bedIds, pos) {
 
 async function run (bot, p, ctx) {
   const md = ctx.mcData
-  const st = { reasons: [], warnings: [], msgs: [], placed: null, broke: false, recovered: null, mode: null, bed: null, signals: [], fights: 0, tried: 0 }
+  const st = { reasons: [], warnings: [], msgs: [], placed: null, broke: false, recovered: null, mode: null, bed: null, signals: [], fights: 0, tried: 0, resleeps: 0, approach: null }
   const bedIds = md.blocksArray.filter(b => /_bed$/.test(b.name)).map(b => b.id)
   const bedItems = new Set(md.itemsArray.filter(i => /_bed$/.test(i.name)).map(i => i.id))
   const radius = Math.min(64, Math.max(4, parseInt(p.radius ?? 24, 10)))
   const retries = Math.min(5, Math.max(0, parseInt(p.retries ?? 2, 10)))
+  const resleepMax = Math.min(5, Math.max(0, parseInt(p.resleep ?? 2, 10)))
   const pollMs = Math.max(50, Number(p.pollMs) || 1000); const stallMs = Math.max(1000, Number(p.stallMs) || 30000); const maxWaitMs = Math.max(10000, Number(p.maxWaitMs) || 900000)
-  const why = m => { st.reasons.push(String(m).slice(0, 140)); if (st.reasons.length > 10) st.reasons.shift() }
+  const why = m => { st.reasons.push(String(m).slice(0, 160)); if (st.reasons.length > 12) st.reasons.shift() }
   const creative = bot.game.gameMode === 'creative'
   const bedCount = () => bot.inventory.items().filter(i => bedItems.has(i.type)).reduce((a, i) => a + i.count, 0)
   const before = bedCount()
-  const finish = (ok, code, error, extra) => ({ ok, code, error, data: Object.assign({ mode: st.mode, bed: st.bed, broke: st.broke, recovered: st.recovered, time: timeInfo(bot), fights: st.fights, serverMsgs: st.msgs.slice(-4), reasons: st.reasons, warnings: st.warnings }, extra) })
+  const aborted = () => Object.assign(new Error('dibatalkan'), { aborted: true })
+  const finish = (ok, code, error, extra) => ({ ok, code, error, data: Object.assign({ mode: st.mode, bed: st.bed, broke: st.broke, recovered: st.recovered, time: timeInfo(bot), fights: st.fights, resleeps: st.resleeps, approach: st.approach, serverMsgs: st.msgs.slice(-4), reasons: st.reasons, warnings: st.warnings }, extra) })
 
   // ---- pra-cek
   if (bot.time.timeOfDay == null) return finish(false, 'PRECONDITION_FAILED', 'waktu dunia belum diterima dari server')
@@ -101,24 +106,76 @@ async function run (bot, p, ctx) {
   if (bot.isSleeping) return finish(false, 'PRECONDITION_FAILED', 'bot sudah tidur')
   if (bot.time.doDaylightCycle === false && !p.force) return finish(false, 'PRECONDITION_FAILED', 'doDaylightCycle=false: waktu beku, tidur tidak akan sampai pagi (/gamerule doDaylightCycle true, atau force:true)')
 
-  const onMsg = m => { const s = String(m); if (/sleep|rest|bed|night|monster|tidur/i.test(s)) { st.msgs.push(s.slice(0, 120)) } }
+  const onMsg = m => { const s = String(m); if (/sleep|rest|bed|night|monster|tidur/i.test(s)) st.msgs.push(s.slice(0, 120)) }
   bot.on('messagestr', onMsg); bot.on('actionBar', onMsg)
   const off = () => { bot.removeListener('messagestr', onMsg); bot.removeListener('actionBar', onMsg) }
 
-  async function clearMonsters () {
-    if (typeof U.hostiles !== 'function' || typeof U.fight !== 'function') return
-    try { for (const h of U.hostiles(bot, 9).slice(0, 3)) { if (ctx.signal.aborted) return; st.fights++; await U.fight(bot, ctx, h, 10000) } } catch (e) { why('lawan monster: ' + e.message) }
+  // ---- mendekat: ulangi selama masih ada kemajuan (pathfinder sering melapor Timeout pada jalur sebagian padahal bot terus berjalan);
+  // fase 1 tanpa membuka pintu, fase 2 dengan membuka pintu (bed biasanya di dalam rumah)
+  async function reach (pos) {
+    const near = () => { const b = bot.entity.position; return Math.hypot(b.x - (pos.x + 0.5), b.z - (pos.z + 0.5)) <= 2.6 && Math.abs(b.y - pos.y) <= 2 }
+    let lastErr = 'tak ada'
+    for (const doors of [false, true]) {
+      const mv = ctx.movements('walk'); if (doors) mv.canOpenDoors = true
+      bot.pathfinder.setMovements(mv)
+      let best = Infinity; let stuck = 0; let rounds = 0
+      for (let i = 0; i < 10; i++) {
+        if (ctx.signal.aborted) throw aborted()
+        if (near()) { st.approach = { doors, rounds }; return true }
+        rounds++
+        try { await goTo(bot, new goals.GoalNear(pos.x, pos.y, pos.z, 1), ctx.signal, 25000) } catch (e) { if (ctx.signal.aborted) throw aborted(); lastErr = e.name }
+        if (near()) { st.approach = { doors, rounds }; return true }
+        const d = bot.entity.position.distanceTo(pos)
+        if (d < best - 0.7) { best = d; stuck = 0 } else if (++stuck >= 2) break
+        await sleep(100)
+      }
+      why('jalan ke bed ' + key(pos) + ' belum sampai (pintu ' + (doors ? 'dibuka' : 'tertutup') + '): sisa ' + bot.entity.position.distanceTo(pos).toFixed(1) + ' blok, ' + lastErr)
+    }
+    return near()
+  }
+
+  // ---- mob: area larang-tidur sama dengan pemeriksaan mineflayer (+1 blok), mob dihajar sampai habis
+  const hostilesNear = head => Object.values(bot.entities).filter(e => e !== bot.entity && e.position && (e.kind === 'Hostile mobs' || e.type === 'hostile') &&
+    e.position.x >= head.x - 9 && e.position.x <= head.x + 8.99 && e.position.z >= head.z - 9 && e.position.z <= head.z + 8.99 && e.position.y >= head.y - 7 && e.position.y <= head.y + 5.99)
+    .sort((a, b) => a.position.distanceTo(bot.entity.position) - b.position.distanceTo(bot.entity.position))
+  async function fightMob (mob, maxMs) {
+    const t0 = Date.now(); let dead = false
+    const onDead = e => { if (e && e.id === mob.id) dead = true }
+    bot.on('entityDead', onDead)
+    try {
+      const w = WEAPONS.map(n => bot.inventory.items().find(i => i.name === n)).find(Boolean)
+      if (w && (!bot.heldItem || bot.heldItem.type !== w.type)) await bot.equip(w, 'hand').catch(() => {})
+      try { bot.pathfinder.setGoal(new goals.GoalFollow(mob, 2), true) } catch (e) {}
+      while (!ctx.signal.aborted && !dead && bot.entities[mob.id] && Date.now() - t0 < maxMs) {
+        const d = bot.entity.position.distanceTo(mob.position)
+        if (d <= 3.3) { await bot.lookAt(mob.position.offset(0, (mob.height || 1) / 2, 0), true).catch(() => {}); bot.attack(mob) }
+        await sleep(d <= 3.3 ? 600 : 250)
+      }
+    } finally { bot.removeListener('entityDead', onDead); try { bot.pathfinder.setGoal(null) } catch (e) {} }
+    return dead || !bot.entities[mob.id]
+  }
+  async function clearBedArea (bed) {
+    const head = (headOf(bot, bed) || bed).position; const t0 = Date.now()
+    while (Date.now() - t0 < 45000) {
+      if (ctx.signal.aborted) return
+      const mobs = hostilesNear(head); if (!mobs.length) return
+      st.fights++; why('mob di area bed: ' + (mobs[0].name || 'hostile'))
+      try { await fightMob(mobs[0], 12000) } catch (e) { why('lawan mob: ' + e.message) }
+    }
   }
 
   async function attemptSleep (bed) {
+    let halves = 0
     for (let i = 0; i <= retries; i++) {
-      if (ctx.signal.aborted) throw Object.assign(new Error('dibatalkan'), { aborted: true })
+      if (ctx.signal.aborted) throw aborted()
+      await clearBedArea(bed)
       st.tried++
       try { await bot.sleep(bed); st.signals.push('event'); return } catch (e) {
         const m = String(e.message)
         if (/not sleeping/.test(m) && anyOccupied(bot, bedIds, bed.position)) { st.signals.push('bed-terisi'); return }
-        if (/monsters/.test(m)) { why('monster dekat bed (percobaan ' + (i + 1) + ')'); await clearMonsters(); await sleep(Math.min(pollMs, 1500)); continue }
-        if (/too far|cant click/.test(m)) { why('bed terlalu jauh; mendekat'); try { await goTo(bot, new goals.GoalNear(bed.position.x, bed.position.y, bed.position.z, 1), ctx.signal, 20000) } catch (e2) {} continue }
+        if (/only half/.test(m) && halves++ < 6) { why('bed masih setengah (menunggu pembaruan server)'); await sleep(500); i--; continue }
+        if (/monsters/.test(m)) { why('server/klien: monster dekat bed (percobaan ' + (i + 1) + ')'); await sleep(Math.min(pollMs, 1000)); continue }
+        if (/too far|cant click/.test(m)) { why('bed terlalu jauh; mendekat'); try { await reach(bed.position) } catch (e2) { if (e2.aborted) throw e2 } continue }
         throw e
       }
     }
@@ -129,75 +186,77 @@ async function run (bot, p, ctx) {
     const spots = findSpots(bot, 6)
     if (!spots.length) throw Object.assign(new Error('tidak ada tempat datar 3 sel segaris (berdiri-kaki-kepala) dalam 6 blok untuk menaruh bed'), { code: 'TARGET_NOT_FOUND' })
     for (const s of spots.slice(0, 4)) {
-      if (ctx.signal.aborted) throw Object.assign(new Error('dibatalkan'), { aborted: true })
+      if (ctx.signal.aborted) throw aborted()
       try {
+        bot.pathfinder.setMovements(ctx.movements('walk'))
         await goTo(bot, new goals.GoalBlock(s.A.x, s.A.y, s.A.z), ctx.signal, 30000)
         await bot.equip(item, 'hand')
         const sup = bot.blockAt(s.F.offset(0, -1, 0))
         await bot.placeBlock(sup, new Vec3(0, 1, 0))
         st.placed = { x: s.F.x, y: s.F.y, z: s.F.z, item: item.name }
-        const fb = bot.blockAt(s.F)
-        if (fb && bot.isABed(fb)) return fb
-        throw new Error('blok bed tidak muncul setelah menaruh')
+        // tunggu KEDUA bagian bed muncul di dunia bot sebelum mengklik (kepala datang lewat pembaruan blok terpisah)
+        for (let i = 0; i < 40; i++) { const fb = bot.blockAt(s.F); if (fb && bot.isABed(fb) && headOf(bot, fb)) { await sleep(150); return bot.blockAt(s.F) } await sleep(100) }
+        throw new Error('bed setengah: bagian kepala tidak muncul dalam 4 dtk')
       } catch (e) { if (ctx.signal.aborted) throw Object.assign(e, { aborted: true }); why('taruh bed di ' + key(s.F) + ': ' + e.message) }
     }
     throw Object.assign(new Error('server menolak menaruh bed di semua tempat yang dicoba'), { code: 'SERVER_REJECTED' })
   }
 
   async function core () {
-    // malam?
     if (!isNight(bot)) {
       if (!p.waitForNight) return { ok: false, code: 'PRECONDITION_FAILED', error: 'belum malam (timeOfDay ' + bot.time.timeOfDay + '): tidur hanya 12541-23458 atau badai petir. Pakai waitForNight:true' }
       const t0 = Date.now()
       while (!isNight(bot)) { if (ctx.signal.aborted) return { ok: false, code: 'ABORTED' }; if (Date.now() - t0 > maxWaitMs) return { ok: false, code: 'TIMEOUT', error: 'malam tidak datang dalam ' + maxWaitMs + ' ms' }; await sleep(pollMs) }
     }
-    // 1) bed terdekat
-    let bed = null
-    const bad = new Set()
+    // 1) bed yang sudah ada: didekati sampai dekat
+    let bed = null; const bad = new Set(); let tried = 0
     for (const cand of bedsAround(bot, bedIds, null, radius)) {
       if (bad.has(key(cand.position)) || occupied(cand)) continue
-      if (st.tried > 2) break
-      try { await goTo(bot, new goals.GoalNear(cand.position.x, cand.position.y, cand.position.z, 2), ctx.signal, 45000); bed = cand; st.mode = 'existing'; break } catch (e) {
-        if (ctx.signal.aborted) return { ok: false, code: 'ABORTED' }
-        why('jalan ke bed ' + key(cand.position) + ': ' + e.name); for (const n of bedsAround(bot, bedIds, cand.position, 3)) bad.add(key(n.position)); st.tried++
-      }
+      if (++tried > 3) break
+      let got = false
+      try { got = await reach(cand.position) } catch (e) { if (e.aborted) return { ok: false, code: 'ABORTED' }; why('jalan ke bed: ' + e.message) }
+      if (got) { bed = bedAt(bot, bedIds, cand.position) || cand; st.mode = 'existing'; break }
+      for (const n of bedsAround(bot, bedIds, cand.position, 3)) bad.add(key(n.position))
     }
     // 2) bed dari inventory
     if (!bed) {
       const item = p.place === false ? null : bot.inventory.items().find(i => bedItems.has(i.type))
-      if (!item) return { ok: false, code: 'TARGET_NOT_FOUND', error: 'tidak ada bed (bebas) dalam ' + radius + ' blok' + (p.place === false ? ' dan place=false' : ' dan tidak ada bed di inventory') }
+      if (!item) return { ok: false, code: 'TARGET_NOT_FOUND', error: 'tidak ada bed yang terjangkau dalam ' + radius + ' blok' + (p.place === false ? ' dan place=false' : ' dan tidak ada bed di inventory') }
       try { bed = await placeFromInventory(item); st.mode = 'placed' } catch (e) {
         if (e.aborted) return { ok: false, code: 'ABORTED' }
         return { ok: false, code: e.code || 'UNKNOWN', error: e.message }
       }
     }
     st.bed = { x: bed.position.x, y: bed.position.y, z: bed.position.z, name: bed.name }
-    // 3) tidur
-    try { await attemptSleep(bed) } catch (e) {
-      if (e.aborted) return { ok: false, code: 'ABORTED' }
-      const m = String(e.message)
-      if (/not night/.test(m)) return { ok: false, code: 'PRECONDITION_FAILED', error: m }
-      if (/monsters/.test(m)) return { ok: false, code: 'SERVER_REJECTED', error: 'tidak bisa tidur: monster dekat bed setelah ' + (retries + 1) + ' percobaan' }
-      return { ok: false, code: 'SERVER_REJECTED', error: 'server tidak menidurkan bot: ' + m + (st.msgs.length ? ' | server: ' + st.msgs.slice(-2).join(' / ') : '') }
-    }
-    // 4) tunggu pagi
-    const t0 = Date.now(); let lastT = bot.time.timeOfDay; let lastChange = Date.now(); let end = 'awake'
-    for (;;) {
-      if (ctx.signal.aborted) { end = 'aborted'; break }
-      if (!(bot.isSleeping || anyOccupied(bot, bedIds, bed.position))) { end = 'awake'; break }
+    // 3) tidur + tunggu pagi (bila terbangun malam hari: hajar mob, tidur lagi)
+    let slept = 0
+    for (let round = 0; ; round++) {
+      try { await attemptSleep(bed) } catch (e) {
+        if (e.aborted) return { ok: false, code: 'ABORTED' }
+        const m = String(e.message)
+        if (/not night/.test(m)) return { ok: false, code: 'PRECONDITION_FAILED', error: m }
+        if (/monsters/.test(m)) return { ok: false, code: 'SERVER_REJECTED', error: 'tidak bisa tidur: monster dekat bed setelah ' + (retries + 1) + ' percobaan' }
+        return { ok: false, code: 'SERVER_REJECTED', error: 'server tidak menidurkan bot: ' + m + (st.msgs.length ? ' | server: ' + st.msgs.slice(-2).join(' / ') : '') }
+      }
+      const t0 = Date.now(); let lastT = bot.time.timeOfDay; let lastChange = Date.now(); let end = 'awake'
+      for (;;) {
+        if (ctx.signal.aborted) { end = 'aborted'; break }
+        if (!(bot.isSleeping || anyOccupied(bot, bedIds, bed.position))) { end = 'awake'; break }
+        const t = bot.time.timeOfDay
+        if (t !== lastT) { lastT = t; lastChange = Date.now() } else if (Date.now() - lastChange > stallMs) { end = 'stalled'; break }
+        if (Date.now() - t0 > maxWaitMs) { end = 'maxwait'; break }
+        await sleep(pollMs)
+      }
+      slept += Date.now() - t0
+      if (end === 'aborted') return { ok: false, code: 'ABORTED', data: { sleptMs: slept } }
+      if (end === 'stalled') { await wakeUp(bot, bedIds, bed.position); return { ok: false, code: 'TIMEOUT', error: 'waktu dunia tidak bergerak ' + stallMs + ' ms selama tidur (doDaylightCycle dimatikan?)', data: { sleptMs: slept } } }
+      if (end === 'maxwait') { await wakeUp(bot, bedIds, bed.position); return { ok: false, code: 'TIMEOUT', error: 'pagi belum tiba dalam ' + maxWaitMs + ' ms (pemain lain tidak tidur?)', data: { sleptMs: slept } } }
       const t = bot.time.timeOfDay
-      if (t !== lastT) { lastT = t; lastChange = Date.now() } else if (Date.now() - lastChange > stallMs) { end = 'stalled'; break }
-      if (Date.now() - t0 > maxWaitMs) { end = 'maxwait'; break }
-      await sleep(pollMs)
+      if (t < 12000 || t >= 23000 || bot.time.isDay) return { ok: true, code: 'OK', data: { sleptMs: slept, wokeAtTick: t } }
+      // terbangun sebelum pagi
+      if (round >= resleepMax || !isNight(bot) || !bedAt(bot, bedIds, bed.position)) return { ok: false, code: 'INTERRUPTED', error: 'bangun sebelum pagi (timeOfDay ' + t + '): terganggu/terkena serangan?', data: { sleptMs: slept } }
+      st.resleeps++; why('terbangun malam hari (tick ' + t + '): hajar mob lalu tidur lagi')
     }
-    const slept = Date.now() - t0
-    if (end === 'aborted') return { ok: false, code: 'ABORTED', data: { sleptMs: slept } }
-    if (end === 'stalled') { await wakeUp(bot, bedIds, bed.position); return { ok: false, code: 'TIMEOUT', error: 'waktu dunia tidak bergerak ' + stallMs + ' ms selama tidur (doDaylightCycle dimatikan?)', data: { sleptMs: slept } } }
-    if (end === 'maxwait') { await wakeUp(bot, bedIds, bed.position); return { ok: false, code: 'TIMEOUT', error: 'pagi belum tiba dalam ' + maxWaitMs + ' ms (pemain lain tidak tidur?)', data: { sleptMs: slept } } }
-    const t = bot.time.timeOfDay
-    const morning = t < 12000 || t >= 23000 || bot.time.isDay
-    if (!morning) return { ok: false, code: 'INTERRUPTED', error: 'bangun sebelum pagi (timeOfDay ' + t + '): terganggu/terkena serangan?', data: { sleptMs: slept } }
-    return { ok: true, code: 'OK', data: { sleptMs: slept, wokeAtTick: t } }
   }
 
   async function cleanup () {

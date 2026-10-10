@@ -1,1 +1,1 @@
-unzip -o arcadia-sleep.zip && node install/fix-sleep.js && node tests/sleep.test.js && npm run check
+unzip -o arcadia-sleep-v2.zip && node install/fix-sleep.js && node tests/sleep.test.js && npm run check

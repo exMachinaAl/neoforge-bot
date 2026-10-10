@@ -80,8 +80,8 @@ Legenda: [x] TERBUKTI (log/!test) | [~] TERUJI TIRUAN / sebagian | [ ] belum
 - [~] breed.animals: cow/sheep/goat/mooshroom/pig/chicken/horse/donkey/llama/rabbit/fox; anak lahir diukur dari event entitySpawn (bukan metadata); cooldown 5 menit disimpan di memori proses - TERUJI TIRUAN. Deteksi anak lewat metadata[16] (AgeableMob) BELUM DIUJI
 - [~] Catatan inventory (BotState) disamakan dengan server setelah inv.store/inv.take/craft.item/breed.animals (reconcile: pulihkan item polos, hapus item hantu, koreksi jumlah)
 - [ ] ChestBook (inventory eksternal): catat isi tiap chest per koordinat (item, jumlah, waktu lihat) ke chests.json agar Director bisa memutuskan "ambil dari chest X"; data sudah tersedia dari inv.view/store/take, tinggal dicatat
-- [ ] Perintah guard: jaga pos (x,y,z) dalam radius R; serang mob hostile yang masuk radius, kembali ke pos; berhenti saat HP rendah; parameter pos/radius/mode dari UI dan chat
-- [ ] Perintah follow-as-guard: ikuti pemain pemilik, jaga jarak, lindungi dari mob (memakai logika guard di sekitar pemilik), makan/istirahat sesuai kebutuhan; tiap petualangan bersama menaikkan affection persona
+- [~] guard.post (v2.5): jaga titik tetap, serang hostile dalam radius (pedang, atau panah bila ada busur+panah dan jarak >= 5), kembali ke pos, mundur + makan saat HP rendah; durasi lewat durationMs/timeoutMs - TERUJI TIRUAN, BELUM DIUJI di server
+- [~] guard.follow (v2.5): ikut pemain (GoalFollow), jaga radius di sekitar pemain, panah/pedang, berhenti bila pemain hilang > lostTimeoutMs; mencatat bot.arcadia.companion (waktu bersama, kill, tembakan, sesi) sebagai bahan affection persona - TERUJI TIRUAN, BELUM DIUJI
 - [ ] Persona: nilai affection (disimpan JSON), dipengaruhi follow-as-guard, hadiah item, waktu bersama; mempengaruhi bobot Director (kontrak Persona.traits sudah ada)
 - [ ] Perintah di dalam game: pemilik mengetik "!bot guard/follow/stop/craft ..." di chat -> masuk antrean engine (hanya dari pemain yang diizinkan)
 - [ ] WebUI: tombol cepat guard/follow/stop, kartu Inventory (akurat/tidak, tombol Snapshot), kartu chest, form craft/breed; peta 2D lalu opsional viewer 3D
@@ -141,3 +141,6 @@ Urutan: B10-1 -> (B10-2, B10-4, B10-5 bebas) -> B10-3 (butuh B10-1) -> B10-6 ter
 - Skema SlotComponent sendiri: tunggu B10-5.   - PvP / damage Epic Fight: butuh HP mob terbaca.
 - Upgrade pathfinder: risiko regresi, tunggu semua skill terbukti.   - Persona / planner LLM / multi-bot: tunggu stabil.
 - Pilih-model YSM: tunggu B10-4.   - Format ack TaCZ selain kosong: hanya bila kick muncul.
+- [ ] Crossbow (muat lalu tembak) dan perilaku khusus creeper (menjauh) untuk guard
+- [ ] Affection persona: baca bot.arcadia.companion, simpan ke JSON, pengaruhi bobot Director
+- [ ] Progress langsung untuk skill panjang (guard/follow/farm): ctx.progress -> event task.progress -> kartu UI
