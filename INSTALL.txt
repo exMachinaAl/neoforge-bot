@@ -1,1 +1,2 @@
-unzip -o arcadia-sleep-v2.zip && node install/fix-sleep.js && node tests/sleep.test.js && npm run check
+unzip -o arcadia-ui-director.zip && node install/fix-ui3b.js && npm test
+# uji model langsung (tanpa bot): ARCADIA_LLM_KEY=... node orchestrator/try.js "kumpulkan 8 kayu" --dry

@@ -153,3 +153,10 @@ Urutan: B10-1 -> (B10-2, B10-4, B10-5 bebas) -> B10-3 (butuh B10-1) -> B10-6 ter
 - [ ] Crossbow (muat lalu tembak) dan perilaku khusus creeper (menjauh) untuk guard
 - [ ] Affection persona: baca bot.arcadia.companion, simpan ke JSON, pengaruhi bobot Director
 - [ ] Progress langsung untuk skill panjang (guard/follow/farm): ctx.progress -> event task.progress -> kartu UI
+
+## Pembaruan #7 (UI/Director)
+- [~] UI modular + cookie per port + peta 2D + Director + /openapi.json: TERUJI TIRUAN (npm test), BELUM DIUJI di browser HP dan dengan model sungguhan
+- [ ] Uji model: ARCADIA_LLM_KEY=... node orchestrator/try.js "..." lalu lewat UI (kartu Director); kirim hasil/galat
+- [ ] Kartu progress memakai bentuk BotState.progress/event task.progress dari UI_PLAN (pct/label/data, taskId+seq): cocokkan dengan implementasi asli
+- [ ] Otonomi Director (loop) dan event director.decision di kontrak: belum ada (sengaja)
+- [ ] Viewer 3D: uji nyata (spike tinggal eksekusi)

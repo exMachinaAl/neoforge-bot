@@ -354,5 +354,16 @@
  "apothic_enchanting:set_raven_stats": "SERVERBOUND",
  "apothic_enchanting:clue": "CLIENTBOUND",
  "apotheosis:link_item_to_chat": "SERVERBOUND",
- "neoforge:sync_attachments": "CLIENTBOUND"
+ "neoforge:sync_attachments": "CLIENTBOUND",
+ "creativecore:1s": "CLIENTBOUND",
+ "creativecore:2s": "CLIENTBOUND",
+ "sophisticatedcore:request_linker_crafting_diagnostics": "SERVERBOUND",
+ "sophisticatedcore:sync_linker_crafting_diagnostics": "CLIENTBOUND",
+ "sophisticatedcore:sync_recent_crafted_results": "CLIENTBOUND",
+ "sophisticatedcore:request_linked_storage_contents": "SERVERBOUND",
+ "sophisticatedbackpacks:mob_catcher_capture_effect": "CLIENTBOUND",
+ "sophisticatedcore:linked_storage_contents": "CLIENTBOUND",
+ "sophisticatedbackpacks:mob_catcher_release": "SERVERBOUND",
+ "sophisticatedcore:sync_block_highlights": "CLIENTBOUND",
+ "sophisticatedcore:linked_storage_settings": "CLIENTBOUND"
 }

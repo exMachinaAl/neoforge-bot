@@ -84,7 +84,7 @@ async function wakeUp (bot, bedIds, pos) {
 
 async function run (bot, p, ctx) {
   const md = ctx.mcData
-  const st = { reasons: [], warnings: [], msgs: [], placed: null, broke: false, recovered: null, mode: null, bed: null, signals: [], fights: 0, tried: 0, resleeps: 0, approach: null }
+  const st = { reasons: [], warnings: [], msgs: [], placed: null, broke: false, recovered: null, mode: null, bed: null, signals: [], fights: 0, tried: 0, resleeps: 0, approach: null, timeline: [] }
   const bedIds = md.blocksArray.filter(b => /_bed$/.test(b.name)).map(b => b.id)
   const bedItems = new Set(md.itemsArray.filter(i => /_bed$/.test(i.name)).map(i => i.id))
   const radius = Math.min(64, Math.max(4, parseInt(p.radius ?? 24, 10)))
@@ -95,8 +95,9 @@ async function run (bot, p, ctx) {
   const creative = bot.game.gameMode === 'creative'
   const bedCount = () => bot.inventory.items().filter(i => bedItems.has(i.type)).reduce((a, i) => a + i.count, 0)
   const before = bedCount()
+  const startedAt = Date.now()
   const aborted = () => Object.assign(new Error('dibatalkan'), { aborted: true })
-  const finish = (ok, code, error, extra) => ({ ok, code, error, data: Object.assign({ mode: st.mode, bed: st.bed, broke: st.broke, recovered: st.recovered, time: timeInfo(bot), fights: st.fights, resleeps: st.resleeps, approach: st.approach, serverMsgs: st.msgs.slice(-4), reasons: st.reasons, warnings: st.warnings }, extra) })
+  const finish = (ok, code, error, extra) => ({ ok, code, error, data: Object.assign({ mode: st.mode, bed: st.bed, broke: st.broke, recovered: st.recovered, time: timeInfo(bot), fights: st.fights, resleeps: st.resleeps, approach: st.approach, signals: st.signals, timeline: st.timeline.slice(-12), serverMsgs: st.msgs.slice(-4), reasons: st.reasons, warnings: st.warnings }, extra) })
 
   // ---- pra-cek
   if (bot.time.timeOfDay == null) return finish(false, 'PRECONDITION_FAILED', 'waktu dunia belum diterima dari server')
@@ -230,14 +231,18 @@ async function run (bot, p, ctx) {
     st.bed = { x: bed.position.x, y: bed.position.y, z: bed.position.z, name: bed.name }
     // 3) tidur + tunggu pagi (bila terbangun malam hari: hajar mob, tidur lagi)
     let slept = 0
+    const mark = (ev, extra) => st.timeline.push(Object.assign({ ev, tick: bot.time.timeOfDay, ms: Date.now() - startedAt, sleepingFlag: !!bot.isSleeping, occupied: anyOccupied(bot, bedIds, bed.position) }, extra))
     for (let round = 0; ; round++) {
+      mark(round ? 'klik-tidur-lagi' : 'klik-tidur')
       try { await attemptSleep(bed) } catch (e) {
+        mark('klik-ditolak', { error: String(e.message).slice(0, 80) })
         if (e.aborted) return { ok: false, code: 'ABORTED' }
         const m = String(e.message)
         if (/not night/.test(m)) return { ok: false, code: 'PRECONDITION_FAILED', error: m }
         if (/monsters/.test(m)) return { ok: false, code: 'SERVER_REJECTED', error: 'tidak bisa tidur: monster dekat bed setelah ' + (retries + 1) + ' percobaan' }
         return { ok: false, code: 'SERVER_REJECTED', error: 'server tidak menidurkan bot: ' + m + (st.msgs.length ? ' | server: ' + st.msgs.slice(-2).join(' / ') : '') }
       }
+      mark('tidur', { via: st.signals[st.signals.length - 1] })
       const t0 = Date.now(); let lastT = bot.time.timeOfDay; let lastChange = Date.now(); let end = 'awake'
       for (;;) {
         if (ctx.signal.aborted) { end = 'aborted'; break }
@@ -248,6 +253,7 @@ async function run (bot, p, ctx) {
         await sleep(pollMs)
       }
       slept += Date.now() - t0
+      mark('bangun', { end })
       if (end === 'aborted') return { ok: false, code: 'ABORTED', data: { sleptMs: slept } }
       if (end === 'stalled') { await wakeUp(bot, bedIds, bed.position); return { ok: false, code: 'TIMEOUT', error: 'waktu dunia tidak bergerak ' + stallMs + ' ms selama tidur (doDaylightCycle dimatikan?)', data: { sleptMs: slept } } }
       if (end === 'maxwait') { await wakeUp(bot, bedIds, bed.position); return { ok: false, code: 'TIMEOUT', error: 'pagi belum tiba dalam ' + maxWaitMs + ' ms (pemain lain tidak tidur?)', data: { sleptMs: slept } } }

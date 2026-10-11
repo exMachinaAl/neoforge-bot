@@ -74,3 +74,13 @@ Kirim: `grep -a "TASK\|SKILLRESULT\|TEST\|CH \|EVENT\|SKIP\|ERR\|KICK" bot.log`
 ## Log task (tasks.log)
 Tiap task menulis satu baris JSON (params + hasil utuh) ke `tasks.log` (diabaikan git; `ARCADIA_TASKLOG=off` mematikan, atau isi path lain). Terminal mencetak `SKILLRESULT {...}` untuk task antrean juga.
 Lihat detail kegagalan: `tail -n 3 tasks.log`. Di UI, ketuk baris Riwayat untuk membuka params + hasil lengkap. Params divalidasi terhadap manifest skill (HTTP 400 bila salah).
+
+## Director (uji model langsung)
+Model HANYA mengusulkan task; tidak ada yang berjalan sebelum disetujui (otonomi MATI). Kunci hanya dari env, tidak pernah ke UI/log.
+- Uji tanpa server/bot: `ARCADIA_LLM_KEY=sk-... node orchestrator/try.js "kumpulkan 8 kayu lalu tidur" --inv bread:3 --hp 20` (tambahkan `--dry` untuk melihat prompt tanpa memanggil model).
+- Env: `ARCADIA_LLM_PROVIDER` (anthropic|openai; openai juga untuk server lokal via `ARCADIA_LLM_URL`, mis. http://127.0.0.1:11434/v1 tanpa kunci), `ARCADIA_LLM_KEY` (atau ANTHROPIC_API_KEY/OPENAI_API_KEY), `ARCADIA_LLM_MODEL`, `ARCADIA_LLM_RPM` (anggaran/menit, bawaan 6), `ARCADIA_LLM_MAX_TOKENS`, `ARCADIA_LLM_TIMEOUT_MS`, `ARCADIA_DIRECTOR_DENY` (skill terlarang, koma), `ARCADIA_DIRECTOR_AUTO` (skill yang disetujui otomatis; bawaan kosong).
+- Di UI: kartu "Director (model)" -> tanya -> Setujui/Tolak. API: `POST /bots/{id}/director/ask`, `/director/proposals/{pid}/approve|reject`, `GET /bots/{id}/director`.
+## UI baru, peta, viewer
+- Buka URL `API siap: http://127.0.0.1:8787/?token=...` sekali; cookie HttpOnly (per port) dipasang dan token dihapus dari URL. UI modular di `ui/` (modul ES, tanpa HTML dinamis).
+- Peta 2D: `GET /bots/{id}/map?r=24` (grid permukaan, ketuk sel untuk nav.goto). Viewer 3D opsional: `npm i prismarine-viewer` (~370 MB) + `ARCADIA_VIEWER=1` (dipaksa 127.0.0.1:3007).
+- `/openapi.json` memuat rute dan skema skill dari manifest.

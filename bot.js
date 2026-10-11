@@ -89,7 +89,7 @@ bot.on('spawn', () => console.log('EVENT spawn'))
 bot.on('end', r => console.log('EVENT end:', r))
 const runner = require('./skills').createRunner(bot)
 const engine = require('./engine').createEngine(bot, runner)
-if (process.env.ARCADIA_API !== '0') require('./control').start({ bot, runner, engine })
+if (process.env.ARCADIA_API !== '0') (() => { const api = require('./control').start({ bot, runner, engine }); require('./control/extend').attach(api, { bot, runner, engine }); return api })()
 
 
 // ---------- CLI command handling ----------

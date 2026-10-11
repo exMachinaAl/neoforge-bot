@@ -15,7 +15,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms))
   const get = async p => (await fetch(B + p, { headers: H })).json(); const post = async (p, b) => { const r = await fetch(B + p, { method: 'POST', headers: H, body: JSON.stringify(b || {}) }); return { s: r.status, j: await r.json() } }
   let r = await fetch(B + '/bots'); ok(r.status === 401, 'tanpa token -> 401')
   r = await fetch(B + '/bots?token=salah'); ok(r.status === 401, 'token salah -> 401')
-  r = await fetch(B + '/?token=tok123'); const html = await r.text(); ok(r.status === 200 && /Arcadia/.test(html) && /textContent|replaceChildren/.test(html), 'UI disajikan (' + html.length + ' B)')
+  r = await fetch(B + '/?token=tok123'); const html = await r.text(); ok(r.status === 200 && /Arcadia/.test(html) && /type="module"/.test(html), 'UI disajikan (' + html.length + ' B)')
   const sk = await get('/skills'); ok(sk.length === 14 && ['inv.snapshot', 'inv.view', 'inv.store', 'inv.take', 'craft.item', 'breed.animals', 'guard.post', 'guard.follow'].every(n => sk.some(s => s.name === n)) && sk.every(s => !validate('SkillManifest', s)), '/skills: 11 manifest valid kontrak (termasuk inv.*, craft.item, breed.animals)')
   bot.emit('spawn'); await sleep(20)
   let st = await get('/bots/me'); ok(!validate('BotState', st) && st.status === 'online' && st.username === 'BotAlpha' && st.inventory.items.length === 1, 'BotState valid kontrak: ' + JSON.stringify({ s: st.status, pos: st.pos, hp: st.health }))
