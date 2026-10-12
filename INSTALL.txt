@@ -1,2 +1,1 @@
-unzip -o arcadia-ui-director.zip && node install/fix-ui3b.js && npm test
-# uji model langsung (tanpa bot): ARCADIA_LLM_KEY=... node orchestrator/try.js "kumpulkan 8 kayu" --dry
+unzip -o arcadia-docs-lifecycle.zip && node install/fix-docs-v9.js && git add docs TODO.md install/fix-docs-v9.js && git commit -m "docs: rencana lifecycle (statistik, sampler, skor, upgrade, tool)"
