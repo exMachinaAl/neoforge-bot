@@ -1,0 +1,18 @@
+{
+  "id": "guard_area",
+  "name": "Patroli Penjagaan",
+  "category": "maintain",
+  "skill": "guard.post",
+  "params": {
+    "durationMs": 30000
+  },
+  "prerequisites": {
+    "minHp": 15,
+    "safeDimension": "overworld",
+    "daytimeOnly": false,
+    "requiresWeapon": true
+  },
+  "baseWeight": 0.8,
+  "cooldownMs": 180000,
+  "estimatedMs": 30000
+}

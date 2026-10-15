@@ -1,0 +1,18 @@
+{
+  "id": "fish_food",
+  "name": "Memancing Makanan",
+  "category": "survive",
+  "skill": "fish.cast",
+  "params": {
+    "count": 3
+  },
+  "prerequisites": {
+    "minHp": 6,
+    "safeDimension": "overworld",
+    "daytimeOnly": false,
+    "requiresWeapon": false
+  },
+  "baseWeight": 1.1,
+  "cooldownMs": 120000,
+  "estimatedMs": 60000
+}

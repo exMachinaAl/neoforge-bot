@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "weights": {
+    "completion": 0.35,
+    "safety": 0.20,
+    "efficiency": 0.15,
+    "contextFit": 0.15,
+    "value": 0.15
+  },
+  "penalties": {
+    "death": 20,
+    "interrupted": 10,
+    "safetyLimit": 5
+  },
+  "safetyMaxScore": 40
+}

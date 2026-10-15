@@ -1,0 +1,18 @@
+{
+  "id": "store_supplies",
+  "name": "Simpan ke Peti",
+  "category": "maintain",
+  "skill": "inv.store",
+  "params": {
+    "chest": "auto"
+  },
+  "prerequisites": {
+    "minHp": 6,
+    "safeDimension": "overworld",
+    "daytimeOnly": false,
+    "requiresWeapon": false
+  },
+  "baseWeight": 1.2,
+  "cooldownMs": 60000,
+  "estimatedMs": 20000
+}

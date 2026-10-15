@@ -1,0 +1,20 @@
+{
+  "id": "explore_patrol",
+  "name": "Eksplorasi Terdekat",
+  "category": "explore",
+  "skill": "nav.goto",
+  "params": {
+    "x": 10,
+    "z": 10,
+    "range": 3
+  },
+  "prerequisites": {
+    "minHp": 14,
+    "safeDimension": "overworld",
+    "daytimeOnly": true,
+    "requiresWeapon": false
+  },
+  "baseWeight": 0.7,
+  "cooldownMs": 120000,
+  "estimatedMs": 25000
+}

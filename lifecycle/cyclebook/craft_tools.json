@@ -1,0 +1,19 @@
+{
+  "id": "craft_tools",
+  "name": "Kerajinan Dasar",
+  "category": "craft",
+  "skill": "craft.item",
+  "params": {
+    "item": "stick",
+    "count": 4
+  },
+  "prerequisites": {
+    "minHp": 6,
+    "safeDimension": "overworld",
+    "daytimeOnly": false,
+    "requiresWeapon": false
+  },
+  "baseWeight": 0.8,
+  "cooldownMs": 60000,
+  "estimatedMs": 15000
+}

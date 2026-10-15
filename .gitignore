@@ -1,0 +1,21 @@
+node_modules/
+server/
+backup/
+*.log
+fail*.txt
+lastfail.bin
+dump_*.bin
+status.json
+.env
+old-v/
+mc.local.json
+snapshot.json
+snapshot_raw.txt
+
+# runtime-local-v1
+*.bp
+data/
+*.jsonl
+stats_agg.json
+itemmap.json
+chests.json

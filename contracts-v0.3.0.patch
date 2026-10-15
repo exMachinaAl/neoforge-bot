@@ -1,0 +1,182 @@
+From 8e2cd39168ede3bc0b40ec61354134c1be1df33d Mon Sep 17 00:00:00 2001
+From: agen-A <a@arcadia.local>
+Date: Mon, 12 Oct 2026 15:03:54 +0000
+Subject: [PATCH] contracts: v0.3.0 lifecycle
+
+---
+ contracts/README.md             | 14 ++++++-
+ contracts/check.js              | 70 ++++++++++++++++++++++++++++++++-
+ contracts/contracts.schema.json | 40 ++++++++++++++++++-
+ 3 files changed, 120 insertions(+), 4 deletions(-)
+
+diff --git a/contracts/README.md b/contracts/README.md
+index 7f291d7..9e522c0 100644
+--- a/contracts/README.md
++++ b/contracts/README.md
+@@ -1,4 +1,4 @@
+-# Arcadia contracts v0.1.0
++# Arcadia contracts v0.3.0
+ Sumber kebenaran antar-AI. Ubah skema hanya lewat commit khusus contracts/ + naikkan versi di title. Jangan impor kode antar paket; bertukar data lewat skema ini.
+ 
+ ## Paket (monorepo, belum dipecah)
+@@ -15,3 +15,15 @@ GET /bots | POST /bots {username, personaId?} | GET /bots/:id (BotState) | DELET
+ POST /bots/:id/tasks (Task tanpa id/status) | DELETE /bots/:id/tasks/:taskId | POST /bots/:id/commands (Command)
+ GET /skills (SkillManifest[]) | GET/PUT /personas/:id | POST /killswitch (hentikan semua bot)
+ WebSocket /ws: aliran Event.
++
++## Riwayat versi
++- v0.3.0 (lifecycle; hanya menambah, semua field baru opsional): Persona.{needs, affection, xp, level}; definisi baru StatsContext, StatsSnapshot, BatchScore. Dokumen v0.1.0 tetap valid. Nomor v0.2.0 tidak pernah masuk repo ini (dilompati).
++- v0.1.0: kontrak awal.
++
++## Lifecycle v0.3.0 (rancangan: docs/LIFECYCLE_PLAN.md bagian 2.1, 2.2, 2.7)
++- Persona.needs {energy, safety, boredom} dan affection: number 0..1. xp: integer >= 0. level: integer >= 1.
++- StatsContext (semua field opsional): timeOfDay 0..23999, timeBucket day|dusk|night|dawn, dayNumber, raining, thundering, playersOnline, hostileCount, threat none|low|high, health, food, dimension, source (asal sinyal). Sinyal berlabel BELUM DIVERIFIKASI (LIFECYCLE_PLAN bagian 3) diisi setelah audit S-1.
++- StatsSnapshot {botId, ts, windowMs, context?, skills{nama-skill: {n, ok, fail, avgMs}}}. Nama skill mengikuti pola Task.skill.
++- BatchScore {batchId, ts, version (versi rubrik), total 0..100, components{completion, safety, efficiency, fit, value: 0..100 atau null}, skipped[], playerScore? 1..5, agentEval? {delta -10..10, note <= 300 karakter}}. Komponen yang tidak dihitung = null (atau tidak ada) dan dicantumkan di skipped.
++- Tidak dijamin skema (periksa di kode pemakai): ok + fail <= n; skipped konsisten dengan komponen null; total sesuai bobot rubrik.
++- Belum ada (menyusul bersama kodenya): Task.batchId, Batch, event batch.*, Command approveBatch/rejectBatch.
+diff --git a/contracts/check.js b/contracts/check.js
+index a9d929f..8af5157 100644
+--- a/contracts/check.js
++++ b/contracts/check.js
+@@ -19,10 +19,78 @@ const cases = [
+   ['Command', true, { id: 'c1', botId: 'b1', op: 'enqueue', payload: { skill: 'fish.cast', params: {} } }],
+   ['SkillManifest', true, { name: 'mine.collect', description: 'Tambang blok', paramsSchema: { type: 'object' }, requires: ['move', 'block.dig'], interruptible: true }]
+ ]
++// --- v0.3.0 lifecycle: kompatibilitas mundur, jalur valid, jalur gagal ---
++const ctxOk = { timeOfDay: 13000, timeBucket: 'dusk', dayNumber: 3, raining: false, thundering: false, playersOnline: 2, hostileCount: 1, threat: 'low', health: 20, food: 18, dimension: 'overworld', source: 'bot.time' }
++const snapOk = { botId: 'b1', ts: now, windowMs: 60000, context: ctxOk, skills: { 'mine.collect': { n: 4, ok: 3, fail: 1, avgMs: 5200.5 }, 'sleep.auto': { n: 0, ok: 0, fail: 0, avgMs: 0 } } }
++const scoreOk = { batchId: 'bt1', ts: now, version: 'rubric-1', total: 72.5, components: { completion: 80, safety: 100, efficiency: 55, fit: 60, value: 50 }, skipped: [] }
++cases.push(
++  ['Persona', true, { id: 'lama', name: 'Lama', traits: { caution: 0.5 }, timing: { reactionMsMean: 300, reactionMsJitter: 50, idleChance: 0.1 }, chat: { style: 'santai', language: 'id', verbosity: 0.3 }, limits: { fleeBelowHealth: 6, maxLlmCallsPerMin: 4 } }],
++  ['Persona', true, { id: 'baru', name: 'Baru', traits: { caution: 0.5 }, timing: { reactionMsMean: 300, reactionMsJitter: 50 }, needs: { energy: 0.8, safety: 1, boredom: 0 }, affection: 0.25, xp: 120, level: 3 }],
++  ['Persona', false, { id: 'x', name: 'x', traits: {}, timing: { reactionMsMean: 1, reactionMsJitter: 1 }, needs: { energy: 1.5 } }],
++  ['Persona', false, { id: 'x', name: 'x', traits: {}, timing: { reactionMsMean: 1, reactionMsJitter: 1 }, needs: { hunger: 0.5 } }],
++  ['Persona', false, { id: 'x', name: 'x', traits: {}, timing: { reactionMsMean: 1, reactionMsJitter: 1 }, affection: -0.1 }],
++  ['Persona', false, { id: 'x', name: 'x', traits: {}, timing: { reactionMsMean: 1, reactionMsJitter: 1 }, level: 0 }],
++  ['Persona', false, { id: 'x', name: 'x', traits: {}, timing: { reactionMsMean: 1, reactionMsJitter: 1 }, xp: -1 }],
++  ['StatsContext', true, ctxOk],
++  ['StatsContext', true, {}],
++  ['StatsContext', false, { ...ctxOk, timeOfDay: 24000 }],
++  ['StatsContext', false, { ...ctxOk, timeBucket: 'evening' }],
++  ['StatsContext', false, { ...ctxOk, playersOnline: -1 }],
++  ['StatsContext', false, { ...ctxOk, moonPhase: 3 }],
++  ['StatsSnapshot', true, snapOk],
++  ['StatsSnapshot', true, { botId: 'b1', ts: now, windowMs: 0, skills: {} }],
++  ['StatsSnapshot', false, { ...snapOk, skills: { 'mine.collect': { n: 1, ok: 1, fail: 0, avgMs: -5 } } }],
++  ['StatsSnapshot', false, { ...snapOk, skills: { Mine: { n: 1, ok: 1, fail: 0, avgMs: 5 } } }],
++  ['StatsSnapshot', false, { botId: 'b1', ts: now, windowMs: 1000 }],
++  ['StatsSnapshot', false, { ...snapOk, extra: 1 }],
++  ['BatchScore', true, scoreOk],
++  ['BatchScore', true, { ...scoreOk, components: { completion: 90, safety: null, efficiency: null, fit: null, value: 40 }, skipped: ['safety', 'efficiency', 'fit'], playerScore: 5, agentEval: { delta: -10, note: 'ok' } }],
++  ['BatchScore', false, { ...scoreOk, total: 101 }],
++  ['BatchScore', false, { ...scoreOk, playerScore: 0 }],
++  ['BatchScore', false, { ...scoreOk, playerScore: 6 }],
++  ['BatchScore', false, { ...scoreOk, agentEval: { delta: 11 } }],
++  ['BatchScore', false, { ...scoreOk, agentEval: { delta: 1, note: 'x'.repeat(301) } }],
++  ['BatchScore', false, { ...scoreOk, components: { ...scoreOk.components, luck: 50 } }],
++  ['BatchScore', false, { ...scoreOk, skipped: ['luck'] }],
++  ['BatchScore', false, { ...scoreOk, extra: 1 }]
++)
+ let bad = 0
+ for (const [n, want, doc] of cases) {
+   const ok = v(n)(doc)
+   if (ok !== want) { bad++; console.log('GAGAL', n, 'harusnya', want, JSON.stringify(v(n).errors)) }
+ }
+-console.log(bad ? bad + ' kasus gagal' : 'kontrak OK: ' + cases.length + ' kasus')
++// --- uji mutasi: lepaskan satu batas pada SALINAN skema di memori; harus ada kasus yang gagal (tes tidak boleh lemah) ---
++const mutate = fn => {
++  const s = JSON.parse(JSON.stringify(require('./contracts.schema.json')))
++  fn(s.definitions)
++  const a = new Ajv({ allErrors: true, strict: false }); a.addSchema(s)
++  return n => a.getSchema('arcadia/contracts#/definitions/' + n)
++}
++const mutations = [
++  ['BatchScore.total.maximum', d => { delete d.BatchScore.properties.total.maximum }],
++  ['BatchScore.playerScore.minimum', d => { delete d.BatchScore.properties.playerScore.minimum }],
++  ['BatchScore.playerScore.maximum', d => { delete d.BatchScore.properties.playerScore.maximum }],
++  ['BatchScore.agentEval.delta.maximum', d => { delete d.BatchScore.properties.agentEval.properties.delta.maximum }],
++  ['BatchScore.agentEval.note.maxLength', d => { delete d.BatchScore.properties.agentEval.properties.note.maxLength }],
++  ['BatchScore.components.additionalProperties', d => { delete d.BatchScore.properties.components.additionalProperties }],
++  ['BatchScore.skipped.items', d => { delete d.BatchScore.properties.skipped.items }],
++  ['BatchScore.additionalProperties', d => { delete d.BatchScore.additionalProperties }],
++  ['Persona.level.minimum', d => { delete d.Persona.properties.level.minimum }],
++  ['Persona.xp.minimum', d => { delete d.Persona.properties.xp.minimum }],
++  ['Persona.affection.minimum', d => { delete d.Persona.properties.affection.minimum }],
++  ['Persona.needs.energy.maximum', d => { delete d.Persona.properties.needs.properties.energy.maximum }],
++  ['Persona.needs.additionalProperties', d => { delete d.Persona.properties.needs.additionalProperties }],
++  ['StatsContext.timeOfDay.maximum', d => { delete d.StatsContext.properties.timeOfDay.maximum }],
++  ['StatsContext.timeBucket.enum', d => { delete d.StatsContext.properties.timeBucket.enum }],
++  ['StatsContext.playersOnline.minimum', d => { delete d.StatsContext.properties.playersOnline.minimum }],
++  ['StatsContext.additionalProperties', d => { delete d.StatsContext.additionalProperties }],
++  ['StatsSnapshot.avgMs.minimum', d => { const k = Object.keys(d.StatsSnapshot.properties.skills.patternProperties)[0]; delete d.StatsSnapshot.properties.skills.patternProperties[k].properties.avgMs.minimum }],
++  ['StatsSnapshot.skills.additionalProperties', d => { delete d.StatsSnapshot.properties.skills.additionalProperties }],
++  ['StatsSnapshot.required', d => { delete d.StatsSnapshot.required }]
++]
++for (const [name, fn] of mutations) {
++  const mv = mutate(fn)
++  if (!cases.some(([n, want, doc]) => mv(n)(doc) !== want)) { bad++; console.log('MUTASI LOLOS (tes lemah):', name) }
++}
++console.log(bad ? bad + ' kasus/mutasi gagal' : 'kontrak OK: ' + cases.length + ' kasus, ' + mutations.length + ' mutasi terdeteksi')
+ process.exit(bad ? 1 : 0)
+diff --git a/contracts/contracts.schema.json b/contracts/contracts.schema.json
+index 6132917..d35f9ae 100644
+--- a/contracts/contracts.schema.json
++++ b/contracts/contracts.schema.json
+@@ -1,7 +1,7 @@
+ {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "$id": "arcadia/contracts",
+-  "title": "Arcadia contracts v0.1.0",
++  "title": "Arcadia contracts v0.3.0",
+   "definitions": {
+     "Vec3": { "type": "object", "required": ["x", "y", "z"], "additionalProperties": false,
+       "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "z": { "type": "number" } } },
+@@ -62,7 +62,43 @@
+         "chat": { "type": "object", "additionalProperties": false,
+           "properties": { "style": { "type": "string" }, "language": { "type": "string" }, "verbosity": { "type": "number", "minimum": 0, "maximum": 1 } } },
+         "limits": { "type": "object", "additionalProperties": false,
+-          "properties": { "fleeBelowHealth": { "type": "number", "minimum": 0 }, "maxLlmCallsPerMin": { "type": "integer", "minimum": 0 } } } } },
++          "properties": { "fleeBelowHealth": { "type": "number", "minimum": 0 }, "maxLlmCallsPerMin": { "type": "integer", "minimum": 0 } } },
++        "needs": { "type": "object", "additionalProperties": false,
++          "properties": { "energy": { "type": "number", "minimum": 0, "maximum": 1 }, "safety": { "type": "number", "minimum": 0, "maximum": 1 },
++            "boredom": { "type": "number", "minimum": 0, "maximum": 1 } } },
++        "affection": { "type": "number", "minimum": 0, "maximum": 1 },
++        "xp": { "type": "integer", "minimum": 0 },
++        "level": { "type": "integer", "minimum": 1 } } },
++    "StatsContext": { "type": "object", "additionalProperties": false,
++      "properties": {
++        "timeOfDay": { "type": "integer", "minimum": 0, "maximum": 23999 },
++        "timeBucket": { "enum": ["day", "dusk", "night", "dawn"] },
++        "dayNumber": { "type": "integer", "minimum": 0 },
++        "raining": { "type": "boolean" }, "thundering": { "type": "boolean" },
++        "playersOnline": { "type": "integer", "minimum": 0 }, "hostileCount": { "type": "integer", "minimum": 0 },
++        "threat": { "enum": ["none", "low", "high"] },
++        "health": { "type": "number" }, "food": { "type": "number" },
++        "dimension": { "type": "string" }, "source": { "type": "string" } } },
++    "StatsSnapshot": { "type": "object", "required": ["botId", "ts", "windowMs", "skills"], "additionalProperties": false,
++      "properties": {
++        "botId": { "type": "string" }, "ts": { "type": "integer" }, "windowMs": { "type": "integer", "minimum": 0 },
++        "context": { "$ref": "#/definitions/StatsContext" },
++        "skills": { "type": "object", "additionalProperties": false,
++          "patternProperties": { "^[a-z][a-z0-9_.]{0,63}$": { "type": "object", "required": ["n", "ok", "fail", "avgMs"], "additionalProperties": false,
++            "properties": { "n": { "type": "integer", "minimum": 0 }, "ok": { "type": "integer", "minimum": 0 }, "fail": { "type": "integer", "minimum": 0 },
++              "avgMs": { "type": "number", "minimum": 0 } } } } } } },
++    "BatchScore": { "type": "object", "required": ["batchId", "ts", "version", "total", "components", "skipped"], "additionalProperties": false,
++      "properties": {
++        "batchId": { "type": "string", "minLength": 1 }, "ts": { "type": "integer" }, "version": { "type": "string", "minLength": 1 },
++        "total": { "type": "number", "minimum": 0, "maximum": 100 },
++        "components": { "type": "object", "additionalProperties": false,
++          "properties": { "completion": { "type": ["number", "null"], "minimum": 0, "maximum": 100 }, "safety": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
++            "efficiency": { "type": ["number", "null"], "minimum": 0, "maximum": 100 }, "fit": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
++            "value": { "type": ["number", "null"], "minimum": 0, "maximum": 100 } } },
++        "skipped": { "type": "array", "uniqueItems": true, "items": { "enum": ["completion", "safety", "efficiency", "fit", "value"] } },
++        "playerScore": { "type": "integer", "minimum": 1, "maximum": 5 },
++        "agentEval": { "type": "object", "required": ["delta"], "additionalProperties": false,
++          "properties": { "delta": { "type": "number", "minimum": -10, "maximum": 10 }, "note": { "type": "string", "maxLength": 300 } } } } },
+     "Command": { "type": "object", "required": ["id", "botId", "op"], "additionalProperties": false,
+       "properties": {
+         "id": { "type": "string" }, "botId": { "type": "string" },
+-- 
+2.43.0
+

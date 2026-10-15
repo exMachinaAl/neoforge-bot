@@ -1,0 +1,2 @@
+{ "host": "10.10.10.162", "port": 25565,
+  "logCmd": "ssh -p 8022 -i ~/.ssh/botlog -o BatchMode=yes -o ConnectTimeout=5 u0_a602@10.10.10.161 true" }

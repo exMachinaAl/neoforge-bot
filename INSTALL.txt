@@ -1,0 +1,1 @@
+unzip -o arcadia-docs-lifecycle.zip && node install/fix-docs-v9.js && git add docs TODO.md install/fix-docs-v9.js && git commit -m "docs: rencana lifecycle (statistik, sampler, skor, upgrade, tool)"

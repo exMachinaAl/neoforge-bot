@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "arcadia/macro",
+  "title": "Arcadia Declarative Macro Specification v1.0",
+  "type": "object",
+  "required": ["id", "name", "version", "category", "limits", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-zA-Z0-9_-]{1,64}$" },
+    "name": { "type": "string" },
+    "version": { "type": "string" },
+    "category": { "enum": ["survive", "gather", "craft", "social", "explore", "maintain"] },
+    "limits": {
+      "type": "object",
+      "required": ["maxDurationMs", "maxSteps"],
+      "additionalProperties": false,
+      "properties": {
+        "maxDurationMs": { "type": "integer", "minimum": 1000, "maximum": 600000 },
+        "maxSteps": { "type": "integer", "minimum": 1, "maximum": 20 }
+      }
+    },
+    "prerequisites": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "minHp": { "type": "number", "minimum": 0, "maximum": 20 },
+        "safeDimension": { "type": "string" },
+        "daytimeOnly": { "type": "boolean" },
+        "nightOnly": { "type": "boolean" },
+        "requiresWeapon": { "type": "boolean" }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": ["id", "skill", "params"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-zA-Z0-9_-]{1,64}$" },
+          "skill": { "type": "string", "pattern": "^[a-z][a-z0-9_.]{0,63}$" },
+          "params": { "type": "object" },
+          "condition": {
+            "type": "object",
+            "required": ["field", "operator", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "field": { "type": "string" },
+              "operator": { "enum": ["==", "!=", ">", ">=", "<", "<=", "contains"] },
+              "value": {}
+            }
+          },
+          "onFail": { "enum": ["abort", "skip", "retry"] },
+          "retries": { "type": "integer", "minimum": 0, "maximum": 5 },
+          "timeoutMs": { "type": "integer", "minimum": 1000, "maximum": 300000 },
+          "outputs": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

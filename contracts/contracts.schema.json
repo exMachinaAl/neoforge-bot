@@ -1,0 +1,809 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "arcadia/contracts",
+  "title": "Arcadia contracts v0.3.0",
+  "definitions": {
+    "Vec3": {
+      "type": "object",
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      }
+    },
+    "ErrorCode": {
+      "enum": [
+        "OK",
+        "PRECONDITION_FAILED",
+        "TARGET_NOT_FOUND",
+        "NO_PATH",
+        "TIMEOUT",
+        "ABORTED",
+        "INTERRUPTED",
+        "DIED",
+        "INVENTORY_FULL",
+        "PROTOCOL_UNSUPPORTED",
+        "SERVER_REJECTED",
+        "UNKNOWN"
+      ]
+    },
+    "Capability": {
+      "enum": [
+        "move",
+        "block.read",
+        "block.dig",
+        "block.place",
+        "inventory.protocol",
+        "inventory.snbt",
+        "combat.vanilla",
+        "combat.epicfight",
+        "chat"
+      ]
+    },
+    "Task": {
+      "type": "object",
+      "required": [
+        "id",
+        "skill",
+        "params",
+        "priority",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,64}$"
+        },
+        "skill": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.]{0,63}$"
+        },
+        "params": {
+          "type": "object"
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "running",
+            "done",
+            "failed",
+            "aborted"
+          ]
+        },
+        "source": {
+          "enum": [
+            "cli",
+            "api",
+            "planner",
+            "persona",
+            "engine"
+          ]
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1000
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "onFail": {
+          "enum": [
+            "abort",
+            "retry",
+            "skip"
+          ]
+        },
+        "createdAt": {
+          "type": "integer"
+        },
+        "batchId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,64}$"
+        }
+      }
+    },
+    "SkillResult": {
+      "type": "object",
+      "required": [
+        "taskId",
+        "skill",
+        "ok",
+        "code"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "taskId": {
+          "type": "string"
+        },
+        "skill": {
+          "type": "string"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "$ref": "#/definitions/ErrorCode"
+        },
+        "data": {
+          "type": "object"
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "SkillManifest": {
+      "type": "object",
+      "required": [
+        "name",
+        "description",
+        "paramsSchema",
+        "requires",
+        "interruptible"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "paramsSchema": {
+          "type": "object"
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Capability"
+          }
+        },
+        "interruptible": {
+          "type": "boolean"
+        },
+        "estimatedMs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "Item": {
+      "type": "object",
+      "required": [
+        "name",
+        "count"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "slot": {
+          "type": "integer"
+        }
+      }
+    },
+    "BotState": {
+      "type": "object",
+      "required": [
+        "botId",
+        "username",
+        "status",
+        "capabilities",
+        "ts"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "botId": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "connecting",
+            "online",
+            "dead",
+            "offline",
+            "error"
+          ]
+        },
+        "pos": {
+          "$ref": "#/definitions/Vec3"
+        },
+        "dimension": {
+          "type": "string"
+        },
+        "health": {
+          "type": "number"
+        },
+        "food": {
+          "type": "number"
+        },
+        "inventory": {
+          "type": "object",
+          "required": [
+            "items",
+            "source",
+            "accurate"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Item"
+              }
+            },
+            "source": {
+              "enum": [
+                "protocol",
+                "snbt",
+                "unknown"
+              ]
+            },
+            "accurate": {
+              "type": "boolean"
+            }
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Capability"
+          }
+        },
+        "currentTaskId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "queueLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "personaId": {
+          "type": "string"
+        },
+        "ts": {
+          "type": "integer"
+        },
+        "progress": {
+          "$ref": "#/definitions/TaskProgress"
+        },
+        "paused": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Event": {
+      "type": "object",
+      "required": [
+        "ts",
+        "botId",
+        "type",
+        "data"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "ts": {
+          "type": "integer"
+        },
+        "botId": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "bot.connected",
+            "bot.spawned",
+            "bot.died",
+            "bot.respawned",
+            "bot.kicked",
+            "bot.disconnected",
+            "task.queued",
+            "task.started",
+            "task.finished",
+            "task.failed",
+            "chat.in",
+            "chat.out",
+            "persona.changed",
+            "safety.killswitch",
+            "batch.proposed",
+            "batch.approved",
+            "batch.started",
+            "batch.finished",
+            "batch.scored",
+            "lifecycle.updated",
+            "task.progress"
+          ]
+        },
+        "data": {
+          "type": "object"
+        }
+      }
+    },
+    "Persona": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "traits",
+        "timing"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "traits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "caution": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "aggression": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "curiosity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "diligence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "sociability": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "timing": {
+          "type": "object",
+          "required": [
+            "reactionMsMean",
+            "reactionMsJitter"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "reactionMsMean": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "reactionMsJitter": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "idleChance": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "chat": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "style": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "verbosity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fleeBelowHealth": {
+              "type": "number",
+              "minimum": 0
+            },
+            "maxLlmCallsPerMin": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "needs": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "energy": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "security": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "boredom": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "affection": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "xp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "Command": {
+      "type": "object",
+      "required": [
+        "id",
+        "botId",
+        "op"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "botId": {
+          "type": "string"
+        },
+        "op": {
+          "enum": [
+            "enqueue",
+            "cancel",
+            "pause",
+            "resume",
+            "clear",
+            "say",
+            "setPersona",
+            "stop",
+            "approveBatch",
+            "rejectBatch"
+          ]
+        },
+        "payload": {
+          "type": "object"
+        }
+      }
+    },
+    "StatsSnapshot": {
+      "type": "object",
+      "required": [
+        "ts",
+        "skill",
+        "params",
+        "durationMs",
+        "ok",
+        "code",
+        "context"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "ts": {
+          "type": "integer"
+        },
+        "skill": {
+          "type": "string"
+        },
+        "params": {
+          "type": "object"
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "$ref": "#/definitions/ErrorCode"
+        },
+        "context": {
+          "type": "object",
+          "required": [
+            "timeOfDay",
+            "weather",
+            "playerCount",
+            "threatCount",
+            "hp",
+            "food",
+            "dimension"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "timeOfDay": {
+              "enum": [
+                "day",
+                "dusk",
+                "night",
+                "dawn"
+              ]
+            },
+            "weather": {
+              "enum": [
+                "clear",
+                "rain",
+                "thunder"
+              ]
+            },
+            "playerCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "threatCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hp": {
+              "type": "number"
+            },
+            "food": {
+              "type": "number"
+            },
+            "dimension": {
+              "type": "string"
+            },
+            "tick": {
+              "type": "number"
+            },
+            "isRaining": {
+              "type": "boolean"
+            },
+            "hostileCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "health": {
+              "type": "number"
+            },
+            "known": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "taskId": {
+          "type": "string"
+        },
+        "botId": {
+          "type": "string"
+        },
+        "batchId": {
+          "type": "string"
+        },
+        "contextAtStart": {
+          "type": "boolean"
+        },
+        "result": {
+          "type": "object"
+        }
+      },
+      "$comment": "stats-runtime-v1"
+    },
+    "Batch": {
+      "type": "object",
+      "required": [
+        "batchId",
+        "category",
+        "tasks",
+        "contextSnapshot",
+        "seed",
+        "mode",
+        "proposedAt",
+        "updatedAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "batchId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,64}$"
+        },
+        "category": {
+          "enum": [
+            "survive",
+            "gather",
+            "craft",
+            "social",
+            "explore",
+            "maintain"
+          ]
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contextSnapshot": {
+          "type": "object"
+        },
+        "seed": {
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "proposed",
+            "approved",
+            "running",
+            "evaluated",
+            "archived"
+          ]
+        },
+        "proposedAt": {
+          "type": "integer"
+        },
+        "updatedAt": {
+          "type": "integer"
+        }
+      }
+    },
+    "BatchScore": {
+      "type": "object",
+      "required": [
+        "batchId",
+        "total",
+        "components",
+        "computedAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "batchId": {
+          "type": "string"
+        },
+        "total": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "components": {
+          "type": "object",
+          "required": [
+            "completion",
+            "safety",
+            "efficiency",
+            "contextFit",
+            "value"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "completion": {
+              "type": "number"
+            },
+            "safety": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "efficiency": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "contextFit": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "value": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        },
+        "playerScore": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "agentEval": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "computedAt": {
+          "type": "integer"
+        }
+      }
+    },
+    "TaskProgress": {
+      "type": "object",
+      "required": [
+        "taskId",
+        "seq",
+        "pct",
+        "label",
+        "data"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "taskId": {
+          "type": "string"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "data": {
+          "type": "object"
+        }
+      }
+    }
+  },
+  "$comment": "runtime-score-nullable-v1: null berarti komponen belum diukur, bukan nol."
+}

@@ -1,0 +1,19 @@
+{
+  "id": "breed_cattle",
+  "name": "Ternakkan Sapi",
+  "category": "maintain",
+  "skill": "breed.animals",
+  "params": {
+    "species": "cow",
+    "pairs": 1
+  },
+  "prerequisites": {
+    "minHp": 10,
+    "safeDimension": "overworld",
+    "daytimeOnly": true,
+    "requiresWeapon": false
+  },
+  "baseWeight": 1,
+  "cooldownMs": 300000,
+  "estimatedMs": 40000
+}

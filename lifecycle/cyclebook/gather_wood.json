@@ -1,0 +1,19 @@
+{
+  "id": "gather_wood",
+  "name": "Kumpulkan Kayu",
+  "category": "gather",
+  "skill": "mine.collect",
+  "params": {
+    "block": "oak_log",
+    "count": 4
+  },
+  "prerequisites": {
+    "minHp": 10,
+    "safeDimension": "overworld",
+    "daytimeOnly": true,
+    "requiresWeapon": false
+  },
+  "baseWeight": 1.2,
+  "cooldownMs": 60000,
+  "estimatedMs": 30000
+}

@@ -1,0 +1,459 @@
+diff --git a/TODO.md b/TODO.md
+index ba58afe..06ea9cd 100644
+--- a/TODO.md
++++ b/TODO.md
+@@ -80,8 +80,8 @@ Legenda: [x] TERBUKTI (log/!test) | [~] TERUJI TIRUAN / sebagian | [ ] belum
+ - [~] breed.animals: cow/sheep/goat/mooshroom/pig/chicken/horse/donkey/llama/rabbit/fox; anak lahir diukur dari event entitySpawn (bukan metadata); cooldown 5 menit disimpan di memori proses - TERUJI TIRUAN. Deteksi anak lewat metadata[16] (AgeableMob) BELUM DIUJI
+ - [~] Catatan inventory (BotState) disamakan dengan server setelah inv.store/inv.take/craft.item/breed.animals (reconcile: pulihkan item polos, hapus item hantu, koreksi jumlah)
+ - [ ] ChestBook (inventory eksternal): catat isi tiap chest per koordinat (item, jumlah, waktu lihat) ke chests.json agar Director bisa memutuskan "ambil dari chest X"; data sudah tersedia dari inv.view/store/take, tinggal dicatat
+-- [ ] Perintah guard: jaga pos (x,y,z) dalam radius R; serang mob hostile yang masuk radius, kembali ke pos; berhenti saat HP rendah; parameter pos/radius/mode dari UI dan chat
+-- [ ] Perintah follow-as-guard: ikuti pemain pemilik, jaga jarak, lindungi dari mob (memakai logika guard di sekitar pemilik), makan/istirahat sesuai kebutuhan; tiap petualangan bersama menaikkan affection persona
++- [~] guard.post (v2.5): jaga titik tetap, serang hostile dalam radius (pedang, atau panah bila ada busur+panah dan jarak >= 5), kembali ke pos, mundur + makan saat HP rendah; durasi lewat durationMs/timeoutMs - TERUJI TIRUAN, BELUM DIUJI di server
++- [~] guard.follow (v2.5): ikut pemain (GoalFollow), jaga radius di sekitar pemain, panah/pedang, berhenti bila pemain hilang > lostTimeoutMs; mencatat bot.arcadia.companion (waktu bersama, kill, tembakan, sesi) sebagai bahan affection persona - TERUJI TIRUAN, BELUM DIUJI
+ - [ ] Persona: nilai affection (disimpan JSON), dipengaruhi follow-as-guard, hadiah item, waktu bersama; mempengaruhi bobot Director (kontrak Persona.traits sudah ada)
+ - [ ] Perintah di dalam game: pemilik mengetik "!bot guard/follow/stop/craft ..." di chat -> masuk antrean engine (hanya dari pemain yang diizinkan)
+ - [ ] WebUI: tombol cepat guard/follow/stop, kartu Inventory (akurat/tidak, tombol Snapshot), kartu chest, form craft/breed; peta 2D lalu opsional viewer 3D
+@@ -141,3 +141,6 @@ Urutan: B10-1 -> (B10-2, B10-4, B10-5 bebas) -> B10-3 (butuh B10-1) -> B10-6 ter
+ - Skema SlotComponent sendiri: tunggu B10-5.   - PvP / damage Epic Fight: butuh HP mob terbaca.
+ - Upgrade pathfinder: risiko regresi, tunggu semua skill terbukti.   - Persona / planner LLM / multi-bot: tunggu stabil.
+ - Pilih-model YSM: tunggu B10-4.   - Format ack TaCZ selain kosong: hanya bila kick muncul.
++- [ ] Crossbow (muat lalu tembak) dan perilaku khusus creeper (menjauh) untuk guard
++- [ ] Affection persona: baca bot.arcadia.companion, simpan ke JSON, pengaruhi bobot Director
++- [ ] Progress langsung untuk skill panjang (guard/follow/farm): ctx.progress -> event task.progress -> kartu UI
+diff --git a/docs/HANDOFF.md b/docs/HANDOFF.md
+index 6e20ccf..180425a 100644
+--- a/docs/HANDOFF.md
++++ b/docs/HANDOFF.md
+@@ -128,3 +128,9 @@ Paket yang memuat komponen modded gagal parse dan dibuang (PARSE GAGAL window_it
+ - breed.animals: pendengar entitySpawn dipasang SEBELUM memberi makan (anak bisa lahir saat hewan kedua masih diberi makan; sebelumnya race). Deteksi dewasa lewat metadata[16] (AgeableMob.DATA_BABY_ID, 1.21.x) BELUM DIUJI.
+ - Catatan inventory: I.reconcile / I.refreshInventory menyamakan tampilan bot dengan /data get entity (butuh op) lalu memperbarui bot.arcadia.inventoryTruth; dipanggil di akhir inv.store, inv.take, craft.item, breed.animals (kecuali verify/refresh=false).
+ - Cara menyerahkan kode: paket .zip + skrip pemasangan beranchor (install/fix-inv.js) yang aman diulang dan diuji pada klon bersih; salin-tempel EOF hanya untuk perubahan satu file kecil.
++
++## 16. Pembaruan: guard (v2.5)
++- Skill baru: guard.post (jaga titik) dan guard.follow (ikuti pemain sebagai pengawal); modul bersama skills/_combat.js (pilih ancaman, melee, memanah). Tes tests/guard.test.js (26 kasus). TERUJI TIRUAN, BELUM DIUJI di server.
++- Memanah: tarik busur penuh 1050 ms sambil membidik terus, lalu lepas (activateItem/deactivateItem). Titik bidik memakai fisika panah vanilla (3 blok/tick, gravitasi 0.05, hambatan 0.99) dan lead dari kecepatan yang diukur dari perubahan posisi. Akurasi di server BELUM DIUJI. Crossbow belum.
++- Durasi: durationMs (default timeoutMs - 8 dtk); runner membatasi timeoutMs default 300000, maks 1800000: isi timeoutMs untuk jaga lama.
++- Enderman/piglin/iron_golem dilewati kecuali disebut di targets. HP di bawah minHealth: tidak menyerang, kembali ke pos/pemain, makan.
+diff --git a/docs/MAP.md b/docs/MAP.md
+index 5cc9fc8..dff8071 100644
+--- a/docs/MAP.md
++++ b/docs/MAP.md
+@@ -75,6 +75,7 @@ Tujuan dokumen: orang/AI yang melanjutkan proyek cukup membaca berkas ini (dan `
+ ### skills/ pembantu (diawali _)
+ | Berkas | Baris | Tujuan |
+ |---|---|---|
++| `skills/_combat.js` | 130 | pertarungan guard: pilih ancaman, melee, memanah (lintasan panah vanilla) — ekspor: `guardLoop, aimPoint, launchAngle, flight, threats, shoot` |
+ | `skills/_inv.js` | 260 | skills/_inv.js - pembantu inventory/chest: kueri perintah via chat, data kebenaran server, pembanding, buka chest. — ekspor: `attachRefresh, reconcile, refreshInventory, openWindowAt, shortId, watch, ensureClosed, quickMove, invToWindow, settle, rawClose, fullId, isModdedId, ` |
+ | `skills/_names.js` | 50 | skills/_names.js - nama item modded. — ekspor: `load, loadFile, learn, save, nameOf, idOf, stats` |
+ | `skills/_snbt.js` | 155 | skills/_snbt.js - parser SNBT (teks NBT Minecraft) untuk keluaran /data get ... dan pemetaan slot inventory. — ekspor: `parse, extract, nbtSlotToMc, inventoryItems, containerItems` |
+@@ -87,6 +88,8 @@ Tujuan dokumen: orang/AI yang melanjutkan proyek cukup membaca berkas ini (dan `
+ | `craft.item` | item, count, table, refresh, waitMs | move, block.read, inventory.protocol | Buat item vanilla dari bahan di inventory: tanpa meja bila resep muat di grid 2x2 (tidak butuh jendela chest), dengan meja crafting (terdekat/koordina |
+ | `farm.harvest` | crops, count, maxDistance, replant, guard, minHealth | move, block.read, block.dig, block.place, inventory.protocol | Panen tanaman matang (wheat, carrots, potatoes, beetroots) di sekitar dan tanam ulang bila punya bibit |
+ | `fish.cast` | count, maxDistance, biteTimeoutMs, guard, minHealth | move, block.read, inventory.protocol | Memancing: cari air terdekat, pegang joran, lempar dan tarik sampai count tangkapan (diukur dari penambahan inventory) |
++| `guard.follow` | player, distance, radius, leash, ranged, targets, minHealth, lostTimeoutMs, durationMs, timeoutMs | move, combat.vanilla | Ikuti pemain sebagai pengawal: serang hostile di sekitar pemain (pedang/panah), berhenti bila pemain hilang |
++| `guard.post` | x, y, z, radius, leash, ranged, targets, minHealth, durationMs, timeoutMs | move, combat.vanilla | Jaga titik tetap: serang hostile dalam radius (pedang/panah), kembali ke pos, mundur saat HP rendah |
+ | `hunt.kill` | mob, count, maxDistance, minHealth | move, combat.vanilla | Mengejar dan membunuh count entitas bernama mob (mis. cow, zombie) atau bertipe animal/hostile, dalam maxDistance |
+ | `inv.snapshot` | waitMs, save, hydrate | inventory.protocol, inventory.snbt, chat | Bandingkan inventory bot (protokol) dengan data server (/data get entity Inventory), samakan tampilan bot (pulihkan item polos, hapus item hantu), bel |
+ | `inv.store` | chest, items, keep, keepTools, includeModded, source, verify, waitMs | move, block.read, inventory.protocol, chat | Pindahkan item inventory ke chest/barrel (default: semua item vanilla kecuali alat/senjata), lalu laporkan isi chest. Item modded hanya dengan include |
+@@ -101,6 +104,7 @@ Tujuan dokumen: orang/AI yang melanjutkan proyek cukup membaca berkas ini (dan `
+ | `tests/breed.test.js` | 111 | tests/breed.test.js - breed.animals (bot tiruan: hewan, pemberian makan, anak lahir lewat event entitySpawn) |
+ | `tests/craft.test.js` | 119 | tests/craft.test.js - craft.item (bot tiruan; resep vanilla asli dari minecraft-data/prismarine-recipe) |
+ | `tests/engine.test.js` | 74 | enqueue prioritas: nav (50), lalu mine (90) harus jalan lebih dulu setelah task pertama berjalan |
++| `tests/guard.test.js` | 100 | guard.post, guard.follow, lintasan panah (26 kasus) |
+ | `tests/inv.test.js` | 252 | tests/inv.test.js - SNBT, nama item, inv.snapshot / inv.view / inv.store / inv.take (bot tiruan, tanpa server) |
+ | `tests/invmock.js` | 139 | tests/invmock.js - bot tiruan dengan model server tunggal (inventory + chest) untuk uji inventory/crafting/breeding. — ekspor: `mkInv, inv, srvInvCount, chestCount, chestIdCount, mcToNbt` |
+ | `tests/mock.js` | 40 | - — ekspor: `mk, mkBlock, mcData, bi, it` |
+diff --git a/package.json b/package.json
+index 56cadfd..3c237b5 100755
+--- a/package.json
++++ b/package.json
+@@ -4,7 +4,7 @@
+   "description": "",
+   "main": "index.js",
+   "scripts": {
+-    "test": "node tests/skills.test.js && node tests/engine.test.js && node tests/inv.test.js && node tests/craft.test.js && node tests/breed.test.js && node tests/path.test.js && node tests/sleep.test.js",
++    "test": "node tests/skills.test.js && node tests/engine.test.js && node tests/inv.test.js && node tests/craft.test.js && node tests/breed.test.js && node tests/path.test.js && node tests/sleep.test.js && node tests/guard.test.js",
+     "postinstall": "node patch-all.js",
+     "adapt": "node adapt.js",
+     "start": "node bot.js",
+diff --git a/skills/_combat.js b/skills/_combat.js
+new file mode 100644
+index 0000000..224a779
+--- /dev/null
++++ b/skills/_combat.js
+@@ -0,0 +1,129 @@
++// skills/_combat.js - pertarungan untuk guard.post / guard.follow: pilih ancaman, melee, memanah (lintasan panah vanilla), mundur saat HP rendah.
++const { Vec3 } = require('vec3')
++const { goals } = require('mineflayer-pathfinder')
++const U = require('./_util')
++
++const V0 = 3.0; const G = 0.05; const DRAG = 0.99 // panah penuh: 3 blok/tick, gravitasi 0.05, hambatan 0.99 per tick (vanilla)
++const DRAW_MS = 1050 // tarik busur penuh 20 tick
++const NEUTRAL = new Set(['enderman', 'zombified_piglin', 'piglin', 'piglin_brute', 'iron_golem'])
++
++// tinggi panah saat menempuh jarak mendatar x dengan sudut theta; null bila tak sampai
++function flight (theta, x) {
++  let px = 0; let py = 0; let vx = V0 * Math.cos(theta); let vy = V0 * Math.sin(theta)
++  for (let t = 1; t <= 200; t++) {
++    const nx = px + vx; const ny = py + vy
++    if (nx >= x) { const f = (x - px) / (nx - px); return { y: py + (ny - py) * f, ticks: t - 1 + f } }
++    px = nx; py = ny; vx *= DRAG; vy = vy * DRAG - G
++  }
++  return null
++}
++// sudut luncur (rad, + = ke atas) agar panah melewati titik (x mendatar, dy vertikal dari mata); null bila mustahil
++function launchAngle (x, dy) {
++  if (x < 0.5) return { theta: Math.atan2(dy, 0.5), ticks: 1 }
++  let lo = -0.7; let hi = 0.9
++  const a = flight(lo, x); const b = flight(hi, x)
++  if (!a || !b || a.y > dy || b.y < dy) return null
++  for (let i = 0; i < 28; i++) { const m = (lo + hi) / 2; const f = flight(m, x); if (!f) return null; if (f.y < dy) lo = m; else hi = m }
++  const th = (lo + hi) / 2; const f = flight(th, x)
++  return f ? { theta: th, ticks: f.ticks } : null
++}
++// titik yang harus dilihat bot: mengompensasi gravitasi dan gerak target (vel = blok/tick)
++function aimPoint (bot, target, vel) {
++  vel = vel || new Vec3(0, 0, 0)
++  const eye = bot.entity.position.offset(0, 1.62, 0)
++  const base = target.position.offset(0, (target.height || 1.8) * 0.6, 0)
++  let pt = base; let sol = null
++  for (let i = 0; i < 3; i++) {
++    const x = Math.hypot(pt.x - eye.x, pt.z - eye.z)
++    sol = launchAngle(x, pt.y - eye.y)
++    if (!sol) return base
++    pt = base.offset(vel.x * sol.ticks, 0, vel.z * sol.ticks)
++  }
++  const dx = pt.x - eye.x; const dz = pt.z - eye.z; const x = Math.hypot(dx, dz)
++  return eye.offset(dx, Math.tan(sol.theta) * x, dz)
++}
++
++const hasBow = bot => !!bot.inventory.items().find(i => i.name === 'bow')
++const arrows = bot => bot.inventory.items().filter(i => /(^|_)arrow$/.test(i.name)).reduce((a, i) => a + i.count, 0)
++function los (bot, t) {
++  try {
++    if (!bot.world || typeof bot.world.raycast !== 'function') return true
++    const eye = bot.entity.position.offset(0, 1.62, 0); const to = t.position.offset(0, (t.height || 1.8) * 0.6, 0)
++    const d = to.minus(eye); const dist = d.norm()
++    const hit = bot.world.raycast(eye, d.scaled(1 / dist), dist)
++    return !hit || !hit.position || hit.position.distanceTo(eye) >= dist - 0.6
++  } catch (e) { return true }
++}
++function threats (bot, center, o) {
++  const now = Date.now()
++  return Object.values(bot.entities).filter(e => e !== bot.entity && e.position && (o.names ? o.names.has(e.name) : (e.type === 'hostile' && !NEUTRAL.has(e.name))) && !(o.skip.get(e.id) > now) && e.position.distanceTo(center) <= o.radius)
++    .sort((a, b) => (a.position.distanceTo(bot.entity.position) - (o.ranged && a.name === 'creeper' ? 4 : 0)) - (b.position.distanceTo(bot.entity.position) - (o.ranged && b.name === 'creeper' ? 4 : 0)))
++}
++
++// tarik busur sambil membidik terus, lalu lepas. true bila terlepas dengan target masih ada
++async function shoot (bot, ctx, target, velOf) {
++  const bow = bot.inventory.items().find(i => i.name === 'bow')
++  if (!bow) return false
++  if (!bot.heldItem || bot.heldItem.type !== bow.type) await bot.equip(bow, 'hand')
++  const t0 = Date.now(); let ok = true
++  bot.activateItem()
++  try {
++    while (Date.now() - t0 < DRAW_MS) {
++      if (ctx.signal.aborted || !bot.entities[target.id]) { ok = false; break }
++      await bot.lookAt(aimPoint(bot, target, velOf(target)), true).catch(() => {})
++      await U.sleep(100)
++    }
++  } finally { if (bot.deactivateItem) bot.deactivateItem() }
++  await U.sleep(250)
++  return ok
++}
++
++// cfg: { center(), idle(c, urgent), onLost(), radius, leash, minHealth, ranged, names, until }
++async function guardLoop (bot, ctx, cfg) {
++  const stats = { kills: 0, shots: 0, hits: 0, retreats: 0, ate: 0 }
++  const skip = new Map(); const seen = new Set(); const last = new Map()
++  const onDead = e => { if (e && seen.delete(e.id)) stats.kills++ }
++  const velOf = e => {
++    const now = Date.now(); const l = last.get(e.id); last.set(e.id, { p: e.position.clone(), t: now })
++    if (!l || now - l.t < 40) return new Vec3(0, 0, 0)
++    const v = e.position.minus(l.p).scaled(50 / (now - l.t)); const n = v.norm()
++    return n > 0.6 ? v.scaled(0.6 / n) : v
++  }
++  bot.on('entityDead', onDead)
++  let low = false
++  try {
++    while (!ctx.signal.aborted && Date.now() < cfg.until) {
++      const c = cfg.center()
++      if (!c) { const r = await cfg.onLost(); if (r) return { stats, end: r }; await U.sleep(300); continue }
++      if (bot.health !== undefined && bot.health < cfg.minHealth) {
++        if (!low) { low = true; stats.retreats++ }
++        await cfg.idle(c, true)
++        if (await U.autoEat(bot, ctx.mcData)) stats.ate++
++        await U.sleep(500); continue
++      }
++      low = false
++      if (await U.autoEat(bot, ctx.mcData)) stats.ate++
++      const t = threats(bot, c, { radius: cfg.radius, names: cfg.names, skip, ranged: cfg.ranged })[0]
++      if (!t) { await cfg.idle(c, false); await U.sleep(250); continue }
++      if (bot.entity.position.distanceTo(c) > cfg.leash) { skip.set(t.id, Date.now() + 5000); await cfg.idle(c, true); continue }
++      seen.add(t.id)
++      const d = bot.entity.position.distanceTo(t.position)
++      if (cfg.ranged && hasBow(bot) && arrows(bot) > 0 && d >= 5 && d <= 28 && los(bot, t)) {
++        try { bot.pathfinder.setGoal(null) } catch (e) { /* abaikan */ }
++        if (await shoot(bot, ctx, t, velOf)) stats.shots++
++        continue
++      }
++      await U.equipWeapon(bot)
++      if (d <= 3.3) { await bot.lookAt(t.position.offset(0, (t.height || 1) / 2, 0), true).catch(() => {}); bot.attack(t); stats.hits++; await U.sleep(600) } else {
++        try { bot.pathfinder.setGoal(new goals.GoalFollow(t, 2), true) } catch (e) { /* abaikan */ }
++        await U.sleep(200)
++      }
++    }
++  } finally { bot.removeListener('entityDead', onDead); try { bot.pathfinder.setGoal(null) } catch (e) { /* abaikan */ } }
++  return { stats }
++}
++
++const toNames = v => { const a = String(v || '').split(/[\s,]+/).filter(Boolean); return !a.length || a.includes('hostile') ? null : new Set(a) }
++const until = p => Date.now() + Math.min(1800000, Math.max(2000, Number(p.durationMs) || Math.max(10000, (Number(p.timeoutMs) || 300000) - 8000)))
++
++module.exports = { guardLoop, aimPoint, launchAngle, flight, threats, shoot, hasBow, arrows, los, toNames, until, NEUTRAL, DRAW_MS }
+diff --git a/skills/guard.follow.js b/skills/guard.follow.js
+new file mode 100644
+index 0000000..08231f1
+--- /dev/null
++++ b/skills/guard.follow.js
+@@ -0,0 +1,66 @@
++const { goals } = require('mineflayer-pathfinder')
++const U = require('./_util')
++const C = require('./_combat')
++
++const manifest = {
++  name: 'guard.follow',
++  description: 'Ikuti pemain sebagai pengawal: jaga jarak, serang monster hostile di sekitar pemain (pedang atau panah), mundur dan makan saat HP rendah. Berhenti bila pemain hilang terlalu lama, durasi habis, atau dihentikan',
++  paramsSchema: {
++    type: 'object',
++    properties: {
++      player: { type: 'string', description: 'nama pemain yang diikuti (default: pemain terdekat selain bot)' },
++      distance: { type: 'integer', minimum: 2, maximum: 16, default: 4, description: 'jarak ikut dari pemain' },
++      radius: { type: 'integer', minimum: 4, maximum: 32, default: 10, description: 'ancaman dihitung bila berada dalam radius dari PEMAIN' },
++      leash: { type: 'integer', minimum: 6, maximum: 48, description: 'batas jauh bot dari pemain saat bertarung (default radius+4)' },
++      ranged: { type: 'boolean', default: true },
++      targets: { type: 'string', default: 'hostile' },
++      minHealth: { type: 'number', default: 8 },
++      lostTimeoutMs: { type: 'integer', minimum: 5000, maximum: 600000, default: 60000, description: 'berhenti bila pemain tak terlihat selama ini' },
++      durationMs: { type: 'integer', minimum: 2000, maximum: 1800000, description: 'lama mengawal (default: timeoutMs - 8 dtk)' },
++      timeoutMs: { type: 'integer', minimum: 10000, maximum: 1800000, default: 300000, description: 'batas waktu task (isi >= durasi + 10 dtk untuk pengawalan lama)' }
++    }
++  },
++  requires: ['move', 'combat.vanilla'],
++  interruptible: true,
++  estimatedMs: 300000
++}
++
++async function run (bot, p, ctx) {
++  if (bot.game.gameMode === 'creative' || bot.game.gameMode === 'spectator') return { ok: false, code: 'PRECONDITION_FAILED', error: 'mode game ' + bot.game.gameMode + ': ganti ke survival' }
++  let name = p.player
++  if (!name) {
++    const near = Object.values(bot.entities).filter(e => e !== bot.entity && e.type === 'player' && e.username && e.position).sort((a, b) => a.position.distanceTo(bot.entity.position) - b.position.distanceTo(bot.entity.position))[0]
++    if (!near) return { ok: false, code: 'PRECONDITION_FAILED', error: 'tidak ada pemain di dekat bot; isi param player' }
++    name = near.username
++  }
++  const ownerEntity = () => { const pl = bot.players && bot.players[name]; return pl && pl.entity && pl.entity.position ? pl.entity : null }
++  if (!ownerEntity()) return { ok: false, code: 'TARGET_NOT_FOUND', error: 'pemain ' + name + ' tidak terlihat (offline atau di luar jarak render)' }
++  const dist = p.distance || 4; const radius = p.radius || 10; const leash = Math.max(p.leash || radius + 4, radius)
++  const lostMs = p.lostTimeoutMs || 60000
++  bot.pathfinder.setMovements(ctx.movements('walk'))
++  let following = null; let lostSince = 0; let lastPos = null
++  const t0 = Date.now()
++  const r = await C.guardLoop(bot, ctx, {
++    center: () => { const o = ownerEntity(); if (o) { lostSince = 0; lastPos = o.position.clone(); return o.position } return null },
++    radius, leash, minHealth: p.minHealth ?? 8, ranged: p.ranged !== false, names: C.toNames(p.targets), until: C.until(p),
++    idle: async () => {
++      const o = ownerEntity(); if (!o) return
++      if (following !== o.id) { following = o.id; try { bot.pathfinder.setGoal(new goals.GoalFollow(o, dist), true) } catch (e) { /* abaikan */ } }
++    },
++    onLost: async () => {
++      following = null
++      if (!lostSince) { lostSince = Date.now(); if (lastPos) { try { bot.pathfinder.setGoal(new goals.GoalNear(lastPos.x, lastPos.y, lastPos.z, 2)) } catch (e) { /* abaikan */ } } }
++      return Date.now() - lostSince > lostMs ? 'pemain ' + name + ' hilang > ' + lostMs + ' ms' : null
++    }
++  })
++  const ms = Date.now() - t0
++  bot.arcadia = bot.arcadia || {}
++  const prev = bot.arcadia.companion && bot.arcadia.companion.owner === name ? bot.arcadia.companion : { owner: name, followedMs: 0, kills: 0, shots: 0, sessions: 0 }
++  bot.arcadia.companion = { ...prev, followedMs: prev.followedMs + ms, kills: prev.kills + r.stats.kills, shots: prev.shots + r.stats.shots, sessions: prev.sessions + 1, last: Date.now() } // bahan affection persona nanti
++  const data = { owner: name, distance: dist, radius, leash, ...r.stats, durationMs: ms, companion: bot.arcadia.companion }
++  if (r.end) return { ok: false, code: 'TARGET_NOT_FOUND', error: r.end, data }
++  if (ctx.signal.aborted) return { ok: false, code: 'ABORTED', error: 'dihentikan', data }
++  return { ok: true, code: 'OK', data }
++}
++
++module.exports = { manifest, run, cli: ['player', 'distance'] }
+diff --git a/skills/guard.post.js b/skills/guard.post.js
+new file mode 100644
+index 0000000..2f51dec
+--- /dev/null
++++ b/skills/guard.post.js
+@@ -0,0 +1,43 @@
++const { goals } = require('mineflayer-pathfinder')
++const { Vec3 } = require('vec3')
++const U = require('./_util')
++const C = require('./_combat')
++
++const manifest = {
++  name: 'guard.post',
++  description: 'Jaga titik tetap: serang monster hostile yang masuk radius (pedang, atau panah bila ada busur+panah dan jarak >=5), kembali ke pos, mundur dan makan saat HP rendah. Berhenti saat durasi habis atau dihentikan',
++  paramsSchema: {
++    type: 'object',
++    properties: {
++      x: { type: 'number', description: 'pos penjagaan (default: posisi bot sekarang)' }, y: { type: 'number' }, z: { type: 'number' },
++      radius: { type: 'integer', minimum: 4, maximum: 32, default: 12, description: 'ancaman dihitung bila berada dalam radius dari pos' },
++      leash: { type: 'integer', minimum: 6, maximum: 48, description: 'batas jauh bot dari pos saat bertarung (default radius+6)' },
++      ranged: { type: 'boolean', default: true, description: 'pakai busur bila ada' },
++      targets: { type: 'string', default: 'hostile', description: '"hostile" atau daftar nama dipisah koma, mis. "zombie,skeleton" (enderman/piglin dilewati kecuali disebut)' },
++      minHealth: { type: 'number', default: 8, description: 'di bawah ini bot tidak menyerang: kembali ke pos dan makan' },
++      durationMs: { type: 'integer', minimum: 2000, maximum: 1800000, description: 'lama jaga (default: timeoutMs - 8 dtk)' },
++      timeoutMs: { type: 'integer', minimum: 10000, maximum: 1800000, default: 300000, description: 'batas waktu task (isi >= durasi + 10 dtk untuk jaga lama)' }
++    }
++  },
++  requires: ['move', 'combat.vanilla'],
++  interruptible: true,
++  estimatedMs: 300000
++}
++
++async function run (bot, p, ctx) {
++  if (bot.game.gameMode === 'creative' || bot.game.gameMode === 'spectator') return { ok: false, code: 'PRECONDITION_FAILED', error: 'mode game ' + bot.game.gameMode + ': ganti ke survival' }
++  const post = [p.x, p.y, p.z].every(Number.isFinite) ? new Vec3(p.x, p.y, p.z) : bot.entity.position.clone()
++  const radius = p.radius || 12; const leash = Math.max(p.leash || radius + 6, radius)
++  bot.pathfinder.setMovements(ctx.movements('walk'))
++  const t0 = Date.now()
++  const r = await C.guardLoop(bot, ctx, {
++    center: () => post, radius, leash, minHealth: p.minHealth ?? 8, ranged: p.ranged !== false, names: C.toNames(p.targets), until: C.until(p),
++    idle: async (c, urgent) => { if (bot.entity.position.distanceTo(c) > 2.5) { try { await U.gotoTimed(bot, new goals.GoalNear(c.x, c.y, c.z, 1), urgent ? 6000 : 8000, ctx.signal) } catch (e) { /* abaikan */ } } },
++    onLost: async () => null
++  })
++  const data = { post: { x: post.x, y: post.y, z: post.z }, radius, leash, ...r.stats, durationMs: Date.now() - t0 }
++  if (ctx.signal.aborted) return { ok: false, code: 'ABORTED', error: 'dihentikan', data }
++  return { ok: true, code: 'OK', data }
++}
++
++module.exports = { manifest, run, cli: ['radius'] }
+diff --git a/tests/engine.test.js b/tests/engine.test.js
+index 77d64b5..3982e91 100644
+--- a/tests/engine.test.js
++++ b/tests/engine.test.js
+@@ -16,7 +16,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms))
+   let r = await fetch(B + '/bots'); ok(r.status === 401, 'tanpa token -> 401')
+   r = await fetch(B + '/bots?token=salah'); ok(r.status === 401, 'token salah -> 401')
+   r = await fetch(B + '/?token=tok123'); const html = await r.text(); ok(r.status === 200 && /Arcadia/.test(html) && /textContent|replaceChildren/.test(html), 'UI disajikan (' + html.length + ' B)')
+-  const sk = await get('/skills'); ok(sk.length === 12 && ['inv.snapshot', 'inv.view', 'inv.store', 'inv.take', 'craft.item', 'breed.animals'].every(n => sk.some(s => s.name === n)) && sk.every(s => !validate('SkillManifest', s)), '/skills: 11 manifest valid kontrak (termasuk inv.*, craft.item, breed.animals)')
++  const sk = await get('/skills'); ok(sk.length === 14 && ['inv.snapshot', 'inv.view', 'inv.store', 'inv.take', 'craft.item', 'breed.animals', 'guard.post', 'guard.follow'].every(n => sk.some(s => s.name === n)) && sk.every(s => !validate('SkillManifest', s)), '/skills: 11 manifest valid kontrak (termasuk inv.*, craft.item, breed.animals)')
+   bot.emit('spawn'); await sleep(20)
+   let st = await get('/bots/me'); ok(!validate('BotState', st) && st.status === 'online' && st.username === 'BotAlpha' && st.inventory.items.length === 1, 'BotState valid kontrak: ' + JSON.stringify({ s: st.status, pos: st.pos, hp: st.health }))
+   st = await get('/bots/BotAlpha'); ok(st.botId === 'BotAlpha', '/bots/<username> = /bots/me')
+diff --git a/tests/guard.test.js b/tests/guard.test.js
+new file mode 100644
+index 0000000..04fb980
+--- /dev/null
++++ b/tests/guard.test.js
+@@ -0,0 +1,106 @@
++// tests/guard.test.js - guard.post, guard.follow, lintasan panah (bot tiruan; hasil di server BELUM DIUJI)
++const { Vec3 } = require('vec3')
++const { goals } = require('mineflayer-pathfinder')
++const { mkInv } = require('./invmock')
++const { createRunner } = require('../skills')
++const C = require('../skills/_combat')
++let pass = 0; let fail = 0
++const ok = (c, m) => { c ? pass++ : fail++; console.log((c ? 'PASS ' : 'FAIL ') + m) }
++
++function mk (o = {}) {
++  const b = mkInv(o)
++  b.goals = []; b.looks = []; b.shots = 0
++  b.pathfinder.setGoal = g => { b.goals.push(g) }
++  b.lookAt = async p => { b.looks.push(p) }
++  b.deactivateItem = () => { b.shots++; if (o.killOnShot) { const e = Object.values(b.entities).find(x => x.name === o.killOnShot); if (e) { delete b.entities[e.id]; b.emit('entityDead', e) } } }
++  b.mob = (id, name, x, z, y = 64, type = 'hostile') => { b.entities[id] = { id, name, type, position: new Vec3(x, y, z), height: 1.95, velocity: new Vec3(0, 0, 0) }; return b.entities[id] }
++  b.owner = (name, x, z) => { const e = { id: 900, username: name, type: 'player', position: new Vec3(x, 64, z), height: 1.8 }; b.entities[900] = e; b.players = { [name]: { entity: e } }; return e }
++  return b
++}
++const run = (b, skill, p) => createRunner(b).run(skill, p)
++const sleep = ms => new Promise(r => setTimeout(r, ms))
++
++;(async () => {
++  let b, o
++
++  // ---- lintasan panah ----
++  const cases = [[10, 0], [20, 0], [20, 3], [28, -4], [6, 1]]
++  ok(cases.every(([x, dy]) => { const s = C.launchAngle(x, dy); return s && Math.abs(C.flight(s.theta, x).y - dy) < 0.02 }), 'panah: sudut luncur mengenai titik (x,dy) dalam 0.02 blok untuk 5 kasus')
++  ok(C.launchAngle(300, 0) === null, 'panah: di luar jangkauan -> null (bidik lurus)')
++  b = mk({}); b.entity.position = new Vec3(0.5, 64, 0.5)
++  const tgt = { position: new Vec3(20.5, 64, 0.5), height: 1.95 }
++  const p0 = C.aimPoint(b, tgt); const center = 64 + 1.95 * 0.6
++  ok(p0.y > center && Math.abs(p0.z - 0.5) < 1e-6 && p0.x > 0.5, 'panah: titik bidik di atas pusat target (kompensasi gravitasi), arah mendatar lurus ke target')
++  const p1 = C.aimPoint(b, tgt, new Vec3(0, 0, 0.2))
++  ok(p1.z > p0.z + 0.5 && Math.abs(p1.x - p0.x) < 1, 'panah: target bergerak ke +z -> titik bidik mendahului ke +z (lead)')
++
++  // ---- guard.post ----
++  b = mk({}); b.mob(1, 'zombie', 6.5, 0.5)
++  o = await run(b, 'guard.post', { durationMs: 1500 })
++  ok(o.ok && b.goals.some(g => g instanceof goals.GoalFollow && g.entity.id === 1), 'guard.post: zombie 6 blok dalam radius -> dikejar (GoalFollow ke zombie)')
++  b = mk({}); b.mob(1, 'zombie', 2.5, 0.5)
++  o = await run(b, 'guard.post', { durationMs: 2500 })
++  ok(o.ok && o.data.kills === 1 && o.data.hits >= 2, 'guard.post: zombie dalam jangkauan serang -> diserang sampai mati (melee)')
++  b = mk({}); b.mob(1, 'zombie', 30.5, 0.5)
++  o = await run(b, 'guard.post', { radius: 8, durationMs: 2000 })
++  ok(o.ok && o.data.kills === 0 && b.attacks === 0, 'guard.post: hostile di luar radius diabaikan')
++  b = mk({}); b.mob(1, 'enderman', 4.5, 0.5)
++  o = await run(b, 'guard.post', { durationMs: 2000 })
++  ok(o.ok && b.attacks === 0, 'guard.post: enderman dilewati secara default')
++  b = mk({}); b.mob(1, 'enderman', 3, 0.5)
++  o = await run(b, 'guard.post', { durationMs: 2500, targets: 'enderman' })
++  ok(o.ok && o.data.kills === 1, 'guard.post: enderman diserang bila disebut di targets')
++  b = mk({ mk: { health: 4 } }); b.mob(1, 'zombie', 3, 0.5)
++  o = await run(b, 'guard.post', { durationMs: 2000, minHealth: 8 })
++  ok(o.ok && b.attacks === 0 && o.data.retreats === 1, 'guard.post: HP di bawah minHealth -> tidak menyerang, tercatat mundur (1x walau berulang)')
++  b = mk({}); b.mob(1, 'zombie', 3, 0.5); b.entity.position = new Vec3(20, 64, 0)
++  o = await run(b, 'guard.post', { x: 0.5, y: 64, z: 0.5, radius: 8, leash: 10, durationMs: 1500 })
++  ok(o.ok && b.attacks === 0, 'guard.post: bot di luar leash tidak mengejar (kembali ke pos dulu)')
++  b = mk({ mk: { gameMode: 'creative', mode: 'creative' } }); o = await run(b, 'guard.post', { durationMs: 2000 })
++  ok(!o.ok && o.code === 'PRECONDITION_FAILED', 'guard.post: mode creative ditolak')
++  b = mk({}); const t0 = Date.now(); o = await run(b, 'guard.post', { durationMs: 2000 })
++  ok(o.ok && Date.now() - t0 < 3500 && o.data.durationMs >= 1900, 'guard.post: berhenti OK saat durasi habis (2 dtk)')
++
++  // ---- memanah ----
++  const kit = { 9: ['bow', 1], 10: ['arrow', 20] }
++  b = mk({ inv: kit, killOnShot: 'skeleton' }); b.mob(1, 'skeleton', 15.5, 0.5)
++  o = await run(b, 'guard.post', { durationMs: 4000, radius: 20 })
++  const ay = b.looks.length ? b.looks[b.looks.length - 1].y : 0
++  ok(o.ok && o.data.shots === 1 && o.data.kills === 1 && b.attacks === 0 && b.equipped.includes('bow') && b._act >= 1 && ay > 64 + 1.95 * 0.6, 'guard.post: skeleton 15 blok dipanah (busur dipegang, ditarik, dilepas, bidik di atas pusat) dan mati')
++  b = mk({ inv: kit }); b.mob(1, 'skeleton', 15.5, 0.5)
++  o = await run(b, 'guard.post', { durationMs: 2500, radius: 20, ranged: false })
++  ok(o.ok && b.shots === 0 && !b._act, 'guard.post: ranged=false -> tidak memanah walau ada busur')
++  b = mk({ inv: { 9: ['bow', 1] } }); b.mob(1, 'skeleton', 15.5, 0.5)
++  o = await run(b, 'guard.post', { durationMs: 2500, radius: 20 })
++  ok(o.ok && b.shots === 0 && !b._act, 'guard.post: busur tanpa panah -> tidak memanah')
++  b = mk({ inv: kit }); b.mob(1, 'zombie', 3.5, 0.5)
++  o = await run(b, 'guard.post', { durationMs: 2500 })
++  ok(o.ok && b.shots === 0 && o.data.kills === 1, 'guard.post: musuh dekat (<5 blok) -> melee walau ada busur')
++  b = mk({ inv: kit }); b.mob(1, 'skeleton', 15.5, 0.5); b.world = { raycast: () => ({ position: new Vec3(8, 64, 0.5) }) }
++  o = await run(b, 'guard.post', { durationMs: 2000, radius: 20 })
++  ok(o.ok && b.shots === 0, 'guard.post: terhalang blok (raycast kena) -> tidak memanah')
++
++  // ---- guard.follow ----
++  b = mk({}); b.owner('Steve', 3.5, 0.5); b.mob(1, 'zombie', 2.5, 0.5)
++  o = await run(b, 'guard.follow', { player: 'Steve', durationMs: 3000 })
++  ok(o.ok && o.data.kills === 1 && b.goals.some(g => g instanceof goals.GoalFollow && g.entity && g.entity.username === 'Steve'), 'guard.follow: mengikuti Steve (GoalFollow) dan membunuh zombie di dekat Steve')
++  ok(b.arcadia.companion.owner === 'Steve' && b.arcadia.companion.followedMs >= 2000 && b.arcadia.companion.kills === 1 && b.arcadia.companion.sessions === 1, 'guard.follow: catatan companion (waktu bersama, kill, sesi) tersimpan untuk affection nanti')
++  b = mk({}); b.owner('Steve', 3.5, 0.5)
++  o = await run(b, 'guard.follow', { durationMs: 2000 })
++  ok(o.ok && o.data.owner === 'Steve', 'guard.follow: tanpa param player -> memakai pemain terdekat')
++  b = mk({}); o = await run(b, 'guard.follow', { durationMs: 2000 })
++  ok(!o.ok && o.code === 'PRECONDITION_FAILED' && /param player/.test(o.error), 'guard.follow: tidak ada pemain di dekat -> minta param player')
++  b = mk({}); b.players = { Alex: {} }; o = await run(b, 'guard.follow', { player: 'Alex', durationMs: 2000 })
++  ok(!o.ok && o.code === 'TARGET_NOT_FOUND' && /tidak terlihat/.test(o.error), 'guard.follow: pemain tak terlihat -> TARGET_NOT_FOUND')
++  b = mk({}); const ow = b.owner('Steve', 3.5, 0.5); b.mob(1, 'zombie', 5.5, 0.5); b.entities[1].name = 'zombie'
++  setTimeout(() => { delete b.players.Steve.entity }, 400)
++  o = await run(b, 'guard.follow', { player: 'Steve', durationMs: 30000, lostTimeoutMs: 5000 })
++  ok(!o.ok && o.code === 'TARGET_NOT_FOUND' && /hilang/.test(o.error) && o.data.durationMs < 9000 && b.arcadia.companion.sessions === 1, 'guard.follow: pemain hilang > lostTimeoutMs -> berhenti TARGET_NOT_FOUND dengan statistik, companion tetap tercatat')
++  b = mk({ mk: { health: 4 } }); b.owner('Steve', 3.5, 0.5); b.mob(1, 'zombie', 5.5, 0.5)
++  o = await run(b, 'guard.follow', { player: 'Steve', durationMs: 2000 })
++  ok(o.ok && b.attacks === 0 && o.data.retreats === 1 && b.goals.some(g => g instanceof goals.GoalFollow), 'guard.follow: HP rendah -> tetap dekat pemain tanpa menyerang')
++  ok(createRunner(mk({})).parse('guard.follow', ['Steve', '6']).player === 'Steve' && createRunner(mk({})).parse('guard.post', ['14']).radius === 14, 'CLI posisional: guard.follow player distance, guard.post radius')
++
++  console.log('\nHASIL: ' + pass + ' lulus, ' + fail + ' gagal')
++  process.exit(fail ? 1 : 0)
++})().catch(e => { console.log('EXCEPTION', e); process.exit(1) })

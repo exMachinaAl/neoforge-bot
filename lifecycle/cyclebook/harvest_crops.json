@@ -1,0 +1,21 @@
+{
+  "id": "harvest_crops",
+  "name": "Panen Tanaman",
+  "category": "maintain",
+  "skill": "farm.harvest",
+  "params": {
+    "crops": [
+      "wheat"
+    ],
+    "count": 6
+  },
+  "prerequisites": {
+    "minHp": 8,
+    "safeDimension": "overworld",
+    "daytimeOnly": true,
+    "requiresWeapon": false
+  },
+  "baseWeight": 1.3,
+  "cooldownMs": 180000,
+  "estimatedMs": 45000
+}

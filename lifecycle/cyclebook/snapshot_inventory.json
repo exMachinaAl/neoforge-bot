@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_inventory",
+  "name": "Audit Inventory",
+  "category": "maintain",
+  "skill": "inv.snapshot",
+  "params": {},
+  "prerequisites": {
+    "minHp": 4,
+    "safeDimension": "overworld",
+    "daytimeOnly": false,
+    "requiresWeapon": false
+  },
+  "baseWeight": 0.5,
+  "cooldownMs": 30000,
+  "estimatedMs": 5000
+}

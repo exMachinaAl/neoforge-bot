@@ -1,0 +1,17 @@
+{
+  "id": "sleep_night",
+  "name": "Tidur Malam",
+  "category": "survive",
+  "skill": "sleep.auto",
+  "params": {},
+  "prerequisites": {
+    "minHp": 1,
+    "safeDimension": "overworld",
+    "daytimeOnly": false,
+    "nightOnly": true,
+    "requiresWeapon": false
+  },
+  "baseWeight": 2.5,
+  "cooldownMs": 300000,
+  "estimatedMs": 20000
+}

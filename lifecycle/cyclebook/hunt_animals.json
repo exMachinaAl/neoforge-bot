@@ -1,0 +1,19 @@
+{
+  "id": "hunt_animals",
+  "name": "Berburu Ternak",
+  "category": "survive",
+  "skill": "hunt.kill",
+  "params": {
+    "mob": "cow",
+    "count": 2
+  },
+  "prerequisites": {
+    "minHp": 14,
+    "safeDimension": "overworld",
+    "daytimeOnly": true,
+    "requiresWeapon": true
+  },
+  "baseWeight": 0.9,
+  "cooldownMs": 120000,
+  "estimatedMs": 35000
+}
