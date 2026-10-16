@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/skills.test.js && node tests/engine.test.js && node tests/inv.test.js && node tests/craft.test.js && node tests/breed.test.js && node tests/path.test.js && node tests/sleep.test.js && node tests/guard.test.js && node tests/static.test.js && node tests/director.test.js && node tests/map.test.js && node tests/extend.test.js && node tests/ui.test.js && node tests/persona.test.js && node tests/lifecycle.test.js && node tests/sampler.test.js && node tests/evaluator.test.js && node tests/integration.test.js",
+    "test": "node tests/skills.test.js && node tests/engine.test.js && node tests/inv.test.js && node tests/craft.test.js && node tests/breed.test.js && node tests/path.test.js && node tests/sleep.test.js && node tests/guard.test.js && node tests/static.test.js && node tests/director.test.js && node tests/map.test.js && node tests/profile3d.test.js && node tests/extend.test.js && node tests/ui.test.js && node tests/persona.test.js && node tests/lifecycle.test.js && node tests/sampler.test.js && node tests/evaluator.test.js && node tests/integration.test.js",
     "postinstall": "node patch-all.js",
     "adapt": "node adapt.js",
     "start": "node bot.js",

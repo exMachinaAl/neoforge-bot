@@ -31,7 +31,7 @@ test('T-01: loadTemplates() memuat minimal 10 template', () => {
   assert(templates.length >= 10, `jumlah template ${templates.length} < 10`)
   for (const t of templates) {
     assert(t.id, 'template harus punya id')
-    assert(t.skill, 'template harus punya skill')
+    assert(t.skill || (Array.isArray(t.steps) && t.steps.length), 'template harus punya skill atau steps')
     assert(t.category, 'template harus punya category')
   }
 })
@@ -178,6 +178,16 @@ test('T-12: scoreCandidate sensitif terhadap kebutuhan persona', () => {
   const scoreCurious = scoreCandidate(exploreTmpl, { timeOfDay: 'day' }, personaCurious)
   const scoreBoring = scoreCandidate(exploreTmpl, { timeOfDay: 'day' }, personaBoring)
   assert(scoreCurious > scoreBoring, 'skor explore saat curiosity tinggi harus lebih tinggi')
+})
+
+test('T-13: batch multi-step memiliki judul, score, dan feature vector', () => {
+  const bundle=templates.find(t=>t.id==='beautiful_farming_day');assert(bundle&&bundle.steps.length===3)
+  const b=sampleBatch({hp:20,food:18,dimension:'overworld',timeOfDay:'day',weather:'clear'}, {traits:{diligence:.8},needs:{energy:.8}}, {seed:'bundle',templates:[bundle],hasWeapon:true})
+  assert.strictEqual(b.title,'Hari yang Indah untuk Bertanam');assert.strictEqual(b.taskDetails.length,3);assert(b.selectionScore>0);assert(Object.keys(b.selectionFactors).length>=20);assert(b.taskDetails.every(x=>x.source==='persona'))
+})
+
+test('T-14: feature vector seluruhnya numerik dan riwayat mempengaruhi skor', () => {
+  const t=templates.find(x=>x.id==='harvest_crops');const a=scoreCandidate(t,{hp:20,food:20,timeOfDay:'day'},{traits:{diligence:.7}},{count:10,okCount:9,successRate:.9});const b=scoreCandidate(t,{hp:20,food:20,timeOfDay:'day'},{traits:{diligence:.7}},{count:10,okCount:1,successRate:.1});assert(a>b)
 })
 
 console.log(`\n==================================================`)

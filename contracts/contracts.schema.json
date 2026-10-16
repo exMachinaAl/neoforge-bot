@@ -693,6 +693,20 @@
         },
         "updatedAt": {
           "type": "integer"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "selectionScore": {
+          "type": "number",
+          "minimum": 0
+        },
+        "selectionFactors": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
         }
       }
     },

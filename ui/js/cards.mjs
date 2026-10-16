@@ -81,7 +81,8 @@ export function renderBatch (el, batch, score, onRate) {
   clear(el)
   if (!batch && !score) { el.append(h('span', { className: 'mut' }, 'belum ada batch')); return el }
   if (batch) {
-    el.append(h('div', {}, h('span', { className: 'tag ok' }, batch.category || 'batch'), ' #' + (batch.batchId || '-') + ' · biji ' + (batch.seed || '-')))
+    el.append(h('div', {}, h('b', {}, batch.title || batch.category || 'Kegiatan'), ' ', h('span', { className: 'tag ok' }, batch.category || 'batch'), ' #' + (batch.batchId || '-') + ' · biji ' + (batch.seed || '-')))
+    if (Number.isFinite(batch.selectionScore)) el.append(h('div', { className: 'mut', style: 'margin-top:4px' }, 'Skor pilihan: ' + batch.selectionScore.toFixed(3) + ' · ' + Object.entries(batch.selectionFactors || {}).slice(0, 8).map(([k,v]) => k + ' ' + v).join(' · ')))
     if (batch.reasons && batch.reasons.length) {
       el.append(h('div', { className: 'mut', style: 'margin:4px 0' }, batch.reasons.map(r => h('div', {}, '• ' + short(r, 100)))))
     }

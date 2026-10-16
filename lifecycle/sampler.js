@@ -3,6 +3,7 @@
 // Prinsip: Filter Keras 100% -> Skor berbobot (Persona + Konteks) -> PRNG Berbiji
 const fs = require('fs')
 const path = require('path')
+const {featureVector,numericFactors}=require('./features')
 
 const CYCLEBOOK_DIR = path.join(__dirname, 'cyclebook')
 
@@ -34,7 +35,7 @@ function loadTemplates () {
   for (const f of files) {
     try {
       const data = JSON.parse(fs.readFileSync(path.join(CYCLEBOOK_DIR, f), 'utf8'))
-      if (data && data.id && data.skill) {
+      if (data && data.id && (data.skill || (Array.isArray(data.steps) && data.steps.length))) {
         templates.push(data)
       }
     } catch (e) {
@@ -64,7 +65,7 @@ function filterCandidates (templates, context = {}, persona = {}, lastExecutedMa
   }
 
   for (const t of templates) {
-    const pre = t.prerequisites || {}
+    const pre = t.prerequisites || {}; const skills=(t.steps||[{skill:t.skill}]).map(x=>x.skill)
 
     // 1. Filter HP minimum (Wajib - tidak bisa ditawar)
     if (typeof pre.minHp === 'number' && hp < pre.minHp) {
@@ -89,7 +90,7 @@ function filterCandidates (templates, context = {}, persona = {}, lastExecutedMa
     }
 
     // 4. Filter Senjata saat malam atau ada ancaman
-    if ((pre.requiresWeapon || ((timeOfDay === 'night' || threatCount > 0) && ['mine.collect','hunt.kill','nav.goto','farm.harvest'].includes(t.skill))) && !hasWeapon) {
+    if ((pre.requiresWeapon || ((timeOfDay === 'night' || threatCount > 0) && skills.some(s=>['mine.collect','hunt.kill','nav.goto','farm.harvest'].includes(s)))) && !hasWeapon) {
       rejected.push({ id: t.id, reason: 'NO_WEAPON' })
       continue
     }
@@ -108,7 +109,7 @@ function filterCandidates (templates, context = {}, persona = {}, lastExecutedMa
 }
 
 // Skor kandidat deterministik berbasis Persona dan Konteks
-function scoreCandidate (template, context = {}, persona = {}) {
+function scoreCandidate (template, context = {}, persona = {}, history = {}) {
   let score = template.baseWeight || 1.0
   const traits = persona.traits || {}
   const needs = persona.needs || {}
@@ -156,6 +157,8 @@ function scoreCandidate (template, context = {}, persona = {}) {
   if (timeOfDay === 'night' && template.skill === 'sleep.auto') score *= 3.0
   if ((weather === 'rain' || weather === 'thunder') && category === 'explore') score *= 0.4
 
+  const fv=featureVector(template,context,persona,history)
+  score*=.85+.15*fv.health;score*=.9+.1*fv.food;score*=.75+.5*fv.successRate;score*=.95+.1*fv.novelty
   return Math.max(0.001, score)
 }
 
@@ -172,6 +175,7 @@ function sampleBatch (context = {}, persona = {}, options = {}) {
     return {
       batchId: 'batch_' + seed,
       category: 'survive',
+      title: 'Tidak Ada Kegiatan Aman',
       tasks: [],
       contextSnapshot: context,
       seed: String(seed),
@@ -182,10 +186,7 @@ function sampleBatch (context = {}, persona = {}, options = {}) {
   }
 
   // Hitung skor untuk semua kandidat yang lolos filter
-  const scored = allowed.map(t => ({
-    template: t,
-    score: scoreCandidate(t, context, persona)
-  }))
+  const scored = allowed.map(t => {const history=(options.historyBySkill||{})[t.skill||(t.steps&&t.steps[0]&&t.steps[0].skill)]||{};return {template:t,score:scoreCandidate(t,context,persona,history),factors:numericFactors(featureVector(t,context,persona,history))}})
 
   // Weighted random selection via PRNG
   const totalWeight = scored.reduce((sum, item) => sum + item.score, 0)
@@ -200,23 +201,19 @@ function sampleBatch (context = {}, persona = {}, options = {}) {
     }
   }
 
-  // Buat Task spec ringkas
-  const taskId = 't_' + chosen.id + '_' + prng().toString(36).slice(2, 8)
-  const task = {
-    id: taskId,
-    skill: chosen.skill,
-    params: Object.assign({}, chosen.params),
-    priority: 50,
-    status: 'queued',
-    source: 'persona',
-    createdAt: Date.now()
-  }
+  // Satu template dapat menjadi rangkaian task berjudul.
+  const specs=chosen.steps||[{skill:chosen.skill,params:chosen.params,priority:50}]
+  const taskDetails=specs.map((spec,i)=>({id:'t_'+chosen.id+'_'+i+'_'+prng().toString(36).slice(2,8),skill:spec.skill,params:Object.assign({},spec.params),priority:Number.isInteger(spec.priority)?spec.priority:50,status:'queued',source:'persona',createdAt:Date.now()}))
+  const selected=scored.find(x=>x.template===chosen)
 
   return {
     batchId: 'batch_' + seed,
     category: chosen.category || 'maintain',
-    tasks: [taskId],
-    taskDetails: [task],
+    title: chosen.name || chosen.id,
+    tasks: taskDetails.map(x=>x.id),
+    taskDetails,
+    selectionScore: +selected.score.toFixed(4),
+    selectionFactors: selected.factors,
     contextSnapshot: context,
     seed: String(seed),
     mode: 'proposed',

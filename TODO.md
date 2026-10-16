@@ -198,6 +198,16 @@ Gelombang 3: [ ] G-2 mode propose + persetujuan  [ ] PR-1 progresi/upgrade  [ ] 
 Gelombang 4: [ ] C-1 konfigurasi berversi + patch  [ ] G-3 bandit  [ ] O-3 auto-safe  [ ] T-3 keputusan kode buatan model (bawaan: tidak)
 Keputusan terbuka pemilik: LIFECYCLE_PLAN bagian 7 (bobot skor, T3, kenaikan otomatis vs persetujuan, nama pemain di prompt, anggaran LLM, arti affection, ambang "banyak pemain", lokasi data).
 
+<!-- profile3d-lifecycle-v1 -->
+## Pembaruan #12 (profil 3D + generator kegiatan bertajuk)
+- [x] Renderer GLB lokal per bot, skala, drag rotasi, mode animasi otomatis/manual, pemetaan clip, dan fallback profil CSS.
+- [x] API profil/model terautentikasi; data model dan kalibrasi berada di 'data/', bukan repo.
+- [x] Tambah 14 statistik UI dan 21 faktor numerik stabil untuk scoring/dataset ML.
+- [x] Cyclebook multi-task berjudul + skor pemilihan; contoh **Hari yang Indah untuk Bertanam**.
+- [ ] Uji model Blue Archive milik pemilik: ukuran, material/texture, skeleton, seluruh nama clip, dan beban render HP.
+- [ ] Rekam pergantian idle/working/happy/tired/danger pada task server asli dan kalibrasi mapping per model.
+- [ ] Setelah outcome cukup: evaluasi teacher LLM -> label/ranking -> ranker offline kecil; bandingkan dengan heuristic sebelum mengaktifkan otomatis.
+
 ## Pembaruan #11 (UI controller AI Life)
 - [x] Viewer otomatis setelah paket tersedia; toggle on/off dan preferensi per bot dari UI, tanpa env aktivasi
 - [x] Iframe prismarine-viewer stabil melewati polling; tidak dibuat ulang setiap 3 detik

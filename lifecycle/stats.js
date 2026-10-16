@@ -153,6 +153,10 @@ function updateAgg (entry, aggPath) {
   if (entry.ok) rec.okCount++
   if (typeof entry.durationMs === 'number' && isFinite(entry.durationMs)) rec.totalMs += entry.durationMs
   rec.lastTs = entry.ts || Date.now()
+  rec.failCount = (rec.failCount || 0) + (entry.ok ? 0 : 1); rec.successRate = +(rec.okCount / rec.count).toFixed(4); rec.avgMs = +(rec.totalMs / rec.count).toFixed(2)
+  rec.codeCounts = rec.codeCounts || {}; rec.codeCounts[entry.code || 'UNKNOWN'] = (rec.codeCounts[entry.code || 'UNKNOWN'] || 0) + 1
+  rec.contextSums = rec.contextSums || { health: 0, food: 0, threats: 0, players: 0, rain: 0 }; const c=entry.context||{}
+  rec.contextSums.health += Number(c.health)||0; rec.contextSums.food += Number(c.food)||0; rec.contextSums.threats += Number(c.threatCount)||0; rec.contextSums.players += Number(c.playerCount)||0; rec.contextSums.rain += c.weather==='rain'||c.weather==='thunder'?1:0
 
   try {
     fs.writeFileSync(aggPath, JSON.stringify(agg, null, 2), 'utf8')

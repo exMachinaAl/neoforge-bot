@@ -1,0 +1,38 @@
+{
+  "id": "beautiful_farming_day",
+  "name": "Hari yang Indah untuk Bertanam",
+  "category": "maintain",
+  "steps": [
+    {
+      "skill": "farm.harvest",
+      "params": {
+        "crops": [
+          "wheat"
+        ],
+        "count": 6
+      },
+      "priority": 55
+    },
+    {
+      "skill": "fish.cast",
+      "params": {
+        "count": 2
+      },
+      "priority": 45
+    },
+    {
+      "skill": "inv.snapshot",
+      "params": {},
+      "priority": 35
+    }
+  ],
+  "prerequisites": {
+    "minHp": 10,
+    "safeDimension": "overworld",
+    "daytimeOnly": true,
+    "requiresWeapon": false
+  },
+  "baseWeight": 0.9,
+  "cooldownMs": 600000,
+  "estimatedMs": 150000
+}

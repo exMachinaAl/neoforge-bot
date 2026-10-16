@@ -25,11 +25,11 @@ async function main () {
   const id = () => store.s.current; const log = message => store.applyEvent({ ts: Date.now(), botId: id() || '-', type: 'ui', data: { message } })
   const act = { cancel: task => api.cancel(id(), task).then(poll).catch(e => log(e.message)), cmd: op => api.command(id(), op, {}).then(poll).catch(e => log(e.message)), kill: () => confirm('Hentikan semua task dan jeda antrean?') && api.kill().then(poll), say: text => api.command(id(), 'say', { text }).catch(e => log(e.message)), snapshot: () => api.enqueue(id(), { skill: 'inv.snapshot', params: {}, priority: 60 }).then(poll).catch(e => log(e.message)), enqueue: (skill, params, priority) => api.enqueue(id(), { skill, params, priority }).then(poll) }
   const els = { status: h('div'), progress: h('div'), quick: h('div'), queue: h('div'), history: h('div'), inventory: h('div'), log: h('pre'), connection: h('span', { className: 'connection' }, 'menghubungkan'), account: h('div', { className: 'account-chip' }, 'Owner') }
-  const picker = h('select', { className: 'bot-picker' }); const companion = companionCard(); let persona = null; let worldMode = 'viewer'; let preferences
+  const picker = h('select', { className: 'bot-picker' }); const companion = companionCard(api, id); let persona = null; let lifeContext = {}; let worldMode = 'viewer'; let preferences
   const form = skillFormCard(store, act); const director = directorCard(api, id, poll)
   const map = mapCard(api, id, (x, z, name) => { if (confirm('Jalan ke ' + x + ', ' + z + ' (' + name + ')?')) act.enqueue('nav.goto', { x, z }, 50).catch(e => log(e.message)) })
   const viewer = viewerCard(api, id)
-  const life = lifecycleCard(api, id, poll, snapshot => { persona = snapshot.persona; companion.update({ state: id() ? store.B(id()).state : {}, persona }) })
+  const life = lifecycleCard(api, id, poll, snapshot => { persona = snapshot.persona; lifeContext = snapshot.context || {}; companion.update({ state: id() ? store.B(id()).state : {}, persona, context: lifeContext }) })
   const worldTabs = tabs([{ key: 'viewer', label: 'Eagle View', body: viewer.el }, { key: 'map', label: 'Peta 2D', body: map.el }], 'viewer', key => { worldMode = key; if (key === 'map') map.refresh() })
   preferences = preferencesCard(api, id, (settings, key) => { if (key === 'viewer') viewer.load(); if (key === 'map' && settings.map && worldMode === 'map') map.refresh(); document.body.className = settings.motion === false ? 'reduce-motion' : '' })
   const activityTabs = tabs([{ key: 'mission', label: 'Misi', body: h('div', {}, panel('Task baru', form.el), panel('Antrean', els.queue), panel('Riwayat', els.history)) }, { key: 'life', label: 'Lifecycle', body: life.el }, { key: 'inventory', label: 'Inventory', body: els.inventory }, { key: 'log', label: 'Log', body: els.log }], 'mission')
@@ -41,11 +41,11 @@ async function main () {
       h('aside', { className: 'right-rail' }, panel('TASK BERJALAN', els.progress), panel('DIRECTOR', director.el), panel('PENGATURAN', preferences.el), panel('CHAT', chatCard(act)))
     ))
   root.append(shell)
-  picker.onchange = () => { store.setCurrent(picker.value); persona = null; poll(); life.load(); director.load(); viewer.load(); preferences.load(); if (worldMode === 'map') map.refresh() }
+  picker.onchange = () => { store.setCurrent(picker.value); persona = null; poll(); life.load(); director.load(); viewer.load(); preferences.load(); companion.loadProfile(); if (worldMode === 'map') map.refresh() }
   const seen = {}; const paint = (key, value, fn) => { const sig = stable(value); if (seen[key] === sig) return; seen[key] = sig; fn() }
   function draw () {
     const bot = id() ? store.B(id()) : null; if (!bot) return
-    paint('status', bot.state, () => renderStatus(els.status, bot.state)); paint('progress', [bot.tasks.running, bot.progress], () => renderProgress(els.progress, bot)); paint('queue', [bot.tasks.running, bot.tasks.queue, bot.tasks.paused], () => renderQueue(els.queue, bot.tasks, act)); paint('history', bot.tasks.history, () => renderHistory(els.history, bot.tasks)); paint('inventory', bot.state && bot.state.inventory, () => renderInventory(els.inventory, bot.state, store.s.skills, act)); paint('quick', store.s.skills.map(x => x.name), () => renderQuick(els.quick, store.s.skills, act, form.pick)); paint('log', store.s.log, () => renderLog(els.log, store.s.log)); companion.update({ state: bot.state || {}, persona: persona || {} }); els.connection.textContent = store.s.status || 'tersambung'; els.connection.className = 'connection ' + (/terputus/.test(store.s.status) ? 'bad' : 'ok')
+    paint('status', bot.state, () => renderStatus(els.status, bot.state)); paint('progress', [bot.tasks.running, bot.progress], () => renderProgress(els.progress, bot)); paint('queue', [bot.tasks.running, bot.tasks.queue, bot.tasks.paused], () => renderQueue(els.queue, bot.tasks, act)); paint('history', bot.tasks.history, () => renderHistory(els.history, bot.tasks)); paint('inventory', bot.state && bot.state.inventory, () => renderInventory(els.inventory, bot.state, store.s.skills, act)); paint('quick', store.s.skills.map(x => x.name), () => renderQuick(els.quick, store.s.skills, act, form.pick)); paint('log', store.s.log, () => renderLog(els.log, store.s.log)); companion.update({ state: bot.state || {}, persona: persona || {}, context: lifeContext }); els.connection.textContent = store.s.status || 'tersambung'; els.connection.className = 'connection ' + (/terputus/.test(store.s.status) ? 'bad' : 'ok')
   }
   store.subscribe(draw)
   async function poll () {
@@ -57,7 +57,7 @@ async function main () {
   }
   try { const session = await api.session(); els.account.textContent = session.user.displayName + ' · ' + session.tenant.name; els.account.setAttribute('title', session.user.role + ' / ' + session.authMode) } catch (e) { els.account.textContent = 'Sesi tidak tersedia' }
   try { store.setSkills(await api.skills()); form.sync() } catch (e) { log('skill gagal dimuat: ' + e.message) }
-  await poll(); await Promise.allSettled([director.load(), viewer.load(), life.load(), preferences.load()])
+  await poll(); await Promise.allSettled([director.load(), viewer.load(), life.load(), preferences.load(), companion.loadProfile()])
   connectEvents({ url: '/events', onEvent: event => { store.applyEvent(event); if (/^(batch.|lifecycle.|persona.)/.test(event.type)) life.load(); if (/^(task.(started|finished|failed|queued)|bot.)/.test(event.type)) poll() }, onStatus: store.setStatus })
   setInterval(() => { if (!document.hidden) { poll(); viewer.load() } }, 3000)
   setInterval(() => { if (!document.hidden && worldMode === 'map' && (!preferences.current || preferences.current.map !== false)) map.refresh() }, 5000)

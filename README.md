@@ -86,6 +86,14 @@ Model HANYA mengusulkan task; tidak ada yang berjalan sebelum disetujui (otonomi
 - UI berbentuk controller AI Life: Eagle View tidak dibuat ulang oleh polling, statistik persona/afeksi, task, lifecycle, Director, inventory, chat, serta identitas akun/tenant lokal. `GET /auth/session` menjadi kontrak awal untuk login pelanggan; autentikasi saat ini masih token lokal melalui cookie HttpOnly.
 - `/openapi.json` memuat rute dan skema skill dari manifest.
 
+<!-- profile3d-lifecycle-v1 -->
+## Profil bot 3D dan generator kegiatan
+- Salin model '.glb' ke 'data/models/' (folder data diabaikan Git), buka ulang profil bot, lalu pilih model. Model maksimum 100 MB dan hanya dilayani ke sesi UI yang terautentikasi.
+- Tiap bot menyimpan model, skala, mode animasi otomatis/manual, dan pemetaan clip di 'data/profiles/<bot>.json'. Kondisi otomatis: 'idle', 'working', 'happy', 'tired', 'sad', dan 'danger'. Nama clip dibaca dari GLB; pemetaan bisa dikalibrasi di panel **AI Life**.
+- Renderer memakai Three.js + GLTFLoader lokal di 'ui/vendor/'; tidak mengambil skrip dari CDN. Lisensi vendornya ada di 'ui/vendor/THREE-LICENSE.txt'.
+- Lifecycle dapat memilih satu template sebagai kegiatan berjudul yang berisi beberapa task berurutan. Contoh 'Hari yang Indah untuk Bertanam' berisi panen, memancing, lalu snapshot inventory. Persetujuan tetap wajib sebelum seluruh task masuk antrean.
+- 'selectionScore' dan 'selectionFactors' menyimpan faktor numerik konteks, persona, riwayat sukses, kecepatan, pengalaman, dan novelty. Ini dataset awal untuk ranker offline; belum ada model ML yang dilatih.
+
 ## Pembaruan v2.5 (UI, Director, viewer)
 Ringkas; rincian di `docs/USAGE_UPDATE.md`, riwayat di `docs/CHANGELOG.md`, rencana di `docs/ORCHESTRATOR_PLAN.md` dan `docs/UI_PLAN_ADDENDUM_v1.2.md`.
 - **UI baru:** `npm start` mencetak `API siap: http://127.0.0.1:8787/?token=...`; buka sekali, cookie `arcadia_<port>` (HttpOnly) dipasang dan token hilang dari URL. UI modular di `ui/` (modul ES, tanpa build, tanpa HTML dinamis), botId-first.

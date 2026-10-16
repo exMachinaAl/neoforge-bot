@@ -17,19 +17,15 @@ function createLifecycle ({bot,runner,engine,dataDir,templates}={}) {
   }
   function candidates () {
     const st=engine.state(); const items=st.inventory?.items||[]; const count=n=>items.filter(i=>i.name===n).reduce((s,i)=>s+i.count,0)
-    return (templates||sampler.loadTemplates()).filter(t=>{
-      const sk=runner.skills[t.skill]; if(!sk || compile(sk.manifest.paramsSchema)(t.params||{})) return false
-      if(t.skill==='fish.cast'&&!count('fishing_rod')) return false
-      if(t.skill==='breed.animals'&&count('wheat')<2) return false
-      if(t.skill==='mine.collect'&&t.params.block==='stone'&&!items.some(i=>/_pickaxe$/.test(i.name))) return false
-      if(t.skill==='craft.item'&&t.params.item==='stick'&&!items.some(i=>/_planks$/.test(i.name)&&i.count>=2)) return false
-      return true
-    }).map(t=>t.id==='explore_patrol'&&st.pos?{...t,params:{...t.params,x:Math.floor(st.pos.x)+6,z:Math.floor(st.pos.z)+6}}:t)
+    const valid=step=>{const sk=runner.skills[step.skill];if(!sk||compile(sk.manifest.paramsSchema)(step.params||{}))return false;if(step.skill==='fish.cast'&&!count('fishing_rod'))return false;if(step.skill==='breed.animals'&&count('wheat')<2)return false;if(step.skill==='mine.collect'&&step.params.block==='stone'&&!items.some(i=>/_pickaxe$/.test(i.name)))return false;if(step.skill==='craft.item'&&step.params.item==='stick'&&!items.some(i=>/_planks$/.test(i.name)&&i.count>=2))return false;return true}
+    return (templates||sampler.loadTemplates()).filter(t=>(t.steps||[{skill:t.skill,params:t.params}]).every(valid)).map(t=>t.id==='explore_patrol'&&st.pos?{...t,params:{...t.params,x:Math.floor(st.pos.x)+6,z:Math.floor(st.pos.z)+6}}:t)
   }
   function propose ({seed}={}) {
     const c=stats.getContext(bot); const o=options()
     if(!c.known.hp||!c.known.time||!c.known.dimension) throw fail(409,'konteks dunia belum lengkap')
-    const batch=sampler.sampleBatch(c,persona.get(botId),{...o,templates:candidates(),seed})
+    let historyBySkill={};try{historyBySkill=JSON.parse(fs.readFileSync(path.join(dir,'stats_agg.json'),'utf8'))}catch(e){}
+    const bySkill={};for(const [key,value] of Object.entries(historyBySkill)){const skill=key.slice(0,key.lastIndexOf(':'));const old=bySkill[skill];if(!old||value.count>old.count)bySkill[skill]=value}
+    const batch=sampler.sampleBatch(c,persona.get(botId),{...o,templates:candidates(),seed,historyBySkill:bySkill})
     if(!batch.taskDetails?.length) return {...batch,status:'empty'}
     batch.batchId='b_'+crypto.randomBytes(10).toString('hex'); batch.status='pending'; batch.updatedAt=Date.now()
     batch.results=[]; batch.tasks=[]

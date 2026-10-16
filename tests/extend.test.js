@@ -19,7 +19,8 @@ async function suite (attachImpl, quiet) {
   const llm = async () => ({ text: JSON.stringify({ reason: 'tes', tasks: [{ skill: 'nav.goto', params: { x: 3, z: 3 } }] }), usage: { in: 1, out: 1 }, model: 'm' })
   const director = dirMod.createDirector({ bot, runner, engine, llm, cfg: { provider: 'anthropic', url: 'http://x', key: 'K-SECRET', model: 'm', rpm: 20, needsKey: true }, deny: [], autoApprove: [] })
   const view = { enabled: false, desired: false, state: 'off', reason: 'tes', setEnabled (v) { this.enabled = v; this.desired = v; this.state = v ? 'starting' : 'off'; return this } }; let prefs = { viewer: false, map: true, motion: true }; const settings = { get: () => ({ ...prefs }), update: (id, patch) => (prefs = { ...prefs, ...patch }) }
-  attachImpl(api, { bot, runner, engine, director }, { uiRoot: ui, viewer: view, settings })
+  const modelFile=path.join(ui,'model.glb');fs.writeFileSync(modelFile,'glTF');let profile={model:null,scale:1,animationMode:'auto',manualAnimation:null,animationMap:{}};const profile3d={publicProfile:()=>({config:{...profile},models:['model.glb'],modelUrl:profile.model?'/bots/BotAlpha/profile/model/model.glb':null,states:['idle','working']}),update:(id,patch)=>(profile={...profile,...patch}),resolveModel:name=>{if(name!=='model.glb')throw Object.assign(Error('model tidak ditemukan'),{status:404});return{full:modelFile,size:4}}}
+  attachImpl(api, { bot, runner, engine, director }, { uiRoot: ui, viewer: view, settings, profile3d })
   const H = { authorization: 'Bearer tok123' }; const ck = 'arcadia_' + port + '=tok123'
   let r = await req(port, '/bots', { headers: H }); t(r.s === 200 && r.j[0].botId === 'BotAlpha', 'rute LAMA tetap jalan lewat pembungkus: GET /bots')
   r = await req(port, '/skills', { headers: H }); t(r.s === 200 && r.j.length >= 5, 'rute lama: GET /skills')
@@ -45,6 +46,10 @@ async function suite (attachImpl, quiet) {
   r = await req(port, '/bots/me/settings', { headers: H }); t(r.s === 200 && r.j.viewer === false && r.j.map === true, '/settings membaca preferensi per bot')
   r = await req(port, '/bots/me/viewer', { method: 'POST', headers: { ...H, 'content-type': 'application/json' }, body: { enabled: true } }); t(r.s === 200 && r.j.desired === true && prefs.viewer === true, '/viewer POST menyalakan runtime dan menyimpan preferensi')
   r = await req(port, '/bots/me/viewer', { method: 'POST', headers: { ...H, 'content-type': 'application/json' }, body: { enabled: 'ya' } }); t(r.s === 400, '/viewer menolak enabled non-boolean')
+  r = await req(port, '/bots/me/profile', { headers: H }); t(r.s === 200 && r.j.models[0] === 'model.glb' && r.j.states.includes('working'), '/profile mendaftar model dan state animasi')
+  r = await req(port, '/bots/me/profile', { method: 'POST', headers: { ...H, 'content-type': 'application/json' }, body: { model: 'model.glb', scale: 1.2 } }); t(r.s === 200 && r.j.config.scale === 1.2 && r.j.modelUrl, '/profile menyimpan kalibrasi')
+  r = await req(port, '/bots/me/profile/model/model.glb', { headers: H }); t(r.s === 200 && r.t === 'glTF' && r.h['content-type'] === 'model/gltf-binary', '/profile/model menyajikan GLB terautentikasi')
+  r = await req(port, '/bots/me/profile/model/model.glb'); t(r.s === 401, '/profile/model tanpa autentikasi ditolak')
   r = await req(port, '/openapi.json', { headers: H }); t(r.s === 200 && r.j.paths['/auth/session'] && r.j.paths['/bots/{id}/settings'] && r.j.paths['/bots/{id}/director/ask'] && r.j.components.schemas['nav.goto'], '/openapi.json memuat auth, settings, dan skema skill'); r = await req(port, '/openapi.json'); t(r.s === 401, '/openapi.json tanpa token -> 401')
   r = await req(port, '/bots/me/director', { headers: H }); t(r.s === 200 && r.j.autonomy === false && !r.t.includes('K-SECRET'), 'Director: snapshot, otonomi MATI, kunci tidak bocor')
   r = await req(port, '/bots/me/director/ask', { method: 'POST', headers: { ...H, 'content-type': 'application/json' }, body: {} }); t(r.s === 400, 'Director ask tanpa goal -> 400')

@@ -1,4 +1,20 @@
-# HANDOFF neoforge-bot / Arcadia (checkpoint #11)
+# HANDOFF neoforge-bot / Arcadia (checkpoint #12)
+
+## Titik berhenti untuk model berikutnya (permintaan pemilik 2026-10-16)
+- Pemilik meminta agen saat ini berhenti mengoding. Lanjutkan hanya setelah instruksi baru dari pemilik.
+- Baca changelog `v2.6-belum-commit` di `docs/CHANGELOG.md` untuk daftar file, hasil uji, dan batas implementasi terakhir.
+- Working tree BELUM di-commit. Jangan menganggap perubahan profil GLB/lifecycle sudah menjadi baseline Git.
+- Prioritas evaluasi berikutnya: review kualitas kode, uji model GLB asli pemilik, lalu putuskan rancangan ML/LLM sebelum menambah implementasi.
+- Jangan mengklaim ML sudah ada: saat ini hanya feature vector, statistik outcome, dan heuristic scoring.
+- Jangan mengklaim auth customer sudah ada: saat ini hanya sesi token lokal dan kontrak tenant awal.
+- Bot/API/viewer terakhir ditinggalkan hidup: NeoForge 25565, API 8787, viewer 3007. Kondisi proses dapat berubah setelah sesi ini, jadi verifikasi ulang sebelum dipakai.
+
+<!-- checkpoint-12-profile3d -->
+## Profil bot GLB + task bundle bertajuk (2026-10-16)
+- TERBUKTI browser Edge + server asli: profil BotAlpha merender GLB lokal, menemukan 5 clip, memilih 'Idle' untuk kondisi idle, dan menyimpan kalibrasi per bot. Model Blue Archive milik pemilik BELUM DIUJI karena berkas belum ditempatkan di 'data/models'.
+- TERBUKTI browser: 14 statistik AI Life tampil; kanvas profil dan iframe Eagle View tetap tersambung melewati polling. Renderer dan GLTFLoader dilayani lokal dengan CSP, autentikasi, validasi nama berkas, batas 100 MB, dan penolakan traversal/symlink keluar.
+- TERUJI TIRUAN: cyclebook menerima template multi-task berjudul, menghasilkan 'selectionScore' serta 21 'selectionFactors', lalu runtime mengantrekan seluruh langkah setelah persetujuan.
+- BELUM DIUJI: clip/rig model milik pemilik, pergantian animasi otomatis selama task sungguhan, dan training ML. Arah berikutnya: kumpulkan outcome nyata, pakai LLM sebagai teacher/ranker opsional, lalu latih ranker kecil offline dengan fallback skor deterministik.
 
 ## UI controller + runtime settings + Ollama (2026-10-16)
 - TERBUKTI browser Edge + server asli: UI baru berbentuk panel controller AI Life, Eagle View merender dunia pada iframe, statistik persona/afeksi tampil, akun **Owner · Arcadia Local** terbaca, tanpa exception browser.

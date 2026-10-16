@@ -26,6 +26,19 @@ Diagnosis berikutnya (kecil): saat tidur cetak `bot.isSleeping`, pose entitas bo
 - bot.died + respawned tercatat 8 dtk setelah task selesai (di luar guard): penyebab tidak diketahui.
 - BELUM DIUJI: akurasi panah di server (kena atau tidak), guard.follow, jaga lebih dari 5 menit (isi timeoutMs).
 
+<!-- profile3d-lifecycle-v1 -->
+## Profil GLB dan lifecycle bundle (16 Oktober 2026)
+
+| Pemeriksaan | Hasil | Status |
+|---|---|---|
+| API profil | daftar model, simpan konfigurasi, dan stream GLB untuk BotAlpha | TERBUKTI server asli |
+| Render GLB | kanvas 242x205, model kalibrasi tampil, 5 clip terbaca, 'Idle' dipilih saat kondisi idle | TERBUKTI browser Edge laptop |
+| Stabilitas UI | kanvas tetap tersambung dan iframe viewer tetap node yang sama setelah polling | TERBUKTI CDP browser |
+| Statistik | 14 meter AI Life tampil | TERBUKTI browser Edge laptop |
+| Bundle | judul, beberapa task, selectionScore, dan 21 faktor terbentuk; persetujuan mengantrekan semua langkah | TERUJI TIRUAN |
+| Model pemilik | model Blue Archive, texture, skeleton, dan clip asli | BELUM DIUJI |
+| ML offline | format faktor/outcome siap dikumpulkan; model belum dilatih | BELUM DIUJI |
+
 ## Pelajaran proses
 - Log CLI memotong objek hasil: UI/CLI perlu menampilkan `data` penuh (atau ringkasan) agar hasil uji bisa dinilai tanpa tebakan.
 - Skill panjang (guard/follow/farm) butuh progress langsung (lihat TODO "Progress langsung").

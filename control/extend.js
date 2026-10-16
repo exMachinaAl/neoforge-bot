@@ -4,18 +4,19 @@
 const fs = require('fs'); const path = require('path'); const crypto = require('crypto')
 const { createStatic } = require('./static'); const cookie = require('./cookie'); const { buildMap } = require('./map'); const { startViewer3d } = require('./viewer3d')
 const { createDirector } = require('../orchestrator/director')
-const { createSettings } = require('./settings'); const { localSession } = require('./auth')
+const { createSettings } = require('./settings'); const { localSession } = require('./auth'); const { createProfile3d } = require('./profile3d')
 
 function attach (api, deps = {}, opts = {}) {
   if (!api || !api.server || !api.token) { console.log('EXTEND: api.server/token tidak tersedia; UI/peta/director tidak dipasang'); return null }
   const { server, token } = api; const port = api.port || (server.address && server.address() && server.address().port) || 0
   const { bot, runner, engine, lifecycle } = deps
-  const stat = createStatic({ root: opts.uiRoot || path.join(__dirname, '..', 'ui'), prefix: '/ui/' })
+  const stat = createStatic({ root: opts.uiRoot || path.join(__dirname, '..', 'ui'), prefix: '/ui/', maxBytes: 2 * 1024 * 1024 })
   const director = deps.director || createDirector({ bot, runner, engine })
   const settings = opts.settings || createSettings(opts.settingsOptions)
   const initialSettings = settings.get(String(bot && bot.username || 'bot'))
   const viewer = opts.viewer || startViewer3d(bot, { enabled: initialSettings.viewer })
   const session = opts.session || localSession() // auth-tenant-boundary-v1
+  const profile3d = opts.profile3d || createProfile3d(opts.profileOptions)
   // viewer-each-bot-v1: lifecycle viewer mengikuti lifecycle bot.
   if (bot && typeof bot.once === 'function' && viewer && typeof viewer.close === 'function') bot.once('end', viewer.close)
   const tokenOk = t => { const a = Buffer.from(String(t || '')); const b = Buffer.from(token); return a.length === b.length && crypto.timingSafeEqual(a, b) }
@@ -44,6 +45,7 @@ function attach (api, deps = {}, opts = {}) {
         '/bots/{id}/chests': {get:op('Catatan chest bertimestamp',{parameters:[idp]})},
         '/auth/session': { get: op('Sesi akun dan tenant aktif') },
         '/bots/{id}/settings': { get: op('Pengaturan UI bot', { parameters: [idp] }), post: op('Ubah pengaturan UI bot', { parameters: [idp] }) },
+        '/bots/{id}/profile': { get: op('Profil model GLB bot', { parameters: [idp] }), post: op('Kalibrasi model/animasi GLB', { parameters: [idp] }) },
         '/bots/{id}/viewer': { get: op('Status viewer 3D', { parameters: [idp] }), post: op('Nyalakan/matikan viewer 3D', { parameters: [idp] }) }, '/bots/{id}/director': { get: op('Status Director', { parameters: [idp] }) },
         '/bots/{id}/director/ask': { post: op('Tanya model (usulan task, tidak dijalankan)', { parameters: [idp] }) },
         '/bots/{id}/director/proposals/{pid}/approve': { post: op('Setujui usulan -> antrean', { parameters: [idp] }) }, '/bots/{id}/director/proposals/{pid}/reject': { post: op('Tolak usulan', { parameters: [idp] }) }
@@ -53,7 +55,7 @@ function attach (api, deps = {}, opts = {}) {
   async function mine (req, res, url, auth) {
     const parts = url.pathname.split('/').filter(Boolean); const m = req.method
     const isUi = (m === 'GET' || m === 'HEAD') && (!parts.length || parts[0] === 'index.html' || parts[0] === 'ui')
-    const isMine = isUi || (m === 'GET' && (parts[0] === 'openapi.json' || (parts[0] === 'auth' && parts[1] === 'session'))) || (parts[0] === 'bots' && (parts[2] === 'map' || parts[2] === 'viewer' || parts[2] === 'settings' || parts[2] === 'director' || parts[2] === 'lifecycle' || parts[2] === 'persona' || parts[2] === 'chests'))
+    const isMine = isUi || (m === 'GET' && (parts[0] === 'openapi.json' || (parts[0] === 'auth' && parts[1] === 'session'))) || (parts[0] === 'bots' && (parts[2] === 'map' || parts[2] === 'viewer' || parts[2] === 'settings' || parts[2] === 'profile' || parts[2] === 'director' || parts[2] === 'lifecycle' || parts[2] === 'persona' || parts[2] === 'chests'))
     if (!isMine) return false
     if (!auth.ok) { send(res, 401, { error: 'token salah/kurang (Authorization: Bearer, ?token=, atau cookie arcadia_' + port + ')' }); return true } // GUARD:AUTH
     if (isUi) {
@@ -78,6 +80,11 @@ function attach (api, deps = {}, opts = {}) {
         const r = Math.min(32, Math.max(4, parseInt(url.searchParams.get('r'), 10) || 24)); const t = Date.now()
         if (!(mapCache.v && mapCache.r === r && t - mapCache.t < 1000)) mapCache = { t, r, v: buildMap(bot, { r }) }
         send(res, 200, mapCache.v); return true
+      }
+      if (parts[2] === 'profile') {
+        if (m === 'GET' && parts.length === 3) { send(res,200,profile3d.publicProfile(botIdOf())); return true }
+        if (m === 'POST' && parts.length === 3) { profile3d.update(botIdOf(),await readBody(req)); send(res,200,profile3d.publicProfile(botIdOf())); return true }
+        if ((m === 'GET' || m === 'HEAD') && parts[3] === 'model' && parts.length === 5) { let modelName; try { modelName=decodeURIComponent(parts[4]) } catch(e) { throw fail(400,'nama model tidak valid') } const f=profile3d.resolveModel(modelName); res.writeHead(200,{'content-type':'model/gltf-binary','content-length':f.size,'cache-control':'no-store','x-content-type-options':'nosniff'}); if(m==='HEAD')res.end();else fs.createReadStream(f.full).pipe(res); return true }
       }
       if (parts[2] === 'settings') {
         if (m === 'GET') { send(res, 200, settings.get(botIdOf())); return true }
@@ -113,6 +120,6 @@ function attach (api, deps = {}, opts = {}) {
     } catch (e) { if (!res.headersSent) send(res, 500, { error: e.message }); return }
     for (const l of orig) l.call(server, req, res)
   })
-  return { director, viewer, stat, settings, session }
+  return { director, viewer, stat, settings, session, profile3d }
 }
 module.exports = { attach }

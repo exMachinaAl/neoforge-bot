@@ -2,6 +2,40 @@
 Format: Ditambah / Diubah / Diperbaiki / Catatan keamanan / Diketahui bermasalah. Label status: TERBUKTI (log pemilik) | DILAPORKAN | TERUJI TIRUAN | BELUM DIUJI.
 Tanggal paket sebelum 2026-10-12 tidak tercatat; urutan di bawah = urutan pengiriman.
 
+## [v2.6-belum-commit] 2026-10-16 - profil GLB per bot dan fondasi generator kegiatan
+
+Ditambah
+- `control/profile3d.js` dan rute `/bots/{id}/profile`: daftar model dari `data/models`, konfigurasi per bot di `data/profiles`, stream GLB terautentikasi, batas 100 MB, serta validasi nama/path/symlink.
+- `ui/js/avatar3d.mjs`: renderer Three.js/GLTFLoader lokal, skala dan rotasi manual, pilihan model, mode animasi otomatis/manual, serta pemetaan clip untuk `idle`, `working`, `happy`, `tired`, `sad`, dan `danger`.
+- `ui/vendor/three.module.mjs`, `GLTFLoader.mjs`, dan lisensi Three.js. Runtime disalin dari dependency lokal yang sudah terpasang; tidak memakai CDN.
+- Profil AI Life menjadi 14 meter: afeksi, kesehatan, kenyang, energi, rasa aman, rasa ingin tahu, produktivitas, sosial, kewaspadaan, agresivitas, ketenangan, keamanan area, kenyamanan waktu, dan progres XP.
+- `lifecycle/features.js`: 21 faktor numerik untuk audit scoring dan dataset ML mendatang.
+- `lifecycle/cyclebook/beautiful_farming_day.json`: contoh kegiatan berjudul **Hari yang Indah untuk Bertanam**, terdiri dari `farm.harvest`, `fish.cast`, lalu `inv.snapshot`.
+- Kontrak Batch menerima `title`, `selectionScore`, dan `selectionFactors`; sampler dan runtime menerima template multi-task dan mengantrekan seluruh langkah setelah persetujuan.
+- Statistik agregat menambah `failCount`, `successRate`, `avgMs`, hitungan kode hasil, dan jumlah konteks.
+
+Diubah / diperbaiki
+- Panel profil dan iframe Eagle View dipertahankan saat polling; render halaman tidak mengganti seluruh UI tiap tiga detik.
+- Status profil menampilkan clip aktif dan kondisi pemilihnya.
+- Validasi endpoint hanya menerima ekstensi literal `.glb`; nama seperti `modelXglb` ditolak.
+- Dry-run lifecycle menampilkan judul, skor pemilihan, dan faktor yang digunakan.
+
+Validasi
+- TERBUKTI di server dan Edge laptop: BotAlpha online; API 8787 dan viewer 3007 aktif; model kalibrasi GLB dirender; lima clip ditemukan; `Idle` dipilih; 14 meter tampil; iframe viewer tetap node DOM yang sama setelah polling.
+- TERUJI TIRUAN: profile 9/9, static 37/37, UI 50/50, sampler 14/14, API extend 41/41, integrasi 12/12, lifecycle 30/30; `npm run check` lulus 41 kontrak, 14 skill, dan 8 makro.
+- Seluruh perubahan masih berada di working tree dan BELUM di-commit.
+
+Diketahui bermasalah / belum tercapai
+- Model Blue Archive milik pemilik belum pernah dimasukkan. Material, texture, skeleton, nama clip, ekstensi GLTF terkompresi, skala, dan performa HP masih BELUM DIUJI.
+- Pergantian animasi otomatis baru diuji dengan helper dan model kalibrasi. Transisi selama task nyata, damage, afeksi rendah, dan energi rendah belum direkam di server.
+- Model kalibrasi `data/models/arcadia-calibration.glb` hanya segitiga lokal untuk pengujian dan diabaikan Git; bukan aset final.
+- `selectionScore` masih heuristic. Belum ada training ML, ranker offline, dataset outcome yang cukup, evaluasi model, ekspor ONNX/JSON weights, ataupun integrasi LLM sebagai teacher.
+- Generator sudah mendukung satu judul dengan banyak task, tetapi bundle contoh belum diuji berjalan penuh di server. Task memasak belum ada karena skill cooking/smelting belum dibuat.
+- Sebagian statistik UI adalah nilai turunan sederhana (`calm`, `daylight`, `experience`), belum seluruhnya state persisten atau sinyal pembelajaran yang tervalidasi.
+- Login customer belum dibuat. `/auth/session` baru boundary lokal; belum ada user database, password/OAuth, rotasi session, tenant membership, RBAC per bot, recovery, atau audit login.
+- Browser HP/Termux, penggunaan viewer lima menit, banyak bot nyata, dan model 3D berat belum diuji.
+- Kode baru cukup padat dan beberapa modul ditulis dalam baris panjang. Model berikutnya sebaiknya melakukan review/refactor keterbacaan sebelum memperluas fitur, tanpa mengubah perilaku yang sudah diuji.
+
 ## [v2.5-usulan] 2026-10-12 - UI modular, controller pelengkap, Director (model langsung), viewer opsional
 Ditambah
 - `control/extend.js`: pembungkus listener `request` milik `control/index.js` (rute lama tidak diubah). Menambah UI statis, `/openapi.json`, `/bots/{id}/map|viewer|director*`. TERUJI TIRUAN (tests/extend.test.js, 32 kasus + mutasi AUTH/CSRF).
