@@ -11,7 +11,8 @@ export function createApi ({ base = '', fetchImpl = (...a) => fetch(...a) } = {}
     call, bots: () => call('/bots'), state: id => call(b(id)), tasks: id => call(b(id) + '/tasks'), skills: () => call('/skills'),
     enqueue: (id, body) => call(b(id) + '/tasks', { method: 'POST', body }), cancel: (id, tid) => call(b(id) + '/tasks/' + q(tid), { method: 'DELETE' }),
     command: (id, op, payload) => call(b(id) + '/commands', { method: 'POST', body: { op, payload } }), kill: () => call('/killswitch', { method: 'POST' }),
-    map: (id, r) => call(b(id) + '/map?r=' + q(r)), viewer: id => call(b(id) + '/viewer'), director: id => call(b(id) + '/director'),
+    session: () => call('/auth/session'), settings: id => call(b(id) + '/settings'), updateSettings: (id, body) => call(b(id) + '/settings', { method: 'POST', body }),
+    map: (id, r) => call(b(id) + '/map?r=' + q(r)), viewer: id => call(b(id) + '/viewer'), setViewer: (id, enabled) => call(b(id) + '/viewer', { method: 'POST', body: { enabled } }), director: id => call(b(id) + '/director'),
     ask: (id, goal) => call(b(id) + '/director/ask', { method: 'POST', body: { goal } }),
     approve: (id, pid) => call(b(id) + '/director/proposals/' + q(pid) + '/approve', { method: 'POST' }), reject: (id, pid) => call(b(id) + '/director/proposals/' + q(pid) + '/reject', { method: 'POST' })
   }

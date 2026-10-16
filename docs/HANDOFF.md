@@ -1,4 +1,23 @@
-# HANDOFF neoforge-bot / Arcadia (checkpoint #4)
+# HANDOFF neoforge-bot / Arcadia (checkpoint #11)
+
+## UI controller + runtime settings + Ollama (2026-10-16)
+- TERBUKTI browser Edge + server asli: UI baru berbentuk panel controller AI Life, Eagle View merender dunia pada iframe, statistik persona/afeksi tampil, akun **Owner · Arcadia Local** terbaca, tanpa exception browser.
+- TERBUKTI browser: iframe Eagle View tetap objek DOM yang sama melewati polling 3 detik; bug restart berkala selesai.
+- TERBUKTI server asli: viewer default aktif tanpa `ARCADIA_VIEWER`; POST toggle menutup port 3007 lalu menyalakan kembali hingga `ready`. Preferensi viewer/map/motion tersimpan per bot di `data/settings.json`.
+- TERUJI TIRUAN: API `/auth/session` memberi user, role, tenant, capability tanpa token. Ini boundary untuk login/customer berikutnya; database customer dan halaman login BELUM dibuat.
+- TERBUKTI model nyata: konfigurasi DPAPI berhasil dimuat, Director memakai Ollama Cloud `gpt-oss:20b`, satu permintaan menghasilkan usulan `inv.snapshot` pending (1354 token masuk/381 keluar, sekitar 5,1 detik). Kunci tidak dibaca atau dicetak.
+- Fix loader: ciphertext DPAPI di-trim karena `Set-Content` menambah newline; sebelumnya `ConvertTo-SecureString` gagal format.
+
+# Riwayat sebelumnya: checkpoint #10
+
+## Viewer 3D per bot (2026-10-16)
+- TERBUKTI server asli/laptop: prismarine-viewer 1.33.0 mendukung 1.21.1, hidup setelah spawn, HTTP 200, Socket.IO terbuka, mengirim 121 chunk pada sampel, dan hanya listen 127.0.0.1.
+- TERBUKTI UI browser laptop: kartu **Viewer 3D · eagle view** mengikuti bot terpilih; iframe + tautan layar penuh. Mode paket `firstPerson:false`.
+- TERUJI TIRUAN: dua bot yang meminta base port sama mendapat port berbeda lewat fallback berurutan. Viewer ditutup saat bot berakhir.
+- Instal opsional: `npm run viewer:install`; aktifkan `ARCADIA_VIEWER=1`. `canvas` wajib dipasang bersama viewer pada Windows.
+- BELUM DIUJI: browser HP/Termux, pemakaian 5 menit, tekstur blok Create. Tangkapan headless menampilkan player/entitas tetapi permukaan belum lengkap; jangan klaim render modded selesai.
+
+# Riwayat sebelumnya: checkpoint #4
 Prompt konteks lengkap untuk AI agent baru. Lihat juga: AGENTS.md (aturan), README.md (cara pakai), TODO.md (backlog), contracts/ (skema).
 
 ## 1. Pemilik & gaya kerja

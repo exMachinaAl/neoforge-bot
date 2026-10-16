@@ -117,7 +117,7 @@ test('T-09: 10.000 sampel berbiji: filter keras 0 pelanggaran', () => {
   }
 
   for (let i = 0; i < 10000; i++) {
-    const batch = sampleBatch(context, persona, { seed: 'run_' + i, hasWeapon: false })
+    const batch = sampleBatch(context, persona, { seed: 'run_' + i, hasWeapon: false, templates }) // sampler-test-no-disk-loop-v1
     if (batch.tasks.length > 0) {
       const chosen = templates.find(t => t.id === batch.chosenTemplate)
       assert(chosen, 'template terpilih harus ada di cyclebook')

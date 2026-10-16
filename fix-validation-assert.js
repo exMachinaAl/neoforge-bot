@@ -1,1 +1,0 @@
-const fs=require('fs');const f='tests/integration.test.js';let s=fs.readFileSync(f,'utf8');const a="assert.equal(validate('StatsSnapshot',rows[0]).ok,true)";const b="assert.equal(validate('StatsSnapshot',rows[0]),null)";if(s.includes(b))console.log('sudah ter-fix');else{if(!s.includes(a))throw Error('anchor hilang');fs.writeFileSync(f,s.replace(a,b))}

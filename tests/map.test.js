@@ -1,5 +1,5 @@
 // tests/map.test.js - control/map.js + control/viewer3d.js (bot tiruan; viewer 3D: hanya pembungkus bind, paketnya TIDAK dijalankan)
-const http = require('http'); const { Vec3 } = require('vec3')
+const http = require('http'); const EE = require('events'); const { Vec3 } = require('vec3')
 const { buildMap } = require('../control/map'); const { startViewer3d, withLoopbackListen } = require('../control/viewer3d')
 let pass = 0; let fail = 0; const ok = (c, m) => { c ? pass++ : fail++; console.log((c ? 'PASS ' : 'FAIL ') + m) }
 function world (o = {}) {
@@ -35,9 +35,15 @@ const dec = m => { const out = []; for (let z = 0; z < m.rows.length; z++) for (
   // viewer 3D (pembungkus bind)
   const srv = http.createServer(); await new Promise(r => withLoopbackListen(() => srv.listen(0, r))); ok(srv.address().address === '127.0.0.1', 'listen(port) tanpa host dipaksa ke 127.0.0.1'); await new Promise(r => srv.close(r))
   const s2 = http.createServer(); await new Promise(r => s2.listen(0, r)); ok(s2.address().address !== '127.0.0.1', 'di luar pembungkus: perilaku asli dipulihkan (semua interface)'); await new Promise(r => s2.close(r))
-  ok(startViewer3d({}, {}).enabled === false && /ARCADIA_VIEWER/.test(startViewer3d({}, {}).reason), 'viewer mati secara bawaan')
-  ok(/npm i prismarine-viewer/.test(startViewer3d({}, { ARCADIA_VIEWER: '1' }, () => { throw new Error('x') }).reason), 'paket tak terpasang -> alasan jelas, tanpa crash')
-  let got; const v = startViewer3d({ tag: 'bot' }, { ARCADIA_VIEWER: '1', ARCADIA_VIEWER_PORT: '3999' }, () => ({ mineflayer: (bot, o) => { got = { bot, o } } })); ok(v.enabled && v.url === 'http://127.0.0.1:3999' && got.o.port === 3999 && got.bot.tag === 'bot', 'diaktifkan: port dari env, URL loopback')
-  ok(startViewer3d({}, { ARCADIA_VIEWER: '1' }, () => ({ mineflayer: () => { throw new Error('gagal') } })).enabled === false, 'galat saat start -> enabled=false')
+  const waiting = new EE(); waiting.username = 'DefaultOn'; const vd = startViewer3d(waiting, {}, () => ({ mineflayer: () => {} })); ok(vd.enabled === true && vd.desired === true && vd.state === 'waiting_spawn', 'viewer aktif secara bawaan tanpa env')
+  ok(/prismarine-viewer/.test(startViewer3d({}, {}, () => { const e = new Error("Cannot find module 'prismarine-viewer'"); e.code = 'MODULE_NOT_FOUND'; throw e }).reason), 'paket tak terpasang -> alasan jelas, tanpa crash')
+  let got; const vb = new EE(); vb.tag = 'bot'; vb.username = 'BotA'; const v = startViewer3d(vb, { basePort: 3999 }, () => ({ mineflayer: (bot, o) => { got = { bot, o } } })); ok(v.enabled && v.state === 'waiting_spawn' && v.mode === 'eagle' && !got, 'viewer tiap bot menunggu spawn dan melaporkan mode eagle'); vb.entity = {}; vb.emit('spawn'); ok(v.url === 'http://127.0.0.1:3999' && got.o.port === 3999 && got.o.firstPerson === false && got.bot.tag === 'bot', 'setelah spawn: port dasar dan third-person diteruskan ke paket')
+  // viewer-port-per-bot-v1: dua bot dengan base sama mendapat port berbeda.
+  const probe = http.createServer(); await new Promise(r => probe.listen(0, '127.0.0.1', r)); const base = probe.address().port; await new Promise(r => probe.close(r))
+  const fake = () => ({ mineflayer: (bot, o) => { const server = http.createServer((q, s) => s.end(bot.username)); server.listen(o.port); bot.viewer = { close: () => server.close() } } })
+  const a = new EE(); a.username = 'A'; a.entity = {}; const c = new EE(); c.username = 'C'; c.entity = {}
+  const va = startViewer3d(a, { basePort: base }, fake); const vc = startViewer3d(c, { basePort: base }, fake)
+  await new Promise(r => setTimeout(r, 80)); ok(va.state === 'ready' && vc.state === 'ready' && va.port !== vc.port && va.botId === 'A' && vc.botId === 'C', 'setiap bot mendapat viewer ready dan port bebas sendiri'); va.setEnabled(false); ok(va.state === 'off' && va.desired === false && !va.enabled, 'viewer dapat dimatikan lewat runtime toggle'); va.close(); vc.close()
+  ok(startViewer3d({}, {}, () => ({ mineflayer: () => { throw new Error('gagal') } })).enabled === false, 'galat saat start -> enabled=false')
   console.log('\nHASIL: ' + pass + ' lulus, ' + fail + ' gagal'); process.exit(fail ? 1 : 0)
 })()

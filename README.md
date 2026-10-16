@@ -82,13 +82,14 @@ Model HANYA mengusulkan task; tidak ada yang berjalan sebelum disetujui (otonomi
 - Di UI: kartu "Director (model)" -> tanya -> Setujui/Tolak. API: `POST /bots/{id}/director/ask`, `/director/proposals/{pid}/approve|reject`, `GET /bots/{id}/director`.
 ## UI baru, peta, viewer
 - Buka URL `API siap: http://127.0.0.1:8787/?token=...` sekali; cookie HttpOnly (per port) dipasang dan token dihapus dari URL. UI modular di `ui/` (modul ES, tanpa HTML dinamis).
-- Peta 2D: `GET /bots/{id}/map?r=24` (grid permukaan, ketuk sel untuk nav.goto). Viewer 3D opsional: `npm i prismarine-viewer` (~370 MB) + `ARCADIA_VIEWER=1` (dipaksa 127.0.0.1:3007).
+- Peta 2D: `GET /bots/{id}/map?r=24`. Setelah paket dipasang sekali lewat `npm run viewer:install`, Viewer 3D eagle aktif otomatis saat bot hidup; tidak perlu env khusus. Matikan/nyalakan dari menu **Pengaturan** atau tombol di Eagle View. Preferensi disimpan per bot. Port dasar 3007 dan otomatis mencari port berikutnya bila terpakai; bind tetap 127.0.0.1.
+- UI berbentuk controller AI Life: Eagle View tidak dibuat ulang oleh polling, statistik persona/afeksi, task, lifecycle, Director, inventory, chat, serta identitas akun/tenant lokal. `GET /auth/session` menjadi kontrak awal untuk login pelanggan; autentikasi saat ini masih token lokal melalui cookie HttpOnly.
 - `/openapi.json` memuat rute dan skema skill dari manifest.
 
 ## Pembaruan v2.5 (UI, Director, viewer)
 Ringkas; rincian di `docs/USAGE_UPDATE.md`, riwayat di `docs/CHANGELOG.md`, rencana di `docs/ORCHESTRATOR_PLAN.md` dan `docs/UI_PLAN_ADDENDUM_v1.2.md`.
 - **UI baru:** `npm start` mencetak `API siap: http://127.0.0.1:8787/?token=...`; buka sekali, cookie `arcadia_<port>` (HttpOnly) dipasang dan token hilang dari URL. UI modular di `ui/` (modul ES, tanpa build, tanpa HTML dinamis), botId-first.
 - **Uji model langsung:** `node orchestrator/try.js "tujuan" --dry` (lihat prompt) lalu `ARCADIA_LLM_KEY=... node orchestrator/try.js "tujuan"`. Model HANYA mengusulkan; task jalan setelah Setujui di UI. Otonomi MATI.
-- **Viewer 3D (prismarine-viewer, opsional):** `npm i prismarine-viewer` (~370 MB) + `ARCADIA_VIEWER=1`; dipaksa 127.0.0.1:3007. Viewer utama proyek = prismarine-viewer; peta 2D buatan sendiri hanya cadangan ringan. Panel di UI: paket V-1 (belum ada).
+- **Viewer 3D:** panel kelas satu aktif otomatis setelah paket opsional dipasang (`npm run viewer:install`), mode `firstPerson:false`/eagle, satu instance dan port bebas per bot, toggle tersimpan di UI, serta iframe aman hanya ke loopback dan tidak restart saat polling. Peta 2D tetap cadangan ringan.
 - **Pasang pembaruan:** `unzip -o arcadia-ui-director.zip && node install/fix-ui3b.js && npm test`. Batalkan: `git checkout bot.js` atau `ARCADIA_API=0 npm start`.
-- **Status:** TERUJI TIRUAN (npm test); BELUM DIUJI di browser HP, dengan model sungguhan, dan viewer dengan bot.
+- **Status viewer:** TERBUKTI di server asli dan browser laptop; browser HP/Termux serta tekstur blok modded masih BELUM DIUJI. Model sungguhan BELUM DIUJI.

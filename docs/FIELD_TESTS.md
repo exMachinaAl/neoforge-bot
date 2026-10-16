@@ -29,3 +29,31 @@ Diagnosis berikutnya (kecil): saat tidur cetak `bot.isSleeping`, pose entitas bo
 ## Pelajaran proses
 - Log CLI memotong objek hasil: UI/CLI perlu menampilkan `data` penuh (atau ringkasan) agar hasil uji bisa dinilai tanpa tebakan.
 - Skill panjang (guard/follow/farm) butuh progress langsung (lihat TODO "Progress langsung").
+
+## Prismarine Viewer per bot (16 Oktober 2026)
+
+| Pemeriksaan | Hasil | Status |
+|---|---|---|
+| Paket | prismarine-viewer 1.33.0; daftar versi mencantumkan 1.21.1; Windows juga membutuhkan canvas 3.1.0 | TERBUKTI source + runtime |
+| Lifecycle | mulai sesudah BotAlpha spawn; status API ready/eagle/BotAlpha; berhenti bersama bot | TERBUKTI server asli |
+| Jaringan | viewer 127.0.0.1:3007 dan API 127.0.0.1:8787; bukan 0.0.0.0 | TERBUKTI Get-NetTCPConnection |
+| Transport | index HTTP 200; Socket.IO handshake berhasil; sampel menerima 121 loadChunk, 690 entity, 5 position dalam 5 dtk | TERBUKTI server asli |
+| UI | panel per bot, iframe dan tautan layar penuh termuat lewat UI Arcadia | TERBUKTI browser Edge laptop |
+| Banyak bot | base port sama otomatis menjadi port berbeda | TERUJI TIRUAN dua bot/EventEmitter |
+| Beban awal | proses bot+API+viewer sekitar 174 MB working set pada satu sampel singkat | TERBUKTI laptop, belum uji 5 menit |
+| Render | canvas menampilkan player dan entitas; tanah/blok tidak lengkap pada screenshot headless | TERBUKTI sebagian; blok vanilla/modded BELUM DIUJI visual interaktif |
+| HP/Termux | belum dibuka dari browser HP dan belum diukur di Termux | BELUM DIUJI |
+
+Catatan: viewer sengaja loopback dan tanpa kontrol bot. Panel iframe saat ini untuk browser di mesin bot; akses browser perangkat lain masih membutuhkan proxy same-origin V-2.
+
+## UI controller + Ollama Cloud (16 Oktober 2026)
+
+| Pemeriksaan | Hasil | Status |
+|---|---|---|
+| UI controller | 12 panel, BotAlpha, akun Owner/Arcadia Local, statistik AI Life, Eagle View aktif | TERBUKTI browser Edge laptop |
+| Stabilitas viewer | objek iframe sama setelah satu siklus polling; exception browser kosong | TERBUKTI CDP browser |
+| Toggle runtime | off menutup listener 3007; on kembali `ready` di 3007; preferensi `viewer:true` tersimpan | TERBUKTI server asli |
+| Render dunia | terrain, platform, bot, dan entitas terlihat pada tangkapan headless | TERBUKTI browser laptop; tekstur blok Create spesifik BELUM DIUJI |
+| Director Ollama | `gpt-oss:20b` memberi satu usulan `inv.snapshot` valid dan pending dalam sekitar 5,1 dtk | TERBUKTI panggilan API nyata |
+| Rahasia | kunci berasal dari berkas DPAPI di luar repo dan tidak tampil dalam hasil | TERBUKTI alur loader/log; isi kunci tidak dibaca |
+| Browser HP | belum diuji | BELUM DIUJI |

@@ -18,7 +18,8 @@ async function suite (attachImpl, quiet) {
   const api = control.start({ bot, runner, engine, port, bind: '127.0.0.1', token: 'tok123' }); await sleep(100)
   const llm = async () => ({ text: JSON.stringify({ reason: 'tes', tasks: [{ skill: 'nav.goto', params: { x: 3, z: 3 } }] }), usage: { in: 1, out: 1 }, model: 'm' })
   const director = dirMod.createDirector({ bot, runner, engine, llm, cfg: { provider: 'anthropic', url: 'http://x', key: 'K-SECRET', model: 'm', rpm: 20, needsKey: true }, deny: [], autoApprove: [] })
-  attachImpl(api, { bot, runner, engine, director }, { uiRoot: ui, viewer: { enabled: false, reason: 'tes' } })
+  const view = { enabled: false, desired: false, state: 'off', reason: 'tes', setEnabled (v) { this.enabled = v; this.desired = v; this.state = v ? 'starting' : 'off'; return this } }; let prefs = { viewer: false, map: true, motion: true }; const settings = { get: () => ({ ...prefs }), update: (id, patch) => (prefs = { ...prefs, ...patch }) }
+  attachImpl(api, { bot, runner, engine, director }, { uiRoot: ui, viewer: view, settings })
   const H = { authorization: 'Bearer tok123' }; const ck = 'arcadia_' + port + '=tok123'
   let r = await req(port, '/bots', { headers: H }); t(r.s === 200 && r.j[0].botId === 'BotAlpha', 'rute LAMA tetap jalan lewat pembungkus: GET /bots')
   r = await req(port, '/skills', { headers: H }); t(r.s === 200 && r.j.length >= 5, 'rute lama: GET /skills')
@@ -39,7 +40,12 @@ async function suite (attachImpl, quiet) {
   const ts1 = r.j.ts; r = await req(port, '/bots/me/map?r=8', { headers: H }); t(r.j.ts === ts1, '/map: cache 1 dtk (ts sama)')
   r = await req(port, '/bots/lain/map', { headers: H }); t(r.s === 404, 'bot tak dikenal -> 404')
   r = await req(port, '/bots/me/viewer', { headers: H }); t(r.s === 200 && r.j.enabled === false, '/viewer melaporkan status (mati)')
-  r = await req(port, '/openapi.json', { headers: H }); t(r.s === 200 && r.j.paths['/bots/{id}/map'] && r.j.paths['/bots/{id}/director/ask'] && r.j.components.schemas['nav.goto'], '/openapi.json memuat rute baru + skema skill dari manifest'); r = await req(port, '/openapi.json'); t(r.s === 401, '/openapi.json tanpa token -> 401')
+  r = await req(port, '/auth/session', { headers: H }); t(r.s === 200 && r.j.user.role === 'owner' && r.j.tenant.id === 'local' && !r.t.includes('tok123'), '/auth/session memberi boundary akun+tenant tanpa membocorkan token')
+  r = await req(port, '/auth/session'); t(r.s === 401, '/auth/session tetap wajib autentikasi')
+  r = await req(port, '/bots/me/settings', { headers: H }); t(r.s === 200 && r.j.viewer === false && r.j.map === true, '/settings membaca preferensi per bot')
+  r = await req(port, '/bots/me/viewer', { method: 'POST', headers: { ...H, 'content-type': 'application/json' }, body: { enabled: true } }); t(r.s === 200 && r.j.desired === true && prefs.viewer === true, '/viewer POST menyalakan runtime dan menyimpan preferensi')
+  r = await req(port, '/bots/me/viewer', { method: 'POST', headers: { ...H, 'content-type': 'application/json' }, body: { enabled: 'ya' } }); t(r.s === 400, '/viewer menolak enabled non-boolean')
+  r = await req(port, '/openapi.json', { headers: H }); t(r.s === 200 && r.j.paths['/auth/session'] && r.j.paths['/bots/{id}/settings'] && r.j.paths['/bots/{id}/director/ask'] && r.j.components.schemas['nav.goto'], '/openapi.json memuat auth, settings, dan skema skill'); r = await req(port, '/openapi.json'); t(r.s === 401, '/openapi.json tanpa token -> 401')
   r = await req(port, '/bots/me/director', { headers: H }); t(r.s === 200 && r.j.autonomy === false && !r.t.includes('K-SECRET'), 'Director: snapshot, otonomi MATI, kunci tidak bocor')
   r = await req(port, '/bots/me/director/ask', { method: 'POST', headers: { ...H, 'content-type': 'application/json' }, body: {} }); t(r.s === 400, 'Director ask tanpa goal -> 400')
   engine.pause(); r = await req(port, '/bots/me/director/ask', { method: 'POST', headers: { ...H, 'content-type': 'application/json' }, body: { goal: 'ke 3,3' } }); const pid = r.j && r.j.tasks && r.j.tasks[0] && r.j.tasks[0].pid

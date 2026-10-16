@@ -4,6 +4,7 @@
 const fs = require('fs'); const path = require('path'); const crypto = require('crypto')
 const { createStatic } = require('./static'); const cookie = require('./cookie'); const { buildMap } = require('./map'); const { startViewer3d } = require('./viewer3d')
 const { createDirector } = require('../orchestrator/director')
+const { createSettings } = require('./settings'); const { localSession } = require('./auth')
 
 function attach (api, deps = {}, opts = {}) {
   if (!api || !api.server || !api.token) { console.log('EXTEND: api.server/token tidak tersedia; UI/peta/director tidak dipasang'); return null }
@@ -11,7 +12,12 @@ function attach (api, deps = {}, opts = {}) {
   const { bot, runner, engine, lifecycle } = deps
   const stat = createStatic({ root: opts.uiRoot || path.join(__dirname, '..', 'ui'), prefix: '/ui/' })
   const director = deps.director || createDirector({ bot, runner, engine })
-  const viewer = opts.viewer || startViewer3d(bot)
+  const settings = opts.settings || createSettings(opts.settingsOptions)
+  const initialSettings = settings.get(String(bot && bot.username || 'bot'))
+  const viewer = opts.viewer || startViewer3d(bot, { enabled: initialSettings.viewer })
+  const session = opts.session || localSession() // auth-tenant-boundary-v1
+  // viewer-each-bot-v1: lifecycle viewer mengikuti lifecycle bot.
+  if (bot && typeof bot.once === 'function' && viewer && typeof viewer.close === 'function') bot.once('end', viewer.close)
   const tokenOk = t => { const a = Buffer.from(String(t || '')); const b = Buffer.from(token); return a.length === b.length && crypto.timingSafeEqual(a, b) }
   const send = (res, code, obj, extra) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...(extra || {}) }); res.end(JSON.stringify(obj)) }
   const fail = (status, msg) => Object.assign(new Error(msg), { status })
@@ -36,7 +42,9 @@ function attach (api, deps = {}, opts = {}) {
         '/bots/{id}/lifecycle/batches/{batchId}/reject': {post:op('Tolak batch',{parameters:[idp]})},
         '/bots/{id}/persona': {get:op('Persona tersimpan',{parameters:[idp]})},
         '/bots/{id}/chests': {get:op('Catatan chest bertimestamp',{parameters:[idp]})},
-        '/bots/{id}/viewer': { get: op('Status viewer 3D', { parameters: [idp] }) }, '/bots/{id}/director': { get: op('Status Director', { parameters: [idp] }) },
+        '/auth/session': { get: op('Sesi akun dan tenant aktif') },
+        '/bots/{id}/settings': { get: op('Pengaturan UI bot', { parameters: [idp] }), post: op('Ubah pengaturan UI bot', { parameters: [idp] }) },
+        '/bots/{id}/viewer': { get: op('Status viewer 3D', { parameters: [idp] }), post: op('Nyalakan/matikan viewer 3D', { parameters: [idp] }) }, '/bots/{id}/director': { get: op('Status Director', { parameters: [idp] }) },
         '/bots/{id}/director/ask': { post: op('Tanya model (usulan task, tidak dijalankan)', { parameters: [idp] }) },
         '/bots/{id}/director/proposals/{pid}/approve': { post: op('Setujui usulan -> antrean', { parameters: [idp] }) }, '/bots/{id}/director/proposals/{pid}/reject': { post: op('Tolak usulan', { parameters: [idp] }) }
       } }
@@ -45,7 +53,7 @@ function attach (api, deps = {}, opts = {}) {
   async function mine (req, res, url, auth) {
     const parts = url.pathname.split('/').filter(Boolean); const m = req.method
     const isUi = (m === 'GET' || m === 'HEAD') && (!parts.length || parts[0] === 'index.html' || parts[0] === 'ui')
-    const isMine = isUi || (m === 'GET' && parts[0] === 'openapi.json') || (parts[0] === 'bots' && (parts[2] === 'map' || parts[2] === 'viewer' || parts[2] === 'director' || parts[2] === 'lifecycle' || parts[2] === 'persona' || parts[2] === 'chests'))
+    const isMine = isUi || (m === 'GET' && (parts[0] === 'openapi.json' || (parts[0] === 'auth' && parts[1] === 'session'))) || (parts[0] === 'bots' && (parts[2] === 'map' || parts[2] === 'viewer' || parts[2] === 'settings' || parts[2] === 'director' || parts[2] === 'lifecycle' || parts[2] === 'persona' || parts[2] === 'chests'))
     if (!isMine) return false
     if (!auth.ok) { send(res, 401, { error: 'token salah/kurang (Authorization: Bearer, ?token=, atau cookie arcadia_' + port + ')' }); return true } // GUARD:AUTH
     if (isUi) {
@@ -53,6 +61,7 @@ function attach (api, deps = {}, opts = {}) {
       return stat.handle(req, res, !parts.length || parts[0] === 'index.html' ? '/ui/index.html' : url.pathname) || (send(res, 404, { error: 'tidak ada' }), true)
     }
     if (parts[0] === 'openapi.json') { send(res, 200, openapi()); return true }
+    if (parts[0] === 'auth' && parts[1] === 'session') { send(res, 200, session); return true }
     try {
       if (!isMe(parts[1])) throw fail(404, 'bot tidak ditemukan: ' + parts[1])
       // lifecycle-routes-v1
@@ -70,7 +79,14 @@ function attach (api, deps = {}, opts = {}) {
         if (!(mapCache.v && mapCache.r === r && t - mapCache.t < 1000)) mapCache = { t, r, v: buildMap(bot, { r }) }
         send(res, 200, mapCache.v); return true
       }
-      if (parts[2] === 'viewer' && m === 'GET') { send(res, 200, viewer); return true }
+      if (parts[2] === 'settings') {
+        if (m === 'GET') { send(res, 200, settings.get(botIdOf())); return true }
+        if (m === 'POST') { const b = await readBody(req); const next = settings.update(botIdOf(), b); if (Object.prototype.hasOwnProperty.call(b, 'viewer') && viewer && typeof viewer.setEnabled === 'function') viewer.setEnabled(b.viewer); send(res, 200, next); return true }
+      }
+      if (parts[2] === 'viewer') {
+        if (m === 'GET') { send(res, 200, viewer); return true }
+        if (m === 'POST') { const b = await readBody(req); if (typeof b.enabled !== 'boolean') throw fail(400, 'enabled harus boolean'); if (!viewer || typeof viewer.setEnabled !== 'function') throw fail(503, 'viewer runtime tidak mendukung toggle'); settings.update(botIdOf(), { viewer: b.enabled }); send(res, 200, viewer.setEnabled(b.enabled)); return true }
+      }
       if (parts[2] === 'director') {
         if (m === 'GET' && parts.length === 3) { send(res, 200, director.snapshot()); return true }
         if (m === 'POST' && parts[3] === 'ask') { const b = await readBody(req); const ac = new AbortController(); res.on('close', () => { if (!res.writableEnded) ac.abort() }); send(res, 200, await director.ask(b.goal, { signal: ac.signal, dry: b.dry === true })); return true }
@@ -97,6 +113,6 @@ function attach (api, deps = {}, opts = {}) {
     } catch (e) { if (!res.headersSent) send(res, 500, { error: e.message }); return }
     for (const l of orig) l.call(server, req, res)
   })
-  return { director, viewer, stat }
+  return { director, viewer, stat, settings, session }
 }
 module.exports = { attach }

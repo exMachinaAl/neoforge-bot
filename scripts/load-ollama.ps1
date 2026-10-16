@@ -3,7 +3,8 @@ $ErrorActionPreference = 'Stop'
 $settingsDir = Join-Path $env:LOCALAPPDATA 'Arcadia'
 $settings = Get-Content -Raw -LiteralPath (Join-Path $settingsDir 'ollama.json') | ConvertFrom-Json
 if ($settings.url -ne 'https://ollama.com/v1' -or $settings.provider -ne 'openai') { throw 'Endpoint lokal tidak sesuai Ollama Cloud.' }
-$secret = Get-Content -Raw -LiteralPath (Join-Path $settingsDir 'ollama-key.dpapi') | ConvertTo-SecureString
+$ciphertext = (Get-Content -Raw -LiteralPath (Join-Path $settingsDir 'ollama-key.dpapi')).Trim()
+$secret = $ciphertext | ConvertTo-SecureString # dpapi-trim-newline-v1
 $credential = New-Object System.Net.NetworkCredential('', $secret)
 $env:ARCADIA_LLM_KEY = $credential.Password
 $env:ARCADIA_LLM_PROVIDER = 'openai'

@@ -14,6 +14,6 @@ export function directorCard (api, getId, refresh) {
     for (const r of d.rejected || []) out.append(h('div', { className: 'warn' }, 'ditolak: ' + (r.skill || '?') + ' — ' + r.why))
   }
   askBtn.onclick = async () => { msg.textContent = ''; askBtn.disabled = true; try { showDecision(await api.ask(getId(), goal.value)) } catch (e) { msg.textContent = e.message } askBtn.disabled = false; load() }
-  async function load () { try { const s = await api.director(getId()); cfg.textContent = (s.configured ? s.provider + ' / ' + s.model : 'BELUM dikonfigurasi (isi ARCADIA_LLM_KEY di Termux)') + ' · anggaran ' + s.used + '/' + s.rpm + ' per menit · otonomi MATI' + (s.autoApprove.length ? ' · auto-setuju: ' + s.autoApprove.join(',') : '') } catch (e) { cfg.textContent = 'Director tidak tersedia: ' + e.message } }
+  async function load () { try { const s = await api.director(getId()); cfg.textContent = (s.configured ? s.provider + ' / ' + s.model : 'Model belum aktif pada proses bot; muat konfigurasi provider lalu restart bot') + ' · anggaran ' + s.used + '/' + s.rpm + ' per menit · otonomi MATI' + (s.autoApprove.length ? ' · auto-setuju: ' + s.autoApprove.join(',') : '') } catch (e) { cfg.textContent = 'Director tidak tersedia: ' + e.message } }
   return { el: h('div', {}, cfg, h('div', { className: 'row', style: 'margin-top:6px' }, goal, askBtn), msg, out), load }
 }

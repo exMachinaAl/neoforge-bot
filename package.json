@@ -8,7 +8,8 @@
     "postinstall": "node patch-all.js",
     "adapt": "node adapt.js",
     "start": "node bot.js",
-    "check": "node contracts/check.js && node skills/check.js && node lifecycle/macro_check.js"
+    "check": "node contracts/check.js && node skills/check.js && node lifecycle/macro_check.js",
+    "viewer:install": "npm install --no-save --package-lock=false prismarine-viewer@1.33.0 canvas@3.1.0"
   },
   "keywords": [],
   "author": "",
