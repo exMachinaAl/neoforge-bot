@@ -2,7 +2,7 @@
 // Dipasang MEMBUNGKUS listener 'request' milik control/index.js: rute lain tetap dilayani apa adanya (kompatibel dengan seluruh API yang ada).
 // Auth: header Bearer > ?token > cookie (nama per port). Cookie dipetakan ke header agar API lama ikut menerimanya; permintaan ubah-data lewat cookie wajib same-origin (CSRF).
 const fs = require('fs'); const path = require('path'); const crypto = require('crypto')
-const { createStatic } = require('./static'); const cookie = require('./cookie'); const { buildMap } = require('./map'); const { startViewer3d } = require('./viewer3d')
+const { createStatic } = require('./static'); const cookie = require('./cookie'); const { buildMap } = require('./map'); const { startViewer3d, viewerBot } = require('./viewer3d')
 const { createDirector } = require('../orchestrator/director')
 const { createMissions } = require('../lifecycle/missions')
 const { createSettings } = require('./settings'); const { localSession } = require('./auth'); const { createProfile3d } = require('./profile3d')
@@ -16,12 +16,14 @@ function attach (api, deps = {}, opts = {}) {
   const missions = opts.missions || createMissions({ engine, runner, director, lifecycle, dataDir: opts.dataDir })
   server.once('close', () => missions.close())
   const settings = opts.settings || createSettings(opts.settingsOptions)
-  const initialSettings = settings.get(String(bot && bot.username || 'bot'))
-  const viewer = opts.viewer || startViewer3d(bot, { enabled: initialSettings.viewer })
+  const initialSettings = settings.get(engine.botId())
+  const viewer = opts.viewer || startViewer3d(viewerBot(bot), { enabled: initialSettings.viewer, prefix: opts.viewerPrefix || '' })
+  const firstPerson = opts.multiView ? startViewer3d(viewerBot(bot), { enabled: false, firstPerson: true, prefix: opts.firstPersonPrefix || '' }) : null
   const session = opts.session || localSession() // auth-tenant-boundary-v1
   const profile3d = opts.profile3d || createProfile3d(opts.profileOptions)
   // viewer-each-bot-v1: lifecycle viewer mengikuti lifecycle bot.
   if (bot && typeof bot.once === 'function' && viewer && typeof viewer.close === 'function') bot.once('end', viewer.close)
+  if (firstPerson) bot.once('end', firstPerson.close)
   const tokenOk = t => { const a = Buffer.from(String(t || '')); const b = Buffer.from(token); return a.length === b.length && crypto.timingSafeEqual(a, b) }
   const send = (res, code, obj, extra) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...(extra || {}) }); res.end(JSON.stringify(obj)) }
   const fail = (status, msg) => Object.assign(new Error(msg), { status })
@@ -121,8 +123,12 @@ function attach (api, deps = {}, opts = {}) {
         if (m === 'POST') { const b = await readBody(req); const next = settings.update(botIdOf(), b); if (Object.prototype.hasOwnProperty.call(b, 'viewer') && viewer && typeof viewer.setEnabled === 'function') viewer.setEnabled(b.viewer); send(res, 200, next); return true }
       }
       if (parts[2] === 'viewer') {
-        if (m === 'GET') { send(res, 200, viewer); return true }
-        if (m === 'POST') { const b = await readBody(req); if (typeof b.enabled !== 'boolean') throw fail(400, 'enabled harus boolean'); if (!viewer || typeof viewer.setEnabled !== 'function') throw fail(503, 'viewer runtime tidak mendukung toggle'); settings.update(botIdOf(), { viewer: b.enabled }); send(res, 200, viewer.setEnabled(b.enabled)); return true }
+        const camera = url.searchParams.get('mode') || 'eagle'
+        if (!['eagle','first-person'].includes(camera)) throw fail(400, 'mode kamera tidak valid')
+        const selectedViewer = camera === 'first-person' ? firstPerson : viewer
+        if (!selectedViewer) throw fail(503, 'kamera ini tersedia melalui panel admin')
+        if (m === 'GET') { send(res, 200, selectedViewer); return true }
+        if (m === 'POST') { const b = await readBody(req); if (typeof b.enabled !== 'boolean') throw fail(400, 'enabled harus boolean'); if (typeof selectedViewer.setEnabled !== 'function') throw fail(503, 'viewer runtime tidak mendukung toggle'); if (camera === 'eagle') settings.update(botIdOf(), { viewer: b.enabled }); send(res, 200, selectedViewer.setEnabled(b.enabled)); return true }
       }
       if (parts[2] === 'director') {
         if (m === 'GET' && parts.length === 3) { send(res, 200, director.snapshot()); return true }
@@ -150,6 +156,6 @@ function attach (api, deps = {}, opts = {}) {
     } catch (e) { if (!res.headersSent) send(res, 500, { error: e.message }); return }
     for (const l of orig) l.call(server, req, res)
   })
-  return { director, viewer, stat, settings, session, profile3d, missions }
+  return { director, viewer, firstPerson, stat, settings, session, profile3d, missions }
 }
 module.exports = { attach }

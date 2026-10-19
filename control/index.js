@@ -6,7 +6,7 @@ const crypto = require('crypto')
 const { validate } = require('../contracts/validate')
 
 function start ({ bot, runner, engine, port, bind, token } = {}) {
-  port = port || Number(process.env.ARCADIA_PORT) || 8787
+  port = port ?? (process.env.ARCADIA_PORT !== undefined ? Number(process.env.ARCADIA_PORT) : 8787)
   bind = bind || process.env.ARCADIA_BIND || '127.0.0.1'
   token = token || process.env.ARCADIA_TOKEN || crypto.randomBytes(12).toString('hex')
   const tokenOk = t => { const a = Buffer.from(String(t || '')); const b = Buffer.from(token); return a.length === b.length && crypto.timingSafeEqual(a, b) }
@@ -68,7 +68,7 @@ function start ({ bot, runner, engine, port, bind, token } = {}) {
     } catch (e) { send(res, e.status || 500, { error: e.message }) }
   })
   server.on('error', e => console.log('API galat: ' + e.message + ' (ganti port: ARCADIA_PORT=xxxx, atau ARCADIA_API=0 untuk mematikan)'))
-  server.listen(port, bind, () => console.log('API siap: http://' + (bind === '0.0.0.0' ? '<IP-perangkat>' : bind) + ':' + port + '/?token=' + token + (bind === '0.0.0.0' ? '  (PERINGATAN: terbuka di jaringan)' : '')))
+  server.listen(port, bind, () => { if (!process.env.ARCADIA_WORKER) console.log('API siap: http://' + (bind === '0.0.0.0' ? '<IP-perangkat>' : bind) + ':' + server.address().port + '/?token=' + token + (bind === '0.0.0.0' ? '  (PERINGATAN: terbuka di jaringan)' : '')) })
   return { server, token, port, bind, close: () => { for (const r of sse) r.end(); server.close() } }
 }
 

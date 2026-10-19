@@ -2,6 +2,21 @@
 Format: Ditambah / Diubah / Diperbaiki / Catatan keamanan / Diketahui bermasalah. Label status: TERBUKTI (log pemilik) | DILAPORKAN | TERUJI TIRUAN | BELUM DIUJI.
 Tanggal paket sebelum 2026-10-12 tidak tercatat; urutan di bawah = urutan pengiriman.
 
+## [Admin multi-bot dan dual kamera] 2026-10-20
+
+- Panel admin satu origin dengan login owner, sesi persisten, registry bot, tambah/import konfigurasi, start/stop/restart/hapus, dan kontrol massal dengan hasil per bot.
+- Supervisor menjalankan satu worker per bot, data dan ID terpisah, heartbeat, restart/reconnect terbatas. Engine/misi lama tetap digunakan; standby admin tidak memerlukan bot online.
+- Dashboard desktop menempatkan Eagle bot fokus di samping kartu bot lain. First-person dapat dibuka untuk semua bot termasuk fokus. Kartu/iframe stabil saat polling dan pergantian fokus; Single memakai UI companion lengkap.
+- Proxy viewer menangani HTTP, aset, Socket.IO polling dan WebSocket melalui origin panel. Token internal worker tidak dikirim ke UI; sesi/ownership diperiksa, logout menutup socket.
+- TERUJI TIRUAN: integrasi admin dengan dua child process, tiga socket kamera, persistensi dan isolasi akses; Edge nyata untuk alur tambah/bulk start/multi/single Momoi/fokus stabil/mobile. Regresi engine 29, static 37, profil 18, UI 50, extend 50, misi 8; check lulus.
+- BELUM DIUJI: multi-bot Minecraft asli dan LLM nyata melalui admin. Customer management, teleoperasi WASD dan profil LLM berbeda per bot belum tersedia. Rincian: [ADMIN_PANEL.md](ADMIN_PANEL.md).
+
+## [Perbaikan scroll & rancangan admin] 2026-10-20
+
+- DILAPORKAN: companion desktop mengganggu/menutupi area saat scroll. Source memakai `position:sticky;top:94px`; diubah menjadi `position:static` agar kartu ikut alur halaman.
+- TERUJI TIRUAN: regresi browser Edge desktop/viewport HP lulus setelah perubahan CSS; Momoi, chat, ingatan, misi dan kestabilan canvas/iframe tetap berjalan. Konfirmasi kenyamanan scroll pada desktop pemilik BELUM DIUJI.
+- Rancangan panel admin, login persisten, pengelola worker, dashboard multi/fokus dan ownership customer: [ADMIN_PANEL_PLAN.md](ADMIN_PANEL_PLAN.md). Masih USULAN; backend admin belum diimplementasikan.
+
 ## [Companion & mission runner] 2026-10-19
 
 - UI utama berpusat pada karakter GLB, kegiatan berjudul/progres, percakapan dan tujuan. Statistik tambahan serta kalibrasi dilipat; Eagle View dan ingatan berada di ruang bersama, kontrol manual di tab lanjutan.

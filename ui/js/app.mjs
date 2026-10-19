@@ -21,6 +21,13 @@ function tabs (items, initial, onChange) {
 async function main () {
   if (location.search.includes('token=')) history.replaceState(null, '', location.pathname)
   const api = createApi(); const store = createStore(); const root = document.getElementById('app'); clear(root)
+  const focusId = location.pathname.match(/^\/focus\/(bot_[a-z0-9-]+)$/)?.[1]
+  if (focusId) {
+    const list = api.bots
+    api.bots = async () => (await list()).filter(b => b.botId === focusId)
+    api.skills = () => api.call('/skills?botId=' + focusId)
+    api.kill = () => api.call('/bots/' + focusId + '/killswitch', { method: 'POST', body: {} })
+  }
   const id = () => store.s.current; const log = message => store.applyEvent({ ts: Date.now(), botId: id() || '-', type: 'ui', data: { message } })
   const act = { cancel: task => api.cancel(id(), task).then(poll).catch(e => log(e.message)), cmd: op => api.command(id(), op, {}).then(poll).catch(e => log(e.message)), kill: () => confirm('Hentikan semua task dan jeda antrean?') && api.kill().then(poll), say: text => api.command(id(), 'say', { text }).catch(e => log(e.message)), snapshot: () => api.enqueue(id(), { skill: 'inv.snapshot', params: {}, priority: 60 }).then(poll).catch(e => log(e.message)), enqueue: (skill, params, priority) => api.enqueue(id(), { skill, params, priority }).then(poll) }
   const els = { status: h('div'), progress: h('div'), quick: h('div'), queue: h('div'), history: h('div'), inventory: h('div'), log: h('pre'), connection: h('span', { className: 'connection' }, 'menghubungkan'), account: h('div', { className: 'account-chip' }, 'Owner') }
@@ -54,10 +61,11 @@ async function main () {
     polling = true
     try {
       const bots = await api.bots(); store.setBots(bots); const ids = store.s.bots.join('|')
-      if (picker.dataset.ids !== ids) { picker.dataset.ids = ids; clear(picker); store.s.bots.forEach(botId => picker.append(h('option', { value: botId }, botId))) }
+      if (picker.dataset.ids !== ids) { picker.dataset.ids = ids; clear(picker); store.s.bots.forEach(botId => picker.append(h('option', { value: botId }, bots.find(b => b.botId === botId)?.displayName || botId))) }
       picker.value = id() || ''
       const current = id()
       if (current) {
+        if (focusId && !store.s.skills.length && bots.find(b => b.botId === current)?.workerStatus === 'ready') { store.setSkills(await api.skills()); form.sync() }
         if (loadedBot !== current) {
           loadedBot = current; persona = null; lifeContext = {}
           await Promise.allSettled([viewer.load(), preferences.load(), companion.loadProfile(), journey.load()])
@@ -65,6 +73,7 @@ async function main () {
         const [state, tasks, life] = await Promise.all([api.state(current), api.tasks(current), api.call('/bots/' + encodeURIComponent(current) + '/lifecycle').catch(() => null)])
         if (current !== id()) { pollAgain = true; return }
         persona = life?.persona || {}; lifeContext = life?.context || {}
+        if (focusId && state.displayName) persona = { ...persona, name: state.displayName }
         store.setState(current, state); store.setTasks(current, tasks); await journey.load()
       }
     } catch (e) { store.setStatus('terputus: ' + e.message) }

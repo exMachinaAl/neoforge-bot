@@ -1,5 +1,17 @@
 # HANDOFF neoforge-bot / Arcadia (checkpoint #12)
 
+## Build admin multi-kamera (2026-10-20, terbaru)
+- Pemilik menyetujui build, menambahkan Eagle fokus di dashboard multi + FP setiap bot termasuk fokus. Implementasi kini ada di `admin/` dan `ui/admin.html`; lihat [ADMIN_PANEL.md](ADMIN_PANEL.md) untuk kondisi sebenarnya.
+- Jalankan `npm run admin` pada localhost:8788; buat owner di browser. Untuk Ollama DPAPI, dot-source `scripts/load-ollama.ps1` sebelum menjalankan admin. Worker mewarisi environment.
+- Bot lama standalone tetap dapat berjalan; hentikan sebelum memulai username sama dari admin. Import profil/persona/misi tersedia lewat form dan tidak menimpa sumber.
+- TERUJI TIRUAN: dua worker, dual kamera nyata melalui proxy HTTP/WebSocket, browser Edge multi/single Momoi/fokus stabil. Minecraft/LLM sungguhan melalui admin BELUM DIUJI. Customer management belum ada.
+- Startup background produksi ditolak peninjauan otomatis tool (`blocked by policy`); proses admin produksi belum dinyalakan, akun/password owner belum dibuat. Tidak perlu mengulang uji tiruan yang sudah lulus tanpa perubahan relevan.
+
+## Scroll companion dan arah admin (2026-10-20)
+- Companion desktop tidak lagi sticky, mengikuti scroll biasa. Instruksi pemilik: analisis panel admin sebelum full code.
+- [ADMIN_PANEL_PLAN.md](ADMIN_PANEL_PLAN.md) memuat temuan source dan usulan registry, worker per bot, login owner, dashboard multi/fokus, serta customer. Belum implementasi admin; engine/misi tetap seperti sebelumnya.
+- Koreksi token: bukan sekali pakai; bawaan diacak setiap restart proses. Login pusat dan sesi independen dari worker adalah rancangan penggantinya.
+
 ## Companion dan runner misi (2026-10-19, terbaru)
 - Pemilik mengonfirmasi Momoi sudah ter-load, lalu mengizinkan upgrade UI companion + runner terpadu. Source diedit langsung sesuai instruksi terbaru, tanpa skrip apply/fix/upgrader.
 - Implementasi dan batas lengkap: [MISSIONS.md](MISSIONS.md), changelog Companion & mission runner. P1/P2 kini sudah memiliki implementasi; jangan mengikuti status rencana lama di bawah sebagai kondisi terbaru.

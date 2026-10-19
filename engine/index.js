@@ -12,7 +12,7 @@ function createEngine (bot, runner) {
   let paused = false; let queue = []; let running = null; let seq = 0; let pumping = false; let engineBusy = false
   const history = []
   let progress = null
-  const botId = () => bot.username || 'bot'
+  const botId = () => bot.arcadiaId || bot.username || 'bot'
   const emit = (type, data) => {
     const ev = { ts: Date.now(), botId: botId(), type, data: data || {} }
     const bad = validate('Event', ev); if (bad) console.log('PERINGATAN: Event melanggar kontrak: ' + bad)

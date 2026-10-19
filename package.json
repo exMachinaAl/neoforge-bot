@@ -7,9 +7,12 @@
     "test": "node tests/skills.test.js && node tests/engine.test.js && node tests/inv.test.js && node tests/craft.test.js && node tests/breed.test.js && node tests/path.test.js && node tests/sleep.test.js && node tests/guard.test.js && node tests/static.test.js && node tests/director.test.js && node tests/map.test.js && node tests/profile3d.test.js && node tests/extend.test.js && node tests/ui.test.js && node tests/persona.test.js && node tests/lifecycle.test.js && node tests/sampler.test.js && node tests/evaluator.test.js && node tests/integration.test.js && node --test tests/missions.test.js",
     "test:missions": "node --test tests/missions.test.js",
     "test:companion-browser": "node tests/companion-browser.test.js",
+    "test:admin": "node --test tests/admin.test.js",
+    "test:admin-browser": "node tests/admin-browser.test.js",
     "postinstall": "node patch-all.js",
     "adapt": "node adapt.js",
     "start": "node bot.js",
+    "admin": "node admin/index.js",
     "check": "node contracts/check.js && node skills/check.js && node lifecycle/macro_check.js",
     "viewer:install": "npm install --no-save --package-lock=false prismarine-viewer@1.33.0 canvas@3.1.0"
   },

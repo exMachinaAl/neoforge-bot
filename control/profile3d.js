@@ -11,7 +11,7 @@ const validName = name => typeof name === 'string' && /^[^<>:"/\\|?*\x00-\x1f]{1
 const clone = value => JSON.parse(JSON.stringify(value))
 
 function createProfile3d ({ dataDir = process.env.ARCADIA_DATA_DIR || path.join(__dirname, '..', 'data') } = {}) {
-  const modelsDir = path.resolve(dataDir, 'models')
+  const modelsDir = path.resolve(process.env.ARCADIA_MODELS_DIR || path.join(dataDir, 'models'))
   const profilesDir = path.resolve(dataDir, 'profiles')
   fs.mkdirSync(modelsDir, { recursive: true })
   fs.mkdirSync(profilesDir, { recursive: true })

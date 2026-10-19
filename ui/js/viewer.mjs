@@ -2,6 +2,7 @@
 import { h, clear } from './dom.mjs'
 
 export function safeViewerUrl (value) {
+  if (typeof value === 'string' && /^\/view\/[A-Za-z0-9_-]+\/(eagle|first-person)\/(\?g=[A-Za-z0-9_-]+)?$/.test(value)) return value
   try {
     const u = new URL(String(value || '')); const port = Number(u.port)
     if (u.protocol !== 'http:' || u.hostname !== '127.0.0.1' || !Number.isInteger(port) || port < 1 || port > 65535 || u.username || u.password) return null // GUARD:VIEWER_URL
@@ -19,7 +20,7 @@ export function viewerCard (api, botId) { // viewer-stable-frame-v2
     if (key === lastKey) return; lastKey = key
     toggle.textContent = current.desired === false || current.state === 'off' ? 'Nyalakan' : 'Matikan'; toggle.disabled = false
     if (current.state === 'ready' && url) {
-      state.className = 'ok'; state.textContent = (current.botId || botId()) + ' · EAGLE · port ' + current.port; open.setAttribute('href', url); open.style.display = ''
+      state.className = 'ok'; state.textContent = url.startsWith('/view/') ? 'Eagle View · Live' : (current.botId || botId()) + ' · EAGLE · port ' + current.port; open.setAttribute('href', url); open.style.display = ''
       if (frameUrl !== url) { clear(frame); frame.append(h('iframe', { className: 'viewer3d', src: url, title: 'Viewer 3D ' + (current.botId || botId()), loading: 'eager', sandbox: 'allow-scripts allow-same-origin', allow: 'fullscreen' })); frameUrl = url }
       return
     }

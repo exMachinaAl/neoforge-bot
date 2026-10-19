@@ -7,7 +7,7 @@ const playChannels = require('./modchannels')
 const client = mc.createClient({
   host: require('./config').host,
   port: require('./config').port,
-  username: 'BotAlpha',
+  username: process.env.MC_USERNAME || 'BotAlpha',
   auth: 'offline',
   version: '1.21.1'
 })
@@ -78,6 +78,7 @@ client.on('neoforgeRegistry', r => { if (r.name === 'minecraft:item') console.lo
 
 const showChannels = require('./sniff')(client)
 const bot = mineflayer.createBot({ client })
+if (process.env.ARCADIA_BOT_ID) bot.arcadiaId = process.env.ARCADIA_BOT_ID
 bot.once('spawn', () => {
   console.log('handshake complete:', client.neoforgeHandshakeComplete)
   bot.chat('Halo, bot terhubung!')
@@ -92,7 +93,15 @@ const engine = require('./engine').createEngine(bot, runner)
 // lifecycle-runtime-v1: telemetri pasif, usulan hanya lewat API.
 const lifecycle = require('./lifecycle/runtime').createLifecycle({ bot, runner, engine })
 bot.once('end', () => lifecycle.close())
-if (process.env.ARCADIA_API !== '0') (() => { const api = require('./control').start({ bot, runner, engine }); require('./control/extend').attach(api, { bot, runner, engine, lifecycle }); return api })()
+if (process.env.ARCADIA_API !== '0') (() => {
+  const api = require('./control').start({ bot, runner, engine })
+  const managed = process.env.ARCADIA_WORKER === '1'
+  const extension = require('./control/extend').attach(api, { bot, runner, engine, lifecycle }, managed ? {
+    multiView: true, viewerPrefix: '/view/' + engine.botId() + '/eagle', firstPersonPrefix: '/view/' + engine.botId() + '/first-person'
+  } : {})
+  if (managed) require('./admin/worker').attach({ bot, engine, api, extension, lifecycle })
+  return api
+})()
 
 
 // ---------- CLI command handling ----------

@@ -1,4 +1,9 @@
 # TODO (checkpoint #4)
+## Pembaruan 2026-10-20 — admin multi-bot
+- [~] Login owner, registry/worker, multi/single, Eagle fokus + first-person per bot, proxy satu origin: TERUJI TIRUAN termasuk dua proses bot dan Edge nyata.
+- [ ] Uji multi-bot Minecraft asli + LLM di admin; beban kamera jangka panjang.
+- [ ] UI customer management, profil LLM per bot, teleoperasi manual dan deployment HTTPS eksternal.
+
 ## Pembaruan 2026-10-19 — companion & misi (lihat docs/MISSIONS.md)
 - [~] UI karakter/kegiatan/percakapan/ingatan dan runner dependency persisten, stop/replan/recovery: TERUJI TIRUAN, termasuk browser Edge nyata.
 - [ ] Uji misi baru di Minecraft + LLM sungguhan; periksa hasil restart di dunia sebelum retry.

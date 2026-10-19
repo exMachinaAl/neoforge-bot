@@ -19,11 +19,13 @@ function number (v, fallback, lo, hi) {
 }
 
 function startViewer3d (bot, opts = {}, load = () => require('prismarine-viewer')) { // viewer-runtime-toggle-v2
-  const botId = String(bot && bot.username || 'bot')
+  const botId = String(bot && (bot.arcadiaId || bot.username) || 'bot')
+  const firstPerson = opts.firstPerson === true
+  const prefix = opts.prefix || ''
   const basePort = number(opts.basePort == null ? opts.port : opts.basePort, 3007, 1, 65535)
   const viewDistance = number(opts.viewDistance, 6, 2, 16)
   let desired = opts.enabled !== false
-  const status = { enabled: desired, desired, state: desired ? 'waiting_spawn' : 'off', botId, mode: 'eagle', bind: '127.0.0.1', port: basePort, url: 'http://127.0.0.1:' + basePort, viewDistance }
+  const status = { enabled: desired, desired, state: desired ? 'waiting_spawn' : 'off', botId, mode: firstPerson ? 'first-person' : 'eagle', bind: '127.0.0.1', port: basePort, url: 'http://127.0.0.1:' + basePort + prefix + '/', viewDistance }
   let ended = false; let spawned = !!(bot && bot.entity); let launching = false; let server = null; let viewerClose = null; let generation = 0
 
   function stopCurrent () {
@@ -35,7 +37,7 @@ function startViewer3d (bot, opts = {}, load = () => require('prismarine-viewer'
 
   function launch () {
     if (ended || !desired || !spawned || launching || status.state === 'ready') return
-    launching = true; status.enabled = true; status.state = 'starting'; status.botId = String(bot && bot.username || botId); delete status.reason
+    launching = true; status.enabled = true; status.state = 'starting'; delete status.reason
     let pv
     try { pv = load() } catch (e) {
       launching = false; status.enabled = false; status.state = 'unavailable'
@@ -45,13 +47,13 @@ function startViewer3d (bot, opts = {}, load = () => require('prismarine-viewer'
     }
     const mine = ++generation; let tries = 0
     try {
-      withLoopbackListen(() => (pv.mineflayer || pv)(bot, { port: basePort, viewDistance, firstPerson: false }), (srv, requested, callback, orig) => {
+      withLoopbackListen(() => (pv.mineflayer || pv)(bot, { port: basePort, viewDistance, firstPerson, prefix }), (srv, requested, callback, orig) => {
         server = srv
         const attempt = () => {
           if (mine !== generation || !desired || ended) return srv
           const port = basePort + tries
           if (port > 65535 || tries >= 100) { launching = false; status.enabled = false; status.state = 'error'; status.reason = 'tidak ada port viewer bebas mulai ' + basePort; return srv }
-          status.port = port; status.url = 'http://127.0.0.1:' + port
+          status.port = port; status.url = 'http://127.0.0.1:' + port + prefix + '/'
           const onError = e => {
             if (mine !== generation) return
             if (e && e.code === 'EADDRINUSE') { tries++; status.state = 'retrying'; status.reason = 'port ' + port + ' terpakai; mencoba port berikutnya'; attempt(); return }
@@ -89,4 +91,13 @@ function startViewer3d (bot, opts = {}, load = () => require('prismarine-viewer'
   return status
 }
 
-module.exports = { startViewer3d, withLoopbackListen }
+// prismarine-viewer menyimpan controller di bot.viewer. Pisahkan controller kedua
+// kamera, tetapi ikat metode event ke bot asli agar listener dapat dilepas tepat.
+function viewerBot (bot) {
+  let viewer
+  return new Proxy(bot, {
+    get (target, key) { if (key === 'viewer') return viewer; const value = target[key]; return typeof value === 'function' ? value.bind(target) : value },
+    set (target, key, value) { if (key === 'viewer') viewer = value; else target[key] = value; return true }
+  })
+}
+module.exports = { startViewer3d, withLoopbackListen, viewerBot }

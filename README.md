@@ -1,5 +1,7 @@
 # neoforge-bot
 
+**Panel admin multi-bot:** `npm run admin`, lalu buka `http://localhost:8788` untuk setup/login owner. Dashboard multi menyediakan Eagle bot fokus + first-person tiap bot; Single membuka companion lengkap. [Panduan admin, Ollama, import BotAlpha, dan hasil uji](docs/ADMIN_PANEL.md).
+
 UI companion dan runner kegiatan terpadu: [cara memakai, recovery, dan API](docs/MISSIONS.md). Setelah memperbarui source, restart proses bot lalu refresh UI; tidak perlu menjalankan upgrader.
 
 Bot mineflayer (1.21.1, auth offline) yang bisa masuk dan bertahan di server NeoForge bermod, belajar sendiri saat mod berubah (`npm run adapt`),
