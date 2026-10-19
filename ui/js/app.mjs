@@ -1,11 +1,10 @@
-// controller-shell-v3: UI stabil, panel game controller, dan boundary akun/tenant.
+// Companion dan kegiatan terpadu; kanvas/iframe tetap dipasang selama polling.
 import { h, clear } from './dom.mjs'
 import { createApi, connectEvents } from './api.mjs'
 import { createStore } from './store.mjs'
 import { renderStatus, renderProgress, renderQueue, renderHistory, renderInventory, renderQuick, renderLog, skillFormCard, chatCard } from './cards.mjs'
-import { directorCard } from './director.mjs'
+import { journeyCard } from './journey.mjs'
 import { mapCard } from './mapcard.mjs'
-import { lifecycleCard } from './lifecycle.mjs'
 import { viewerCard } from './viewer.mjs'
 import { companionCard } from './companion.mjs'
 import { preferencesCard } from './preferences.mjs'
@@ -26,39 +25,55 @@ async function main () {
   const act = { cancel: task => api.cancel(id(), task).then(poll).catch(e => log(e.message)), cmd: op => api.command(id(), op, {}).then(poll).catch(e => log(e.message)), kill: () => confirm('Hentikan semua task dan jeda antrean?') && api.kill().then(poll), say: text => api.command(id(), 'say', { text }).catch(e => log(e.message)), snapshot: () => api.enqueue(id(), { skill: 'inv.snapshot', params: {}, priority: 60 }).then(poll).catch(e => log(e.message)), enqueue: (skill, params, priority) => api.enqueue(id(), { skill, params, priority }).then(poll) }
   const els = { status: h('div'), progress: h('div'), quick: h('div'), queue: h('div'), history: h('div'), inventory: h('div'), log: h('pre'), connection: h('span', { className: 'connection' }, 'menghubungkan'), account: h('div', { className: 'account-chip' }, 'Owner') }
   const picker = h('select', { className: 'bot-picker' }); const companion = companionCard(api, id); let persona = null; let lifeContext = {}; let worldMode = 'viewer'; let preferences
-  const form = skillFormCard(store, act); const director = directorCard(api, id, poll)
+  const form = skillFormCard(store, act); const journey = journeyCard(api, id, poll)
   const map = mapCard(api, id, (x, z, name) => { if (confirm('Jalan ke ' + x + ', ' + z + ' (' + name + ')?')) act.enqueue('nav.goto', { x, z }, 50).catch(e => log(e.message)) })
   const viewer = viewerCard(api, id)
-  const life = lifecycleCard(api, id, poll, snapshot => { persona = snapshot.persona; lifeContext = snapshot.context || {}; companion.update({ state: id() ? store.B(id()).state : {}, persona, context: lifeContext }) })
   const worldTabs = tabs([{ key: 'viewer', label: 'Eagle View', body: viewer.el }, { key: 'map', label: 'Peta 2D', body: map.el }], 'viewer', key => { worldMode = key; if (key === 'map') map.refresh() })
   preferences = preferencesCard(api, id, (settings, key) => { if (key === 'viewer') viewer.load(); if (key === 'map' && settings.map && worldMode === 'map') map.refresh(); document.body.className = settings.motion === false ? 'reduce-motion' : '' })
-  const activityTabs = tabs([{ key: 'mission', label: 'Misi', body: h('div', {}, panel('Task baru', form.el), panel('Antrean', els.queue), panel('Riwayat', els.history)) }, { key: 'life', label: 'Lifecycle', body: life.el }, { key: 'inventory', label: 'Inventory', body: els.inventory }, { key: 'log', label: 'Log', body: els.log }], 'mission')
+  const advanced = h('div', { className: 'advanced-grid' }, panel('STATUS BOT', els.status), panel('TASK BERJALAN', els.progress),
+    panel('KONTROL MANUAL', els.quick), panel('TASK MANUAL', form.el), panel('ANTREAN ENGINE', els.queue), panel('RIWAYAT TASK', els.history),
+    panel('INVENTORY', els.inventory), panel('CHAT MINECRAFT', chatCard(act)), panel('LOG', els.log), panel('PENGATURAN', preferences.el))
+  const workspace = tabs([{ key: 'world', label: 'Dunia bersama', body: worldTabs.el },
+    { key: 'memories', label: 'Ingatan', body: journey.memories }, { key: 'advanced', label: 'Kontrol lanjutan', body: advanced }], 'world')
   const shell = h('div', { className: 'controller-shell' },
-    h('header', { className: 'topbar' }, h('div', { className: 'brand' }, h('span', { className: 'brand-mark' }, 'A'), h('span', {}, h('b', {}, 'ARCADIA'), h('small', {}, 'AI LIFE CONTROL'))), h('div', { className: 'top-controls' }, picker, els.connection, els.account)),
-    h('main', { className: 'dashboard-grid' },
-      h('div', { className: 'left-rail' }, companion.el, panel('STATUS BOT', els.status), panel('KONTROL CEPAT', els.quick)),
-      h('div', { className: 'world-column' }, panel('LIVE WORLD', worldTabs.el, 'world-panel'), panel('AKTIVITAS', activityTabs.el, 'activity-panel')),
-      h('aside', { className: 'right-rail' }, panel('TASK BERJALAN', els.progress), panel('DIRECTOR', director.el), panel('PENGATURAN', preferences.el), panel('CHAT', chatCard(act)))
-    ))
+    h('header', { className: 'topbar' }, h('div', { className: 'brand' }, h('span', { className: 'brand-mark' }, 'A'), h('span', {}, h('b', {}, 'ARCADIA'), h('small', {}, 'AI LIFE COMPANION'))), h('div', { className: 'top-controls' }, picker, els.connection, els.account)),
+    h('main', { className: 'life-dashboard' }, companion.el,
+      h('div', { className: 'life-main' }, journey.activities, journey.talk),
+      panel('RUANG BERSAMA', workspace.el, 'shared-space')))
   root.append(shell)
-  picker.onchange = () => { store.setCurrent(picker.value); persona = null; poll(); life.load(); director.load(); viewer.load(); preferences.load(); companion.loadProfile(); if (worldMode === 'map') map.refresh() }
+  picker.onchange = () => { persona = null; lifeContext = {}; store.setCurrent(picker.value); poll() }
   const seen = {}; const paint = (key, value, fn) => { const sig = stable(value); if (seen[key] === sig) return; seen[key] = sig; fn() }
   function draw () {
     const bot = id() ? store.B(id()) : null; if (!bot) return
-    paint('status', bot.state, () => renderStatus(els.status, bot.state)); paint('progress', [bot.tasks.running, bot.progress], () => renderProgress(els.progress, bot)); paint('queue', [bot.tasks.running, bot.tasks.queue, bot.tasks.paused], () => renderQueue(els.queue, bot.tasks, act)); paint('history', bot.tasks.history, () => renderHistory(els.history, bot.tasks)); paint('inventory', bot.state && bot.state.inventory, () => renderInventory(els.inventory, bot.state, store.s.skills, act)); paint('quick', store.s.skills.map(x => x.name), () => renderQuick(els.quick, store.s.skills, act, form.pick)); paint('log', store.s.log, () => renderLog(els.log, store.s.log)); companion.update({ state: bot.state || {}, persona: persona || {}, context: lifeContext }); els.connection.textContent = store.s.status || 'tersambung'; els.connection.className = 'connection ' + (/terputus/.test(store.s.status) ? 'bad' : 'ok')
+    paint('status', bot.state, () => renderStatus(els.status, bot.state)); paint('progress', [bot.tasks.running, bot.progress], () => renderProgress(els.progress, bot)); paint('queue', [bot.tasks.running, bot.tasks.queue, bot.tasks.paused], () => renderQueue(els.queue, bot.tasks, act)); paint('history', bot.tasks.history, () => renderHistory(els.history, bot.tasks)); paint('inventory', bot.state && bot.state.inventory, () => renderInventory(els.inventory, bot.state, store.s.skills, act)); paint('quick', store.s.skills.map(x => x.name), () => renderQuick(els.quick, store.s.skills, act, form.pick)); paint('log', store.s.log, () => renderLog(els.log, store.s.log)); companion.update({ state: bot.state || {}, persona: persona || {}, context: lifeContext }); journey.update({ ...bot.state, progress: bot.progress[bot.state?.currentTaskId] || bot.state?.progress }); els.connection.textContent = store.s.status || 'tersambung'; els.connection.className = 'connection ' + (/terputus/.test(store.s.status) ? 'bad' : 'ok')
   }
   store.subscribe(draw)
+  let polling = false, pollAgain = false, loadedBot = null
   async function poll () {
+    if (polling) { pollAgain = true; return }
+    polling = true
     try {
       const bots = await api.bots(); store.setBots(bots); const ids = store.s.bots.join('|')
       if (picker.dataset.ids !== ids) { picker.dataset.ids = ids; clear(picker); store.s.bots.forEach(botId => picker.append(h('option', { value: botId }, botId))) }
-      picker.value = id() || ''; if (id()) { const [state, tasks] = await Promise.all([api.state(id()), api.tasks(id())]); store.setState(id(), state); store.setTasks(id(), tasks) }
+      picker.value = id() || ''
+      const current = id()
+      if (current) {
+        if (loadedBot !== current) {
+          loadedBot = current; persona = null; lifeContext = {}
+          await Promise.allSettled([viewer.load(), preferences.load(), companion.loadProfile(), journey.load()])
+        }
+        const [state, tasks, life] = await Promise.all([api.state(current), api.tasks(current), api.call('/bots/' + encodeURIComponent(current) + '/lifecycle').catch(() => null)])
+        if (current !== id()) { pollAgain = true; return }
+        persona = life?.persona || {}; lifeContext = life?.context || {}
+        store.setState(current, state); store.setTasks(current, tasks); await journey.load()
+      }
     } catch (e) { store.setStatus('terputus: ' + e.message) }
+    finally { polling = false; if (pollAgain) { pollAgain = false; setTimeout(poll, 100) } }
   }
   try { const session = await api.session(); els.account.textContent = session.user.displayName + ' · ' + session.tenant.name; els.account.setAttribute('title', session.user.role + ' / ' + session.authMode) } catch (e) { els.account.textContent = 'Sesi tidak tersedia' }
   try { store.setSkills(await api.skills()); form.sync() } catch (e) { log('skill gagal dimuat: ' + e.message) }
-  await poll(); await Promise.allSettled([director.load(), viewer.load(), life.load(), preferences.load(), companion.loadProfile()])
-  connectEvents({ url: '/events', onEvent: event => { store.applyEvent(event); if (/^(batch.|lifecycle.|persona.)/.test(event.type)) life.load(); if (/^(task.(started|finished|failed|queued)|bot.)/.test(event.type)) poll() }, onStatus: store.setStatus })
+  await poll()
+  connectEvents({ url: '/events', onEvent: event => { store.applyEvent(event); if (event.botId !== id()) return; if (event.type === 'mission.updated') journey.load(); if (/^(task\.(started|finished|failed|queued)|bot\.|persona\.|lifecycle\.)/.test(event.type)) poll() }, onStatus: store.setStatus })
   setInterval(() => { if (!document.hidden) { poll(); viewer.load() } }, 3000)
   setInterval(() => { if (!document.hidden && worldMode === 'map' && (!preferences.current || preferences.current.map !== false)) map.refresh() }, 5000)
 }

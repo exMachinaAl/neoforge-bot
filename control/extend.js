@@ -4,6 +4,7 @@
 const fs = require('fs'); const path = require('path'); const crypto = require('crypto')
 const { createStatic } = require('./static'); const cookie = require('./cookie'); const { buildMap } = require('./map'); const { startViewer3d } = require('./viewer3d')
 const { createDirector } = require('../orchestrator/director')
+const { createMissions } = require('../lifecycle/missions')
 const { createSettings } = require('./settings'); const { localSession } = require('./auth'); const { createProfile3d } = require('./profile3d')
 
 function attach (api, deps = {}, opts = {}) {
@@ -12,6 +13,8 @@ function attach (api, deps = {}, opts = {}) {
   const { bot, runner, engine, lifecycle } = deps
   const stat = createStatic({ root: opts.uiRoot || path.join(__dirname, '..', 'ui'), prefix: '/ui/', maxBytes: 2 * 1024 * 1024 })
   const director = deps.director || createDirector({ bot, runner, engine })
+  const missions = opts.missions || createMissions({ engine, runner, director, lifecycle, dataDir: opts.dataDir })
+  server.once('close', () => missions.close())
   const settings = opts.settings || createSettings(opts.settingsOptions)
   const initialSettings = settings.get(String(bot && bot.username || 'bot'))
   const viewer = opts.viewer || startViewer3d(bot, { enabled: initialSettings.viewer })
@@ -22,7 +25,7 @@ function attach (api, deps = {}, opts = {}) {
   const tokenOk = t => { const a = Buffer.from(String(t || '')); const b = Buffer.from(token); return a.length === b.length && crypto.timingSafeEqual(a, b) }
   const send = (res, code, obj, extra) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...(extra || {}) }); res.end(JSON.stringify(obj)) }
   const fail = (status, msg) => Object.assign(new Error(msg), { status })
-  const readBody = req => new Promise((resolve, reject) => { let n = 0; const ch = []; req.on('data', c => { n += c.length; if (n > 65536) { reject(fail(413, 'body terlalu besar')); req.destroy() } else ch.push(c) }); req.on('end', () => { try { resolve(ch.length ? JSON.parse(Buffer.concat(ch).toString()) : {}) } catch (e) { reject(fail(400, 'JSON tidak valid')) } }) })
+  const readBody = req => new Promise((resolve, reject) => { let n = 0; const ch = []; req.on('data', c => { n += c.length; if (n > 65536) { reject(fail(413, 'body terlalu besar')); req.destroy() } else ch.push(c) }); req.on('end', () => { try { const body = ch.length ? JSON.parse(Buffer.concat(ch).toString()) : {}; if (!body || typeof body !== 'object' || Array.isArray(body)) throw Error('object diperlukan'); resolve(body) } catch (e) { reject(fail(400, 'JSON object tidak valid')) } }) })
   const botIdOf = () => (typeof engine.botId === 'function' ? engine.botId() : engine.state().botId)
   const isMe = id => id === 'me' || id === botIdOf()
   let mapCache = { t: 0, r: 0, v: null }
@@ -43,6 +46,12 @@ function attach (api, deps = {}, opts = {}) {
         '/bots/{id}/lifecycle/batches/{batchId}/reject': {post:op('Tolak batch',{parameters:[idp]})},
         '/bots/{id}/persona': {get:op('Persona tersimpan',{parameters:[idp]})},
         '/bots/{id}/chests': {get:op('Catatan chest bertimestamp',{parameters:[idp]})},
+        '/bots/{id}/missions': {get:op('Misi, percakapan, dan ingatan persisten',{parameters:[idp]})},
+        '/bots/{id}/missions/plan': {post:op('Rencanakan kegiatan dari LLM atau lifecycle; run=true mulai langsung',{parameters:[idp]})},
+        '/bots/{id}/missions/{missionId}/{action}': {post:op('start, stop, cancel, replan, atau resolve langkah',{parameters:[idp]})},
+        '/bots/{id}/companion/chat': {post:op('Percakapan AI tanpa eksekusi task',{parameters:[idp]})},
+        '/bots/{id}/memories': {post:op('Simpan catatan pemilik',{parameters:[idp]})},
+        '/bots/{id}/memories/{memoryId}': {delete:op('Hapus ingatan tersimpan',{parameters:[idp]})},
         '/auth/session': { get: op('Sesi akun dan tenant aktif') },
         '/bots/{id}/settings': { get: op('Pengaturan UI bot', { parameters: [idp] }), post: op('Ubah pengaturan UI bot', { parameters: [idp] }) },
         '/bots/{id}/profile': { get: op('Profil model GLB bot', { parameters: [idp] }), post: op('Kalibrasi model/animasi GLB', { parameters: [idp] }) },
@@ -55,7 +64,7 @@ function attach (api, deps = {}, opts = {}) {
   async function mine (req, res, url, auth) {
     const parts = url.pathname.split('/').filter(Boolean); const m = req.method
     const isUi = (m === 'GET' || m === 'HEAD') && (!parts.length || parts[0] === 'index.html' || parts[0] === 'ui')
-    const isMine = isUi || (m === 'GET' && (parts[0] === 'openapi.json' || (parts[0] === 'auth' && parts[1] === 'session'))) || (parts[0] === 'bots' && (parts[2] === 'map' || parts[2] === 'viewer' || parts[2] === 'settings' || parts[2] === 'profile' || parts[2] === 'director' || parts[2] === 'lifecycle' || parts[2] === 'persona' || parts[2] === 'chests'))
+    const isMine = isUi || (m === 'GET' && (parts[0] === 'openapi.json' || (parts[0] === 'auth' && parts[1] === 'session'))) || (parts[0] === 'bots' && ['map','viewer','settings','profile','director','lifecycle','persona','chests','missions','companion','memories'].includes(parts[2]))
     if (!isMine) return false
     if (!auth.ok) { send(res, 401, { error: 'token salah/kurang (Authorization: Bearer, ?token=, atau cookie arcadia_' + port + ')' }); return true } // GUARD:AUTH
     if (isUi) {
@@ -66,6 +75,27 @@ function attach (api, deps = {}, opts = {}) {
     if (parts[0] === 'auth' && parts[1] === 'session') { send(res, 200, session); return true }
     try {
       if (!isMe(parts[1])) throw fail(404, 'bot tidak ditemukan: ' + parts[1])
+      if (parts[2] === 'missions') {
+        if (m === 'GET' && parts.length === 3) { send(res,200,missions.snapshot()); return true }
+        if (m === 'POST' && parts.length === 4 && parts[3] === 'plan') { send(res,200,await missions.generate(await readBody(req))); return true }
+        if (m === 'POST' && parts.length === 5) {
+          const id = parts[3], action = parts[4]; let result
+          if (action === 'start') result = missions.start(id)
+          else if (action === 'stop') result = missions.halt(id)
+          else if (action === 'cancel') result = missions.halt(id,true)
+          else if (action === 'replan') result = await missions.replan(id)
+          else if (action === 'resolve') { const b = await readBody(req); result = missions.resolve(id,b.stepId,b.resolution) }
+          else throw fail(404,'aksi misi tidak ditemukan')
+          send(res,200,result); return true
+        }
+      }
+      if (parts[2] === 'companion' && parts[3] === 'chat' && parts.length === 4 && m === 'POST') {
+        const b = await readBody(req); send(res,200,await missions.chat(b.text)); return true
+      }
+      if (parts[2] === 'memories') {
+        if (m === 'POST' && parts.length === 3) { const b = await readBody(req); send(res,200,missions.memory(b.text)); return true }
+        if (m === 'DELETE' && parts.length === 4) { send(res,200,missions.forget(parts[3])); return true }
+      }
       // lifecycle-routes-v1
       if (['lifecycle','persona','chests'].includes(parts[2])) {
         if (!lifecycle) throw fail(503, 'lifecycle belum terpasang')
@@ -120,6 +150,6 @@ function attach (api, deps = {}, opts = {}) {
     } catch (e) { if (!res.headersSent) send(res, 500, { error: e.message }); return }
     for (const l of orig) l.call(server, req, res)
   })
-  return { director, viewer, stat, settings, session, profile3d }
+  return { director, viewer, stat, settings, session, profile3d, missions }
 }
 module.exports = { attach }

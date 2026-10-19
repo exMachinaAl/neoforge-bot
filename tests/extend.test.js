@@ -20,8 +20,20 @@ async function suite (attachImpl, quiet) {
   const director = dirMod.createDirector({ bot, runner, engine, llm, cfg: { provider: 'anthropic', url: 'http://x', key: 'K-SECRET', model: 'm', rpm: 20, needsKey: true }, deny: [], autoApprove: [] })
   const view = { enabled: false, desired: false, state: 'off', reason: 'tes', setEnabled (v) { this.enabled = v; this.desired = v; this.state = v ? 'starting' : 'off'; return this } }; let prefs = { viewer: false, map: true, motion: true }; const settings = { get: () => ({ ...prefs }), update: (id, patch) => (prefs = { ...prefs, ...patch }) }
   const modelFile=path.join(ui,'model.glb');fs.writeFileSync(modelFile,'glTF');let profile={model:null,scale:1,animationMode:'auto',manualAnimation:null,animationMap:{}};const profile3d={publicProfile:()=>({config:{...profile},models:['model.glb'],modelUrl:profile.model?'/bots/BotAlpha/profile/model/model.glb':null,states:['idle','working']}),update:(id,patch)=>(profile={...profile,...patch}),resolveModel:name=>{if(name!=='model.glb')throw Object.assign(Error('model tidak ditemukan'),{status:404});return{full:modelFile,size:4}}}
-  attachImpl(api, { bot, runner, engine, director }, { uiRoot: ui, viewer: view, settings, profile3d })
+  attachImpl(api, { bot, runner, engine, director }, { uiRoot: ui, dataDir: path.join(ui, 'data'), viewer: view, settings, profile3d })
   const H = { authorization: 'Bearer tok123' }; const ck = 'arcadia_' + port + '=tok123'
+  const post = body => ({ method: 'POST', headers: { ...H, 'content-type': 'application/json' }, body })
+  let missionResponse = await req(port, '/bots/BotAlpha/missions'); t(missionResponse.s === 401, 'missions memerlukan auth')
+  missionResponse = await req(port, '/bots/lain/missions', { headers: H }); t(missionResponse.s === 404, 'missions terisolasi bot')
+  missionResponse = await req(port, '/bots/BotAlpha/missions/plan', post('null')); t(missionResponse.s === 400, 'plan menolak body null')
+  missionResponse = await req(port, '/bots/BotAlpha/memories', { method: 'POST', headers: { cookie: ck, origin: 'http://evil.example' }, body: { text: 'injeksi' } }); t(missionResponse.s === 403, 'ingatan memerlukan same-origin saat memakai cookie')
+  missionResponse = await req(port, '/bots/BotAlpha/memories', post({ text: 'Suka kebun' })); const noteId = missionResponse.j.id
+  t(missionResponse.s === 200 && noteId, 'ingatan tersimpan')
+  missionResponse = await req(port, '/bots/BotAlpha/memories/' + noteId, { method: 'DELETE', headers: H }); t(missionResponse.s === 200, 'ingatan dapat dihapus')
+  missionResponse = await req(port, '/bots/BotAlpha/missions/plan', post({ goal: 'Kunjungi kebun' })); const missionId = missionResponse.j.id
+  t(missionResponse.s === 200 && missionResponse.j.status === 'proposed' && !engine.list().queue.length, 'rencana terpadu tersimpan tanpa enqueue sebelum mulai')
+  missionResponse = await req(port, '/bots/BotAlpha/missions/' + missionId + '/cancel', post({})); t(missionResponse.s === 200 && missionResponse.j.status === 'cancelled', 'misi dapat dibatalkan lewat API')
+  missionResponse = await req(port, '/bots/BotAlpha/missions/plan', post({ source: 'offline' })); t(missionResponse.s === 503, 'offline menjelaskan lifecycle yang tidak terpasang')
   let r = await req(port, '/bots', { headers: H }); t(r.s === 200 && r.j[0].botId === 'BotAlpha', 'rute LAMA tetap jalan lewat pembungkus: GET /bots')
   r = await req(port, '/skills', { headers: H }); t(r.s === 200 && r.j.length >= 5, 'rute lama: GET /skills')
   r = await req(port, '/bots/me/tasks', { method: 'POST', headers: { ...H, 'content-type': 'application/json' }, body: { skill: 'nav.goto', params: { x: 3, z: 3 } } }); t(r.s === 201, 'rute lama: POST task diterima'); await sleep(300)

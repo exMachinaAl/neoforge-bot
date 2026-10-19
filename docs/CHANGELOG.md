@@ -2,6 +2,28 @@
 Format: Ditambah / Diubah / Diperbaiki / Catatan keamanan / Diketahui bermasalah. Label status: TERBUKTI (log pemilik) | DILAPORKAN | TERUJI TIRUAN | BELUM DIUJI.
 Tanggal paket sebelum 2026-10-12 tidak tercatat; urutan di bawah = urutan pengiriman.
 
+## [Companion & mission runner] 2026-10-19
+
+- UI utama berpusat pada karakter GLB, kegiatan berjudul/progres, percakapan dan tujuan. Statistik tambahan serta kalibrasi dilipat; Eagle View dan ingatan berada di ruang bersama, kontrol manual di tab lanjutan.
+- Runner persisten per bot: dependency, satu langkah aktif, stop/cancel, retry eksplisit, replan LLM yang mempertahankan hasil selesai, checkpoint dan pemulihan restart tanpa mengulang aksi yang hasilnya belum diketahui.
+- Director/lifecycle menghasilkan kegiatan melalui runner yang sama. Chat LLM memakai konteks dan ingatan; catatan serta hasil kegiatan dapat dilihat/dihapus di UI. Skor hasil mempertahankan riwayat kegagalan.
+- TERUJI TIRUAN: 8 skenario mission runner, 50 extend/API termasuk auth/CSRF, 48 Director, 50 UI, 12 integrasi. `npm run check` lulus.
+- TERUJI TIRUAN (Edge nyata): Momoi, percakapan, ingatan/hapus, kegiatan dua langkah, persistensi reload, desktop/viewport HP; kanvas dan iframe stabil, tanpa exception. Tidak memanggil API model sungguhan atau Minecraft.
+- BELUM DIUJI: alur misi baru dengan server Minecraft/model LLM sungguhan dan HP fisik. First-person, training ML, serta login customer belum dikerjakan. Restart proses bot diperlukan untuk memuat backend baru.
+- Rincian pemakaian, recovery, batas dan API: [MISSIONS.md](MISSIONS.md). Perubahan langsung ke source, tanpa installer/upgrader.
+
+## [Profil GLB v2] 2026-10-19 — Momoi dan pergantian model
+
+- Renderer Three.js dipertahankan ketika model berganti; hasil load usang diabaikan, unduhan lama dibatalkan, dan kanvas mengikuti resize.
+- CSP mengizinkan fetch blob lokal agar ImageBitmapLoader dapat membaca tekstur GLB tertanam.
+- Pilihan model langsung memuat dan tersimpan; ukuran, rotasi, clip manual, serta mapping otomatis disimpan per model/per bot. Kalibrasi lama dipulihkan saat kembali ke model.
+- Framing memakai wrapper terpisah dari root animasi. Model statis tanpa clip tetap dapat ditampilkan.
+- Validasi container GLB 2.0, file rusak, resource eksternal, dan ekstensi wajib. Draco/KTX2/Meshopt belum didukung; UI meminta ekspor GLB tanpa kompresi tersebut.
+- TERUJI TIRUAN (browser Edge nyata, aset Momoi asli, API profil lokal tanpa Minecraft): Momoi dengan 37 clip dan tekstur tampil; pemilihan manual, pergantian model, resize, pemulihan dari file rusak, pilihan cepat, serta autosave lulus. Screenshot lokal: backup/avatar-momoi.png.
+- TERUJI TIRUAN: profil 18/18, UI 50/50, static 37/37, extend 41/41. Tes symlink profil dilewati karena Windows EPERM; validasi path lain lulus.
+- BELUM DIUJI: browser HP/Termux, model lain milik pemilik, dan transisi kondisi selama task Minecraft nyata.
+- Uji browser dapat diulang dengan `node tests/avatar-browser.test.js` (Edge dan dua aset lokal diperlukan). Tes tidak memanggil LLM atau server Minecraft.
+
 ## [v2.6-belum-commit] 2026-10-16 - profil GLB per bot dan fondasi generator kegiatan
 
 Ditambah

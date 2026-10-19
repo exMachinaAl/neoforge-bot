@@ -9,4 +9,23 @@ const f=p.resolveModel('A model.glb');ok(f.size===4&&f.full.startsWith(fs.realpa
 for(const bad of ['../x.glb','x.txt','xXglb','C:\\x.glb']){let e;try{p.resolveModel(bad)}catch(x){e=x}ok(e&&e.status>=400,'path/ekstensi ditolak: '+bad)}
 let e;try{p.update('BotAlpha',{model:'missing.glb'})}catch(x){e=x}ok(e&&e.status===400,'model yang tidak ada ditolak')
 try{fs.symlinkSync(path.join(dir,'outside.glb'),path.join(models,'link.glb'));fs.writeFileSync(path.join(dir,'outside.glb'),'x');let z;try{p.resolveModel('link.glb')}catch(x){z=x}ok(z&&z.status===404,'symlink keluar folder ditolak')}catch(e){console.log('SKIP symlink: '+e.message)}
+
+fs.writeFileSync(path.join(models,'B.glb'), 'glTF')
+fs.writeFileSync(path.join(models,'xXglb'), 'glTF')
+ok(!p.models().includes('xXglb'), 'daftar hanya menerima ekstensi .glb literal')
+p.update('BotAlpha', {rotationY:45})
+p.update('BotAlpha', {model:'B.glb'})
+ok(p.load('BotAlpha').scale===1&&p.load('BotAlpha').animationMode==='auto', 'model baru tidak mewarisi kalibrasi model lama')
+p.update('BotAlpha', {scale:2,rotationY:-30})
+p.update('BotAlpha', {model:'A model.glb'})
+ok(p.load('BotAlpha').manualAnimation==='Wave'&&p.load('BotAlpha').scale===1.25&&p.load('BotAlpha').rotationY===45, 'kembali ke model memulihkan clip, ukuran, rotasi')
+const reopened=createProfile3d({dataDir:dir})
+reopened.update('BotAlpha',{model:'B.glb'})
+ok(reopened.load('BotAlpha').scale===2&&reopened.load('BotAlpha').rotationY===-30, 'kalibrasi bertahan setelah membuka ulang penyimpanan')
+ok(reopened.load('OtherBot').model===null, 'profil bot lain terisolasi')
+for(const patch of [{scale:null},{rotationY:181},{animationMap:[]},{animationMap:{unknown:'Idle'}}]){
+  let error;try{reopened.update('BotAlpha',patch)}catch(e){error=e}
+  ok(error?.status===400,'kalibrasi invalid ditolak: '+JSON.stringify(patch))
+}
+
 console.log('HASIL: '+pass+' lulus, '+fail+' gagal');process.exit(fail?1:0)

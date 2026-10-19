@@ -1,5 +1,23 @@
 # HANDOFF neoforge-bot / Arcadia (checkpoint #12)
 
+## Companion dan runner misi (2026-10-19, terbaru)
+- Pemilik mengonfirmasi Momoi sudah ter-load, lalu mengizinkan upgrade UI companion + runner terpadu. Source diedit langsung sesuai instruksi terbaru, tanpa skrip apply/fix/upgrader.
+- Implementasi dan batas lengkap: [MISSIONS.md](MISSIONS.md), changelog Companion & mission runner. P1/P2 kini sudah memiliki implementasi; jangan mengikuti status rencana lama di bawah sebagai kondisi terbaru.
+- UI menggunakan `/missions/plan` (LLM atau offline), `/companion/chat`, dan `/memories`. API legacy tetap ada. Recovery mewajibkan pemeriksaan langkah uncertain; tidak otomatis mengulang aksi dunia.
+- TERUJI TIRUAN: runner 8, API 50, Director 48, UI 50, integrasi 12; check lulus. Browser Edge desktop/viewport HP memakai Momoi, bot/model tiruan, tanpa key; canvas/iframe stabil. Minecraft/LLM sungguhan untuk alur baru BELUM DIUJI.
+- Proses API lama terdeteksi memakai port 8787 ketika tes; tidak dihentikan. Pemilik perlu restart proses bot, lalu refresh UI. First-person, login customer, dan training ML masih backlog.
+
+## Implementasi profil GLB v2 (2026-10-19)
+- Pemilik menyetujui upgrade pemuatan model. P0 sudah dikerjakan: Momoi tampil di Edge, renderer stabil, autosave dan kalibrasi per model, resize, serta error kompatibilitas yang jelas.
+- Lihat CHANGELOG bagian Profil GLB v2. UI tetap memakai GLB 2.0 dengan resource tertanam; decoder kompresi tambahan belum dipasang.
+- Pengujian memakai browser nyata dan API profil terisolasi, bukan koneksi Minecraft. Jangan mengklaim transisi task server asli sudah diuji.
+- P1 UI companion, P2 mission runner, dan P3 ML tetap rencana; tidak dikerjakan pada upgrade model ini.
+
+## Audit dan usulan upgrade 2026-10-19
+- Lihat [rencana upgrade terbaru](UPGRADE_PLAN_2026-10-19.md): model Momoi, UI companion/misi, mission runner, lalu ML offline. Status USULAN; runtime tidak diubah pada sesi audit ini.
+- Koreksi kondisi lama: Momoi.glb sekarang sudah ada; HEAD saat audit a0772a3 dan working tree awal bersih. Pernyataan belum di-commit/model belum tersedia di bawah adalah riwayat 16 Oktober.
+- Gagal load DILAPORKAN pemilik; kandidat penyebab dari source tercatat dalam rencana, belum direproduksi di browser.
+
 ## Titik berhenti untuk model berikutnya (permintaan pemilik 2026-10-16)
 - Pemilik meminta agen saat ini berhenti mengoding. Lanjutkan hanya setelah instruksi baru dari pemilik.
 - Baca changelog `v2.6-belum-commit` di `docs/CHANGELOG.md` untuk daftar file, hasil uji, dan batas implementasi terakhir.

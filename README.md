@@ -1,4 +1,7 @@
 # neoforge-bot
+
+UI companion dan runner kegiatan terpadu: [cara memakai, recovery, dan API](docs/MISSIONS.md). Setelah memperbarui source, restart proses bot lalu refresh UI; tidak perlu menjalankan upgrader.
+
 Bot mineflayer (1.21.1, auth offline) yang bisa masuk dan bertahan di server NeoForge bermod, belajar sendiri saat mod berubah (`npm run adapt`),
 dan menjalankan task (jalan, tambang, pancing, panen, berburu) lewat CLI. Konteks lengkap untuk AI agent: `docs/HANDOFF.md`, aturan: `AGENTS.md`, backlog: `TODO.md`.
 
@@ -88,7 +91,7 @@ Model HANYA mengusulkan task; tidak ada yang berjalan sebelum disetujui (otonomi
 
 <!-- profile3d-lifecycle-v1 -->
 ## Profil bot 3D dan generator kegiatan
-- Salin model '.glb' ke 'data/models/' (folder data diabaikan Git), buka ulang profil bot, lalu pilih model. Model maksimum 100 MB dan hanya dilayani ke sesi UI yang terautentikasi.
+- Salin GLB 2.0 ke `data/models/` (maksimum 100 MB), tekan **Muat ulang model**, lalu pilih file. Pilihan langsung berlaku; ukuran, rotasi, clip manual, dan mapping tersimpan otomatis per model/per bot. Tekstur/buffer harus tertanam di GLB. FBX/PMX/VRM khusus dan GLB dengan Draco/KTX2/Meshopt belum didukung; ekspor GLB tanpa kompresi tersebut terlebih dahulu. Model hanya dilayani ke sesi terautentikasi.
 - Tiap bot menyimpan model, skala, mode animasi otomatis/manual, dan pemetaan clip di 'data/profiles/<bot>.json'. Kondisi otomatis: 'idle', 'working', 'happy', 'tired', 'sad', dan 'danger'. Nama clip dibaca dari GLB; pemetaan bisa dikalibrasi di panel **AI Life**.
 - Renderer memakai Three.js + GLTFLoader lokal di 'ui/vendor/'; tidak mengambil skrip dari CDN. Lisensi vendornya ada di 'ui/vendor/THREE-LICENSE.txt'.
 - Lifecycle dapat memilih satu template sebagai kegiatan berjudul yang berisi beberapa task berurutan. Contoh 'Hari yang Indah untuk Bertanam' berisi panen, memancing, lalu snapshot inventory. Persetujuan tetap wajib sebelum seluruh task masuk antrean.

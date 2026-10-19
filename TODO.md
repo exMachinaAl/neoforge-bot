@@ -1,4 +1,9 @@
 # TODO (checkpoint #4)
+## Pembaruan 2026-10-19 — companion & misi (lihat docs/MISSIONS.md)
+- [~] UI karakter/kegiatan/percakapan/ingatan dan runner dependency persisten, stop/replan/recovery: TERUJI TIRUAN, termasuk browser Edge nyata.
+- [ ] Uji misi baru di Minecraft + LLM sungguhan; periksa hasil restart di dunia sebelum retry.
+- [ ] First-person view, autentikasi customer, dan training ranker/task generator ML offline.
+
 Legenda: [x] TERBUKTI (log/!test) | [~] TERUJI TIRUAN / sebagian | [ ] belum
 
 ## Koneksi & kompatibilitas modded
