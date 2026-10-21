@@ -1,4 +1,13 @@
 # TODO (checkpoint #4)
+## Pembaruan 2026-10-21 — agent berulang
+- [~] Loop keputusan/pemulihan LLM, izin per bot, checkpoint/recovery, metode JS sandbox, primitives world.inspect/world.place dan dataset pengalaman: TERUJI TIRUAN, lihat docs/AGENT_RUNTIME.md.
+- [ ] Uji tujuan mining dan pemulihan modded di Minecraft + Ollama asli; uji command Docker serta Linux/Termux fisik.
+- [ ] Perluasan native smelting/portal/eksplorasi, validasi tujuan bangunan, training ML dari pengalaman, budget LLM bersama lintas worker.
+
+## Pembaruan 2026-10-21 — prasyarat mining
+- [~] Namespace vanilla + bootstrap wooden_pickaxe dari log/papan, pemasangan meja, progres dan stop: TERUJI TIRUAN; lihat docs/MINING_PREPARATION.md.
+- [ ] Uji bootstrap di server asli; lanjutkan planner prasyarat tier batu/besi, smelting, dan sublangkah misi persisten.
+
 ## Pembaruan 2026-10-20 — admin multi-bot
 - [~] Login owner, registry/worker, multi/single, Eagle fokus + first-person per bot, proxy satu origin: TERUJI TIRUAN termasuk dua proses bot dan Edge nyata.
 - [ ] Uji multi-bot Minecraft asli + LLM di admin; beban kamera jangka panjang.

@@ -4,6 +4,8 @@ Panel admin sekarang memiliki login owner, registry bot, pengelola proses, dashb
 
 ## Jalankan
 
+Multi dan Single kini menyediakan slider izin serta kontrol tujuan [agent berulang](AGENT_RUNTIME.md). Preferensi dan data agent terpisah per bot. Jalankan tujuan menggunakan loop keputusan/pemulihan LLM.
+
 Dari folder proyek, jika konfigurasi Ollama Windows sudah disimpan:
 
 ```powershell

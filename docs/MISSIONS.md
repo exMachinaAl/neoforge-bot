@@ -1,5 +1,7 @@
 # Companion dan kegiatan terpadu
 
+**Pembaruan 2026-10-21:** tujuan baru dari **Mulai kegiatan** memakai [agent berulang](AGENT_RUNTIME.md) dan slider izin. Dokumen di bawah menjelaskan runner lama/offline dan API `/missions`, yang tetap tersedia. Agent dan misi tidak berjalan bersamaan.
+
 Implementasi 2026-10-19. Status **TERUJI TIRUAN**: engine/API asli dengan executor atau bot tiruan, browser Edge nyata. Minecraft dan model LLM sungguhan **BELUM DIUJI** untuk jalur baru ini.
 
 ## Cara memakai

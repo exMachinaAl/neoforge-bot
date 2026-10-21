@@ -2,6 +2,31 @@
 Format: Ditambah / Diubah / Diperbaiki / Catatan keamanan / Diketahui bermasalah. Label status: TERBUKTI (log pemilik) | DILAPORKAN | TERUJI TIRUAN | BELUM DIUJI.
 Tanggal paket sebelum 2026-10-12 tidak tercatat; urutan di bawah = urutan pengiriman.
 
+## [Agent berulang, izin dan sandbox] 2026-10-21
+
+- Tujuan baru di UI Single/Multi kini memakai `agent/runtime.js`: LLM mengambil keputusan setelah hasil native, memilih pemulihan, dan melanjutkan tujuan. Runner offline/legacy dipertahankan dengan pengaman executor bersama.
+- Slider Observasi/Semi/Penuh tersimpan per bot; persetujuan Semi berlaku per cakupan selama tujuan. Stop, perubahan izin, kill switch, death/disconnect membatalkan keputusan terlambat. Checkpoint dan pemeriksaan dunia setelah restart menghindari pengulangan buta.
+- `tool.create`/`tool.run`: metode JS tersimpan dan diuji dalam QuickJS/WASM terisolasi; task hasil metode divalidasi dan memakai izin/runner yang sama. Command production melalui container; flag command host hanya debug dan diabaikan dengan warning di production.
+- Skill `world.inspect` dan `world.place`, konteks agent untuk chat, serta JSONL pengalaman keputusan/hasil/persetujuan/koreksi. Belum training ML atau jaminan rumah/village/portal otomatis.
+- TERUJI TIRUAN: agent 13, misi 8, API 57, UI 50, Director 48, admin multi-worker; check/sintaks lulus. Edge desktop/HP: Semi, slider Penuh persisten, karakter/kamera/input stabil; admin multi-kamera lulus. Server Minecraft/LLM nyata, Docker command dan Linux/Termux fisik BELUM DIUJI.
+- Dependency QuickJS 0.32.0 dipasang; viewer/canvas dipulihkan dan dapat di-require, patch native proyek diterapkan kembali setelah instalasi. `.env`/key pemilik dan proses produksi tidak diubah. Rincian dan pemakaian: [AGENT_RUNTIME.md](AGENT_RUNTIME.md).
+
+## [Namespace mining dan persiapan alat dasar] 2026-10-21
+
+- TERBUKTI dari log pemilik: `minecraft:stone` ditolak lookup skill. Prefix vanilla kini diterima untuk block/item; namespace mod tidak disamarkan.
+- `mine.collect` otomatis menyiapkan wooden_pickaxe bila cukup untuk target: log/papan, stick, meja, pickaxe. Resep/inventory menentukan kekurangan; alat/meja yang ada dipakai kembali. Progres dan hasil persiapan tercatat; stop/gagal/partial menghentikan dependency berikutnya.
+- `craft.item` dapat memasang meja dari inventory dengan pemeriksaan ruang dan konfirmasi server; memilih resep yang memenuhi seluruh jumlah sebelum resep parsial. Director diberi konteks kemampuan bootstrap, drop stone -> cobblestone, dan inventory hingga 46 entri.
+- TERUJI TIRUAN: 10 kasus bootstrap, 45 regresi skill, 26 crafting, 48 Director lulus; `npm run check` dan pemeriksaan sintaks lulus. Kasus tambahan CLI `autoPlace=false` juga lulus.
+- Uji tiruan, batas bootstrap, dan cara uji Minecraft: [MINING_PREPARATION.md](MINING_PREPARATION.md). Persiapan tier alat lebih tinggi dan checkpoint per sublangkah belum dibuat; Minecraft asli untuk perubahan ini BELUM DIUJI.
+
+## [Konfigurasi LLM portable] 2026-10-20
+
+- `.env` root dibaca otomatis memakai API native Node, berlaku untuk bot, admin, worker, dan CLI Director; environment yang sudah ada tetap menang. Node minimum proyek 22. Konfigurasi DPAPI Windows lama tetap dapat dipakai.
+- `.env.example`, `npm run llm:status` tanpa key/output secret atau request jaringan, serta `npm run llm:test -- "tujuan"`; CLI uji memberi exit code nonzero pada kegagalan request/validasi.
+- [LLM_SETUP.md](LLM_SETUP.md) menjelaskan Cloud vs lokal, dot-source, konfigurasi Windows/Termux/Linux, dan pengujian bertahap tanpa/sampai koneksi model nyata.
+- Pemeriksaan metadata file: settings dan key DPAPI ada, tetapi key/provider belum dimuat ke environment proses tool. Key tidak dibuka atau dicetak.
+- TERUJI TIRUAN: loader, prioritas environment, pewarisan child, status cloud/lokal tanpa bocor key; Director 48 lulus. Termux/Linux fisik dan Ollama nyata pada perubahan ini BELUM DIUJI.
+
 ## [Admin multi-bot dan dual kamera] 2026-10-20
 
 - Panel admin satu origin dengan login owner, sesi persisten, registry bot, tambah/import konfigurasi, start/stop/restart/hapus, dan kontrol massal dengan hasil per bot.

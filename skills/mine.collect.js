@@ -4,7 +4,7 @@ const U = require('./_util')
 
 const manifest = {
   name: 'mine.collect',
-  description: 'Menambang blok terdekat sampai terkumpul count item hasil (drop otomatis dari data blok); menggali menembus tanah/batu alami bila perlu; opsional simpan ke chest',
+  description: 'Tambang drop blok; otomatis siapkan wooden_pickaxe dari kayu/papan, stick dan meja bila belum ada. Stone menghasilkan cobblestone.',
   paramsSchema: {
     type: 'object',
     required: ['block'],
@@ -16,10 +16,11 @@ const manifest = {
       dig: { enum: ['natural', 'any', 'none'], default: 'natural' },
       guard: { type: 'boolean', default: true },
       minHealth: { type: 'number', default: 8 },
+      prepare: { type: 'boolean', default: true, description: 'siapkan wooden_pickaxe bila cukup untuk blok tujuan; false = hanya gunakan alat yang sudah ada' },
       chest: { type: ['boolean', 'string', 'object'], description: 'true/"auto" = chest/barrel terdekat; {x,y,z} = di/dekat koordinat itu' }
     }
   },
-  requires: ['move', 'block.read', 'block.dig', 'inventory.protocol'],
+  requires: ['move', 'block.read', 'block.dig', 'block.place', 'inventory.protocol'],
   interruptible: true,
   estimatedMs: 180000
 }
@@ -41,9 +42,12 @@ function safeTarget (bot, block) {
 
 async function run (bot, p, ctx) {
   const md = ctx.mcData
+  p = { ...p, block: String(p.block || '').replace(/^minecraft:/, ''),
+    ...(p.item ? { item: String(p.item).replace(/^minecraft:/, '') } : {}) }
   const blockInfo = md.blocksByName[p.block]
   if (!blockInfo) return { ok: false, code: 'PRECONDITION_FAILED', error: 'blok tidak dikenal (hanya vanilla): ' + p.block }
   if (bot.game.gameMode !== 'survival') return { ok: false, code: 'PRECONDITION_FAILED', error: 'mode game ' + bot.game.gameMode + ': blok tidak menjatuhkan item. /gamemode survival BotAlpha' }
+  if (p.item && !md.itemsByName[p.item]) return { ok: false, code: 'PRECONDITION_FAILED', error: 'item hasil tidak dikenal (hanya vanilla): ' + p.item }
   let dropIds = p.item ? [md.itemsByName[p.item] && md.itemsByName[p.item].id] : (blockInfo.drops || [])
   if (!dropIds.length || dropIds.some(x => x == null)) dropIds = [md.itemsByName[p.block] && md.itemsByName[p.block].id].filter(x => x != null)
   if (!dropIds.length) return { ok: false, code: 'PRECONDITION_FAILED', error: 'item hasil tidak diketahui untuk ' + p.block + ' (isi param item)' }
@@ -56,8 +60,16 @@ async function run (bot, p, ctx) {
   // pra-cek: alat yang boleh memanen blok ini harus ada (stone tanpa pickaxe tidak menjatuhkan apa pun)
   const probe = bot.findBlock({ matching: blockInfo.id, maxDistance, useExtraInfo: x => safeTarget(bot, x) })
   if (!probe) return { ok: false, code: 'TARGET_NOT_FOUND', error: 'tidak ada ' + p.block + ' dalam ' + maxDistance + ' blok' }
-  const bt = U.bestTool(bot, probe, md)
-  if (!bt.canHarvest) return { ok: false, code: 'PRECONDITION_FAILED', error: p.block + ' butuh alat: ' + bt.needs.slice(0, 3).join('/') + ' (mis. /give BotAlpha minecraft:' + (bt.needs[0] || 'iron_pickaxe') + ')' }
+  let bt = U.bestTool(bot, probe, md)
+  let preparation = []
+  if (!bt.canHarvest && p.prepare !== false && p.prepare !== 'false') {
+    const ready = await require('./_mining_prepare').prepare(bot, { ...p, maxDistance }, ctx, bt.needs)
+    if (!ready.ok) return ready
+    preparation = ready.data.preparation
+    bt = U.bestTool(bot, probe, md)
+  }
+  if (!bt.canHarvest) return { ok: false, code: 'PRECONDITION_FAILED', error: p.block + ' butuh alat: ' + bt.needs.join('/'), data: { requiredTools: bt.needs, preparation } }
+  ctx.progress?.({ label: 'Menambang ' + p.block, data: { phase: 'mining', preparationSteps: preparation.length } })
 
   const have = () => dropIds.reduce((a, id) => a + bot.inventory.count(id, null), 0)
   const start = have(); const got = () => have() - start
@@ -66,7 +78,7 @@ async function run (bot, p, ctx) {
   const bad = new Set(); const reasons = []
   let fails = 0; let collected = null; let dug = 0
   const why = m => { reasons.push(m); if (reasons.length > 6) reasons.shift() }
-  const res = (ok, code, error, extra) => ({ ok, code, error, data: Object.assign({ collected: collected ?? got(), items: dropNames, dug, fights: (ctx.stats && ctx.stats.fights) || 0, reasons }, extra) })
+  const res = (ok, code, error, extra) => ({ ok, code, error, data: Object.assign({ collected: collected ?? got(), items: dropNames, dug, fights: (ctx.stats && ctx.stats.fights) || 0, reasons, preparation }, extra) })
   const mv = ctx.movements('mine', { dig, keepIds: [blockInfo.id] })
   const gotoLook = pos => U.approach(bot, pos, ctx, 45000)
 

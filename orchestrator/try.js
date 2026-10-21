@@ -14,5 +14,5 @@ const cfg = configFromEnv(); const d = createDirector({ bot, runner: { skills },
   console.log('konfigurasi:', JSON.stringify(publicConfig(cfg)), '| skill dimuat:', Object.keys(skills).length)
   if (!goal) return console.log('pakai: node orchestrator/try.js "tujuan" [--dry]')
   if (args.includes('--dry')) { const p = await d.ask(goal, { dry: true }); return console.log('--- SYSTEM\n' + p.system + '\n--- USER\n' + p.user) }
-  try { const r = await d.ask(goal); console.log(JSON.stringify(r, null, 2)) } catch (e) { console.log('GAGAL (' + e.status + '): ' + e.message) }
+  try { const r = await d.ask(goal); console.log(JSON.stringify(r, null, 2)); if (r.error || r.rejected?.length) process.exitCode = 1 } catch (e) { console.log('GAGAL (' + e.status + '): ' + e.message); process.exitCode = 1 }
 })()

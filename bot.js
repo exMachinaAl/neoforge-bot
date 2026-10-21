@@ -1,3 +1,4 @@
+require('./env').loadProjectEnv()
 const mc = require('minecraft-protocol')
 const mineflayer = require('mineflayer')
 const { neoforgeHandshake } = require('minecraft-protocol-forge')

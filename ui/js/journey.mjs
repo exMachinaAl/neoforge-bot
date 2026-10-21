@@ -1,10 +1,12 @@
 import { h, clear } from './dom.mjs'
+import { agentCard } from './agent.mjs'
 
 const STATUS = { proposed: 'Siap dimulai', running: 'Berjalan', paused: 'Dijeda', blocked: 'Butuh perhatian',
   finished: 'Selesai', cancelled: 'Dibatalkan', pending: 'Menunggu', dispatching: 'Menyiapkan',
   done: 'Selesai', failed: 'Gagal', uncertain: 'Perlu diperiksa' }
 
 export function journeyCard (api, getId, onRefresh) {
+  const agent = agentCard(api, getId, onRefresh)
   const missionHost = h('div', { className: 'mission-content' })
   const recent = h('div', { className: 'mission-history' })
   const progressLabel = h('div', { className: 'mut mission-live-progress' })
@@ -38,8 +40,11 @@ export function journeyCard (api, getId, onRefresh) {
     if (kind !== 'offline' && !text) { message.textContent = 'Tulis pesan atau tujuan dahulu.'; return }
     const id = getId(); setBusy(true)
     message.textContent = kind === 'chat' ? 'Sedang membalas…' : 'Menyiapkan kegiatan…'
-    const result = await action(kind === 'chat' ? '/companion/chat' : '/missions/plan',
-      kind === 'chat' ? { text } : { source: kind === 'offline' ? 'offline' : 'llm', goal: text, run: true })
+    let result
+    try {
+      result = kind === 'llm' ? await agent.submit(text) : await action(kind === 'chat' ? '/companion/chat' : '/missions/plan',
+        kind === 'chat' ? { text } : { source: 'offline', goal: text, run: true })
+    } catch (error) { if (id === getId()) message.textContent = error.message }
     if (id === getId()) {
       if (result) {
         if (input.value.trim() === text) input.value = ''
@@ -67,10 +72,11 @@ export function journeyCard (api, getId, onRefresh) {
   function renderMission () {
     const mission = data?.missions.find(m => m.id === selected) || data?.missions[0]
     if (mission) selected = mission.id
-    const signature = JSON.stringify([mission, data?.missions.map(m => [m.id, m.title, m.status]), data?.storageError])
+    const signature = JSON.stringify([mission, data?.missions.map(m => [m.id, m.title, m.status]), data?.storageError, agent.hasGoal])
     if (signature === missionSig) return
     missionSig = signature; clear(missionHost); clear(recent)
     if (!mission) {
+      if (agent.hasGoal) return
       missionHost.append(h('div', { className: 'empty-activity' }, h('h2', {}, 'Hari ini, kita melakukan apa?'),
         h('p', { className: 'mut' }, 'Beri tujuan bersama atau biarkan lifecycle memilih kegiatan yang sesuai keadaan.')))
       return
@@ -144,7 +150,7 @@ export function journeyCard (api, getId, onRefresh) {
       clear(missionHost); clear(memoryHost); clear(conversation); clear(recent)
     }
     try {
-      const result = await api.call(base(id) + '/missions')
+      const [result] = await Promise.all([api.call(base(id) + '/missions'), agent.load()])
       if (version !== loadVersion || id !== getId()) return
       data = result; renderMission(); renderMemory(); renderConversation()
     } catch (error) { if (version === loadVersion && id === getId()) message.textContent = error.message }
@@ -157,7 +163,7 @@ export function journeyCard (api, getId, onRefresh) {
   }
   return {
     load, update,
-    activities: h('section', { className: 'panel activity-card' }, h('div', { className: 'panel-label' }, 'KEGIATAN KITA'), missionHost, progressLabel,
+    activities: h('section', { className: 'panel activity-card' }, h('div', { className: 'panel-label' }, 'KEGIATAN KITA'), agent.el, missionHost, progressLabel,
       h('details', {}, h('summary', {}, 'Kegiatan sebelumnya'), recent)),
     talk: h('section', { className: 'panel talk-card' }, h('div', { className: 'panel-label' }, 'PERCAKAPAN & TUJUAN'),
       conversation, input, h('div', { className: 'row conversation-actions' }, send, start, offline), message, sourceLabel),

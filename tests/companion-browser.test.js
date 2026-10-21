@@ -20,7 +20,11 @@ async function main () {
   lifecycle = require('../lifecycle/runtime').createLifecycle({ bot, runner, engine, dataDir: temp })
   const director = require('../orchestrator/director').createDirector({ bot, runner, engine, deny: [], autoApprove: [],
     cfg: { provider: 'ollama', url: 'http://unused', model: 'test', rpm: 20, needsKey: false },
-    llm: async (cfg, request) => ({ text: request.tool ? JSON.stringify({ title: 'Hari yang indah untuk menjelajah', reason: 'Mengunjungi dua tempat bersama.', tasks: [
+    llm: async (cfg, request) => ({ text: request.tool?.name === 'agent_decision' ? (() => {
+      const ctx = JSON.parse(request.user), done = ctx.history.filter(s => s.status === 'done' && s.decision.kind === 'skill')
+      return JSON.stringify(done.length >= 2 ? { kind: 'finish', reason: 'Dua tujuan perjalanan terverifikasi.', evidence: done.map(s => s.id) }
+        : { kind: 'skill', reason: 'Menjelajah bersama.', skill: 'nav.goto', params: { x: done.length ? 4 : 2, z: done.length ? 4 : 2 } })
+    })() : request.tool ? JSON.stringify({ title: 'Hari yang indah untuk menjelajah', reason: 'Mengunjungi dua tempat bersama.', tasks: [
       { skill: 'nav.goto', params: { x: 2, z: 2 } }, { skill: 'nav.goto', params: { x: 4, z: 4 } }
     ] }) : 'Aku ingat, kamu suka kebun bunga. Kita bisa berkunjung bersama.', usage: { in: 1, out: 1 } }) })
   world = http.createServer((req, res) => res.end('<html><body style="background:#1c2735;color:white">Dunia tiruan untuk menguji kestabilan iframe</body></html>'))
@@ -70,9 +74,15 @@ async function main () {
   await evaluate("document.querySelector('[aria-label=\"Pesan atau tujuan\"]').value='Halo, ingat kesukaanku?'")
   await click('Kirim pesan'); await waitFor("document.querySelector('.conversation').textContent.includes('Aku ingat')")
   await evaluate("document.querySelector('[aria-label=\"Pesan atau tujuan\"]').value='Mari menjelajah bersama'")
-  await click('Mulai kegiatan'); await waitFor("document.querySelector('.mission-content').textContent.includes('2 / 2 langkah')")
+  await click('Mulai kegiatan'); await waitFor("document.querySelector('.agent-panel').textContent.includes('Menunggu izin')")
+  await click('Izinkan cakupan untuk tujuan ini')
+  await waitFor("document.querySelector('.agent-panel').textContent.includes('Tujuan tercapai')")
+  await evaluate("const s=document.querySelector('[aria-label=\"Izin agent\"]');s.value='2';s.dispatchEvent(new Event('change'))")
+  await waitFor("document.querySelector('[aria-label=\"Izin agent\"]').value==='2'")
+  await evaluate("window.savedPermission=document.querySelector('[aria-label=\"Izin agent\"]');window.savedFeedback=document.querySelector('[aria-label=\"Jawaban untuk agent\"]');savedFeedback.value='Catatan belum dikirim'")
   await click('Dunia bersama'); await sleep(3500)
   assert.equal(await evaluate("savedCanvas===document.querySelector('.avatar-canvas') && savedFrame===document.querySelector('iframe')"), true)
+  assert.equal(await evaluate("savedPermission===document.querySelector('[aria-label=\"Izin agent\"]') && savedFeedback===document.querySelector('[aria-label=\"Jawaban untuk agent\"]') && savedFeedback.value==='Catatan belum dikirim'"), true)
   assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true)
   fs.mkdirSync(path.join(root, 'backup'), { recursive: true })
   const desktop = await send('Page.captureScreenshot', { format: 'png' }); fs.writeFileSync(path.join(root, 'backup/companion-desktop.png'), Buffer.from(desktop.data, 'base64'))
@@ -80,13 +90,13 @@ async function main () {
   await sleep(500)
   assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, 'tidak overflow horizontal di HP')
   const mobile = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true }); fs.writeFileSync(path.join(root, 'backup/companion-mobile.png'), Buffer.from(mobile.data, 'base64'))
-  await send('Page.reload', { ignoreCache: true }); await waitFor("document.querySelector('.mission-content')?.textContent.includes('2 / 2 langkah')")
+  await send('Page.reload', { ignoreCache: true }); await waitFor("document.querySelector('.agent-panel')?.textContent.includes('Tujuan tercapai') && document.querySelector('[aria-label=\"Izin agent\"]').value==='2'")
   assert.equal(await evaluate("document.querySelector('.conversation').textContent.includes('Aku ingat')"), true)
   await click('Ingatan')
   await evaluate("Array.from(document.querySelectorAll('.memory-entry')).find(e=>e.textContent.includes('Suka kebun bunga')).querySelector('button').click()")
   await waitFor("!document.querySelector('.memory-list').textContent.includes('Suka kebun bunga')")
   assert.deepEqual(errors, [])
-  console.log('PASS companion desktop/HP: GLB, chat, ingatan/hapus, misi 2 langkah, reload persisten; canvas/iframe stabil; tanpa exception')
+  console.log('PASS companion desktop/HP: GLB, chat, ingatan, agent 2 langkah + verifikasi, persetujuan semi, slider penuh persisten; canvas/iframe/input stabil; tanpa exception')
   await send('Browser.close').catch(() => {})
 }
 const deadline = setTimeout(() => { console.error('Browser test timeout'); process.exit(1) }, 90000)

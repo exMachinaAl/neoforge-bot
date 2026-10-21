@@ -345,6 +345,7 @@
             "batch.scored",
             "lifecycle.updated",
             "mission.updated",
+              "agent.updated",
             "task.progress"
           ]
         },

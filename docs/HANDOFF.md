@@ -1,5 +1,25 @@
 # HANDOFF neoforge-bot / Arcadia (checkpoint #12)
 
+## Agent berulang (2026-10-21, terbaru)
+- Pemilik menyetujui build full agent: LLM memilih tindakan/pemulihan dari log native; slider Observasi/Semi/Penuh; metode sendiri; sandbox dan debug-only pelonggaran host. Implementasi langsung di source, bukan upgrader. Baca [AGENT_RUNTIME.md](AGENT_RUNTIME.md).
+- `agent/` berisi runtime, izin, schema keputusan, QuickJS/WASM worker, dan command Docker. `Director.decide()` memakai klien/config LLM yang sama; data hasil native kembali ke model. UI Single/Multi tujuan baru memakai `/agent/goals`; `/missions` tetap offline/legacy.
+- Checkpoint per bot, izin cakupan Semi, budget, stop/abort, batas kegagalan identik, evidence finish, observasi wajib setelah restart. Generated methods menghasilkan task native tervalidasi; bukan akses langsung ke host atau API bot sembarang.
+- Env: `ARCADIA_MODE=production` default; `ARCADIA_DEBUG_UNSAFE_SANDBOX=true` hanya berlaku bersama mode debug. Production mengabaikan flag dengan warning. QuickJS tersedia tanpa Docker; command production membutuhkan Docker+image lokal. Jangan mengklaim semua tujuan besar sudah didukung atau ML sudah terlatih.
+- TERUJI TIRUAN: agent 13, misi 8, API 57, UI 50, Director 48, admin worker/kamera; check/sintaks lulus. Browser Edge companion dan multi lulus. Server/LLM nyata, Docker nyata, Linux/Termux fisik BELUM DIUJI. `.env` tidak dibaca/diubah dan proses produksi tidak direstart.
+- Instalasi QuickJS sempat menghapus dependency viewer no-save; viewer/canvas sudah dipasang kembali dan require OK; `patch-all.js` diterapkan ulang untuk mempertahankan patch native. Dependency kini tercatat pada package.json/lock.
+
+## Persiapan menambang (2026-10-21)
+- Pemilik melaporkan Ollama Cloud tersambung, memberi log penolakan `minecraft:stone`, dan meminta alur prasyarat kayu -> meja/pickaxe -> batu.
+- Fix langsung: namespace di `mine.collect`; bootstrap bounded wooden_pickaxe di `skills/_mining_prepare.js`; auto-place meja di `craft.item`; prompt Director menjelaskan kemampuan dan memperluas inventory menjadi 46 entri.
+- Baca [MINING_PREPARATION.md](MINING_PREPARATION.md). Persiapan satu task, bukan DAG misi terpisah; recovery uncertain tetap berlaku. Tier alat tinggi/smelting belum otomatis.
+- TERUJI TIRUAN: bootstrap 10, skill 45, crafting 26, Director 48, check/sintaks lulus; server pemilik BELUM DIUJI. Tidak membuka `.env`, memanggil cloud, atau restart proses produksi.
+
+## Setup LLM lintas OS (2026-10-20)
+- `.env` di root proyek kini otomatis dibaca oleh bot/admin/configFromEnv. `.env.example` disediakan tanpa key; belum membuat `.env` atau menyalin/membuka DPAPI pemilik. Env yang sudah ada lebih tinggi prioritasnya.
+- `npm run llm:status` aman tanpa key/network; `npm run llm:test -- "tujuan" [--dry]` untuk uji tanpa bot. Petunjuk lengkap Windows/Termux/Linux: [LLM_SETUP.md](LLM_SETUP.md).
+- Metadata menunjukkan file konfigurasi dan key Windows ada; environment tool belum terisi (default Anthropic/configured false). Ini bukan bukti key pemilik invalid. Jangan klaim memeriksa isi terminal/proses lain.
+- TERUJI TIRUAN: konfigurasi portable/pewarisan child + Director 48; pengujian fisik Linux/Termux dan cloud nyata belum dilakukan pada perubahan ini.
+
 ## Build admin multi-kamera (2026-10-20, terbaru)
 - Pemilik menyetujui build, menambahkan Eagle fokus di dashboard multi + FP setiap bot termasuk fokus. Implementasi kini ada di `admin/` dan `ui/admin.html`; lihat [ADMIN_PANEL.md](ADMIN_PANEL.md) untuk kondisi sebenarnya.
 - Jalankan `npm run admin` pada localhost:8788; buat owner di browser. Untuk Ollama DPAPI, dot-source `scripts/load-ollama.ps1` sebelum menjalankan admin. Worker mewarisi environment.

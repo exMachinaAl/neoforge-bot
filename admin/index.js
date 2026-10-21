@@ -1,3 +1,4 @@
+require('../env').loadProjectEnv()
 const { createAdmin } = require('./server')
 const app = createAdmin()
 app.listen().then(address => console.log('Arcadia Admin: http://localhost:' + address.port + ' — login/setup owner di browser')).catch(async e => { console.error('Admin gagal: ' + e.message); await app.close(); process.exitCode = 1 })

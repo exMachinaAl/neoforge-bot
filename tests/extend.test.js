@@ -23,6 +23,13 @@ async function suite (attachImpl, quiet) {
   attachImpl(api, { bot, runner, engine, director }, { uiRoot: ui, dataDir: path.join(ui, 'data'), viewer: view, settings, profile3d })
   const H = { authorization: 'Bearer tok123' }; const ck = 'arcadia_' + port + '=tok123'
   const post = body => ({ method: 'POST', headers: { ...H, 'content-type': 'application/json' }, body })
+  let agentResponse = await req(port, '/bots/BotAlpha/agent'); t(agentResponse.s === 401, 'agent memerlukan autentikasi')
+  agentResponse = await req(port, '/bots/lain/agent', { headers: H }); t(agentResponse.s === 404, 'agent terisolasi per bot')
+  agentResponse = await req(port, '/bots/BotAlpha/agent/permissions', { method: 'POST', headers: { cookie: ck, origin: 'http://evil.example' }, body: { mode: 'full' } }); t(agentResponse.s === 403, 'perubahan izin agent dilindungi CSRF')
+  agentResponse = await req(port, '/bots/BotAlpha/agent/permissions', post({ mode: 'observe' })); t(agentResponse.s === 200 && agentResponse.j.mode === 'observe', 'mode agent dapat disimpan')
+  agentResponse = await req(port, '/bots/BotAlpha/agent', { headers: H }); t(agentResponse.s === 200 && agentResponse.j.mode === 'observe' && !JSON.stringify(agentResponse.j).includes('K-SECRET'), 'snapshot agent tanpa key')
+  agentResponse = await req(port, '/bots/BotAlpha/agent/goals', post({ goal: '' })); t(agentResponse.s === 400, 'agent menolak tujuan kosong')
+  agentResponse = await req(port, '/bots/BotAlpha/agent/experiences', { headers: H }); t(agentResponse.s === 200 && Array.isArray(agentResponse.j), 'pengalaman agent tersedia melalui API terautentikasi')
   let missionResponse = await req(port, '/bots/BotAlpha/missions'); t(missionResponse.s === 401, 'missions memerlukan auth')
   missionResponse = await req(port, '/bots/lain/missions', { headers: H }); t(missionResponse.s === 404, 'missions terisolasi bot')
   missionResponse = await req(port, '/bots/BotAlpha/missions/plan', post('null')); t(missionResponse.s === 400, 'plan menolak body null')

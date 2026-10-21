@@ -17,7 +17,7 @@ function stepLabel (step) {
   return step.label || names[step.skill] || step.skill
 }
 
-function createMissions ({ engine, runner, director, lifecycle, dataDir = process.env.ARCADIA_DATA_DIR || './data' }) {
+function createMissions ({ engine, runner, director, lifecycle, dataDir = process.env.ARCADIA_DATA_DIR || './data', canRun = () => null, agentContext = () => null }) {
   const botId = engine.botId()
   if (!/^[a-zA-Z0-9_-]{1,64}$/.test(botId)) throw fail(400, 'botId misi tidak valid')
   const file = path.resolve(dataDir, 'missions', botId + '.json')
@@ -112,6 +112,7 @@ function createMissions ({ engine, runner, director, lifecycle, dataDir = proces
     return copy(mission)
   }
   function prerequisites (step) {
+    const occupied = canRun(); if (occupied) return occupied
     const state = engine.state(), queue = engine.list()
     if (queue.paused) return 'Antrean engine dijeda; lanjutkan engine terlebih dahulu.'
     const unsafe = safetyReason(step, state)
@@ -253,6 +254,7 @@ function createMissions ({ engine, runner, director, lifecycle, dataDir = proces
     chatting = true; const version = epoch
     try {
       const reply = await director.chat(text, { memories: db.memories.slice(0, 12), conversation: db.conversation.slice(-12),
+        agent: agentContext(),
         mission: db.missions[0] ? { title: db.missions[0].title, status: db.missions[0].status } : null,
         persona: lifecycle?.snapshot?.().persona })
       if (closed || version !== epoch) throw fail(409, 'percakapan dibatalkan')

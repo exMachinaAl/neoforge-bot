@@ -5,6 +5,7 @@ const DEFAULTS = {
 }
 const int = (v, d, lo, hi) => { const n = parseInt(v, 10); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d }
 function configFromEnv (env = process.env) {
+  if (env === process.env) require('../env').loadProjectEnv()
   const provider = String(env.ARCADIA_LLM_PROVIDER || 'anthropic').toLowerCase()
   const d = DEFAULTS[provider] || DEFAULTS.anthropic
   const url = String(env.ARCADIA_LLM_URL || d.url).replace(/\/+$/, '')

@@ -82,7 +82,7 @@ async function main () {
   try { const session = await api.session(); els.account.textContent = session.user.displayName + ' · ' + session.tenant.name; els.account.setAttribute('title', session.user.role + ' / ' + session.authMode) } catch (e) { els.account.textContent = 'Sesi tidak tersedia' }
   try { store.setSkills(await api.skills()); form.sync() } catch (e) { log('skill gagal dimuat: ' + e.message) }
   await poll()
-  connectEvents({ url: '/events', onEvent: event => { store.applyEvent(event); if (event.botId !== id()) return; if (event.type === 'mission.updated') journey.load(); if (/^(task\.(started|finished|failed|queued)|bot\.|persona\.|lifecycle\.)/.test(event.type)) poll() }, onStatus: store.setStatus })
+  connectEvents({ url: '/events', onEvent: event => { store.applyEvent(event); if (event.botId !== id()) return; if (['mission.updated', 'agent.updated'].includes(event.type)) journey.load(); if (/^(task\.(started|finished|failed|queued)|bot\.|persona\.|lifecycle\.)/.test(event.type)) poll() }, onStatus: store.setStatus })
   setInterval(() => { if (!document.hidden) { poll(); viewer.load() } }, 3000)
   setInterval(() => { if (!document.hidden && worldMode === 'map' && (!preferences.current || preferences.current.map !== false)) map.refresh() }, 5000)
 }

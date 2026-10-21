@@ -1,5 +1,9 @@
 # neoforge-bot
 
+**Agent berulang:** Mulai kegiatan/Jalankan tujuan kini memakai loop LLM, pemulihan otomatis, slider izin per bot, dan metode buatan agent dalam sandbox. [Panduan dan batas kemampuan](docs/AGENT_RUNTIME.md). Restart bot lalu pilih **Penuh** untuk eksekusi tanpa persetujuan per langkah.
+
+**Setup LLM Windows/Termux/Linux:** [panduan langkah demi langkah](docs/LLM_SETUP.md). `.env` di root kini dibaca otomatis; `npm run llm:status` memeriksa konfigurasi tanpa menampilkan key, `npm run llm:test -- "tujuan"` menguji model tanpa Minecraft. Ollama memakai `ARCADIA_LLM_PROVIDER=openai`.
+
 **Panel admin multi-bot:** `npm run admin`, lalu buka `http://localhost:8788` untuk setup/login owner. Dashboard multi menyediakan Eagle bot fokus + first-person tiap bot; Single membuka companion lengkap. [Panduan admin, Ollama, import BotAlpha, dan hasil uji](docs/ADMIN_PANEL.md).
 
 UI companion dan runner kegiatan terpadu: [cara memakai, recovery, dan API](docs/MISSIONS.md). Setelah memperbarui source, restart proses bot lalu refresh UI; tidak perlu menjalankan upgrader.
@@ -28,7 +32,7 @@ Di Termux, jalankan `termux-wake-lock` sebelum task panjang.
 | Skill | Contoh |
 |---|---|
 | `nav.goto` | `!task nav.goto x=20 z=30` (tanpa y) atau `!task nav.goto 20 70 30` |
-| `mine.collect` | `!task mine.collect block=stone count=8` (survival + pickaxe; menembus tanah alami) |
+| `mine.collect` | `!task mine.collect block=stone count=8` (survival; persiapan wooden_pickaxe otomatis bila belum punya alat) |
 | `fish.cast` | `!task fish.cast count=3` (dekat air, bawa fishing_rod) |
 | `farm.harvest` | `!task farm.harvest {"crops":["wheat"],"count":6}` |
 | `hunt.kill` | `!task hunt.kill mob=cow count=2` |
@@ -58,7 +62,7 @@ Mengurangi mod: tidak perlu apa-apa. Fresh clone dengan mod yang sama: `npm inst
 Siapkan: `/difficulty peaceful`, `/gamemode survival BotAlpha`, lalu `/give BotAlpha minecraft:iron_pickaxe`, `iron_sword`, `fishing_rod`, `wheat_seeds 8`, `bread 8`.
 1. `!test` tanpa FAIL; `walk` >= 4 blok. 2. `nav.goto x=20 z=30` lalu `/data get entity BotAlpha Pos` (ukuran gerak = posisi server, bukan animasi).
 3. `nav.goto 0 70 90` (y di tanah) = OK dengan `note`. 4. `mine.collect block=dirt count=6` dan `block=stone count=8` (cobblestone, `dug` >= 8, blok buatan tidak rusak).
-5. Tanpa pickaxe / di creative = `PRECONDITION_FAILED` jelas. 6. `mine.collect` dengan `chest` = `deposited` benar. 7. `hunt.kill mob=cow count=2`, lalu `/difficulty normal` + zombie.
+5. Tanpa pickaxe: siapkan kayu/papan, stick dan meja otomatis; `prepare=false` atau creative = `PRECONDITION_FAILED`. 6. `mine.collect` dengan `chest` = `deposited` benar. 7. `hunt.kill mob=cow count=2`, lalu `/difficulty normal` + zombie.
 8. `farm.harvest` gandum matang. 9. `fish.cast count=3`. 10. `!task stop` = `ABORTED`; `/kill BotAlpha` saat task = `DIED`. 11. Malam + `mine.collect`: `fights` > 0, bot tidak mati.
 12. T-pose: `!channels ysm epicfight yes_steve`; bandingkan `npm start` dengan `ARCADIA_UNKNOWN_EMPTY=1 npm start`.
 Kirim: `grep -a "TASK\|SKILLRESULT\|TEST\|CH \|EVENT\|SKIP\|ERR\|KICK" bot.log`

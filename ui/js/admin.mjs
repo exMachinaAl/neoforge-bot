@@ -1,6 +1,7 @@
 import { h, clear } from './dom.mjs'
 import { createApi, connectEvents } from './api.mjs'
 import { safeViewerUrl } from './viewer.mjs'
+import { agentCard } from './agent.mjs'
 const api = createApi(), root = typeof document !== 'undefined' && typeof document.getElementById === 'function' ? document.getElementById('admin') : null
 const field = (label, input) => h('label', { className: 'admin-field' }, h('span', {}, label), input)
 const button = (text, action, cls = '') => h('button', { className: cls, onclick: action }, text)
@@ -58,6 +59,7 @@ function dashboard () {
   const goal=h('textarea',{rows:2,maxlength:600,placeholder:'Tujuan untuk bot yang sedang dipilih…','aria-label':'Tujuan bot fokus'})
   const controls=h('div',{className:'row'})
   const report=text=>{message.textContent=text}
+  const agent = agentCard(api, () => focused, () => poll())
   async function act (id, action) {
     try { const result=await api.call('/admin/bots/'+id+'/'+action,{method:'POST',body:{}});report(action+' · '+(result.displayName||id));await poll();return true }
     catch(e){report(e.message);return false}
@@ -89,16 +91,17 @@ function dashboard () {
     focusTitle.textContent=bot?.displayName||id;focusMeta.textContent=(bot?.mission?.title||bot?.currentTask||'Belum ada kegiatan')+' · '+(bot?.status||'offline')
     if(bot?.workerStatus==='ready'&&!eagleViews.get(id).opened){autoOpened.add(id);eagleViews.get(id).open()}
     if(mode==='single')setMode('single')
+    agent.load()
   }
   const goalButton=button('Jalankan tujuan',async()=>{
     if(!focused||!goal.value.trim()){report('Pilih bot dan tulis tujuan.');return}
     const id=focused,text=goal.value.trim();goalButton.disabled=true
-    try{const mission=await api.call('/bots/'+id+'/missions/plan',{method:'POST',body:{source:'llm',goal:text,run:true}});report(mission.title+' · '+mission.status);if(goal.value.trim()===text)goal.value='';await poll()}catch(e){report(e.message)}finally{goalButton.disabled=false}
+    try{const mission=await api.call('/bots/'+id+'/agent/goals',{method:'POST',body:{goal:text}});report(mission.title+' · '+mission.status);if(goal.value.trim()===text)goal.value='';await poll()}catch(e){report(e.message)}finally{goalButton.disabled=false}
   },'p')
   controls.append(goalButton,button('Jeda kegiatan',async()=>{
     if(!focused)return
     const id=focused
-    try{const data=await api.call('/bots/'+id+'/missions');for(const m of data.missions.filter(m=>m.status==='running'))await api.call('/bots/'+id+'/missions/'+m.id+'/stop',{method:'POST',body:{}});report('Kegiatan dijeda. Buka Single untuk memeriksa atau melanjutkan.');await poll()}catch(e){report(e.message)}
+    try{const a=await api.call('/bots/'+id+'/agent');for(const g of a.goals.filter(g=>!['finished','cancelled'].includes(g.status)))await api.call('/bots/'+id+'/agent/goals/'+g.id+'/stop',{method:'POST',body:{}});const data=await api.call('/bots/'+id+'/missions');for(const m of data.missions.filter(m=>m.status==='running'))await api.call('/bots/'+id+'/missions/'+m.id+'/stop',{method:'POST',body:{}});report('Kegiatan dijeda.');await poll()}catch(e){report(e.message)}
   }))
   const form=createForm(report,async()=>{form.open=false;await poll()})
   const logout=button('Keluar',async()=>{await api.call('/admin/logout',{method:'POST',body:{}});await boot()})
@@ -106,7 +109,7 @@ function dashboard () {
     if(!confirm('Hentikan aksi aktif dan jeda engine semua bot?'))return
     try{const r=await api.call('/killswitch',{method:'POST',body:{}});report(r.results.filter(x=>x.ok).length+' bot dijeda; '+r.results.filter(x=>!x.ok).length+' gagal.');await poll()}catch(e){report(e.message)}
   },'k'),logout))
-  multi.append(h('section',{className:'panel fleet-focus'},h('div',{className:'focus-heading'},h('div',{},h('div',{className:'panel-label'},'BOT FOKUS / EAGLE VIEW'),focusTitle,focusMeta),button('Buka companion',()=>setMode('single'))),eagleHost,goal,controls),
+  multi.append(h('section',{className:'panel fleet-focus'},h('div',{className:'focus-heading'},h('div',{},h('div',{className:'panel-label'},'BOT FOKUS / EAGLE VIEW'),focusTitle,focusMeta),button('Buka companion',()=>setMode('single'))),eagleHost,goal,controls,agent.el),
     h('section',{className:'fleet-section'},h('div',{className:'fleet-toolbar'},h('div',{},h('h2',{},'Seluruh bot'),h('p',{className:'mut'},'Pilih fokus tanpa meninggalkan dashboard. First-person dapat dibuka pada setiap kartu.')),h('div',{className:'row'},...bulkButtons),h('div',{className:'row'},button('Buka semua FP',()=>{for(const b of bots)if(b.workerStatus==='ready')cards.get(b.botId)?.camera.open()}),button('Tutup semua kamera',()=>{for(const c of cards.values())c.camera.pause();for(const v of eagleViews.values())v.pause()}))),grid))
   root.append(h('div',{className:'admin-shell'},top,message,form,multi,single))
   function makeCard (bot) {
@@ -137,6 +140,7 @@ function dashboard () {
       if(!focused&&bots.length)focus(bots[0].botId)
       const b=bots.find(b=>b.botId===focused)
       if(b){focusTitle.textContent=b.displayName;focusMeta.textContent=(b.mission?.title||b.currentTask||'Belum ada kegiatan')+' · '+b.status;if(b.workerStatus==='ready'&&!autoOpened.has(b.botId)){autoOpened.add(b.botId);eagleViews.get(b.botId)?.open()}}
+      if(b?.workerStatus==='ready') await agent.load()
     }catch(e){if(e.status===401){await boot();return}report(e.message)}finally{polling=false;if(pendingPoll&&!stopped){pendingPoll=false;setTimeout(poll,100)}}
   }
   const timer=setInterval(()=>{if(!document.hidden)poll()},2000)
