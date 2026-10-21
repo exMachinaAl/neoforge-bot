@@ -1,5 +1,10 @@
 # HANDOFF neoforge-bot / Arcadia (checkpoint #12)
 
+## Log agent ringkas + profil 3D Multi (2026-10-21, terbaru)
+- Log agent di admin sekarang ringkas: tujuan, status/langkah aktif dan animasi fokus. Klik baris status untuk membuka seluruh proses; daftar lengkap dibatasi scroll agar panel tidak tumbuh tanpa batas.
+- Setiap kartu Multi merender profil GLB di kanan atas tanpa dibuat ulang oleh polling. `Atur framing` menyediakan ukuran, rotasi, Posisi X/Y dan reset. Kontrol yang sama tersedia di Single; `offsetX`/`offsetY` persisten per bot/per model. Endpoint profil berada di admin dan tetap tersedia saat worker bot berhenti.
+- TERUJI TIRUAN: profil 20, UI 50, dan Edge admin dua bot lulus termasuk Momoi 37 clip, autosave posisi, log collapse/expand, kamera stabil, serta mobile. Server Minecraft dan LLM asli untuk tampilan ini BELUM DIUJI.
+
 ## Anti-loop pencarian (2026-10-21, terbaru)
 - TERBUKTI dari pengalaman agent pemilik: tujuan rumah berulang kali mencari `oak_log` di area/radius sama; dua log yang sempat terkumpul tidak dipakai sebagai progres; Ollama Cloud sesekali menjawab tanpa JSON. Ini dua jalur berbeda: native mining memberi `TARGET_NOT_FOUND`, sedangkan error JSON berasal dari keputusan model.
 - Fix source: metadata pencarian eksplisit pada `world.inspect`/`mine.collect`, normalisasi hasil semua skill, forced tool call + satu koreksi keputusan invalid, pengaman `NO_PROGRESS`, dan skill gerak-baca `world.explore` untuk memuat wilayah baru. Checkpoint status lama juga direkonsiliasi dari hasil tersimpan.

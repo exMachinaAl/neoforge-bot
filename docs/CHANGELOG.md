@@ -2,6 +2,13 @@
 Format: Ditambah / Diubah / Diperbaiki / Catatan keamanan / Diketahui bermasalah. Label status: TERBUKTI (log pemilik) | DILAPORKAN | TERUJI TIRUAN | BELUM DIUJI.
 Tanggal paket sebelum 2026-10-12 tidak tercatat; urutan di bawah = urutan pengiriman.
 
+## [Log agent ringkas dan profil 3D Multi] 2026-10-21
+
+- Panel agent kini hanya menampilkan tujuan serta langkah terbaru/aktif secara bawaan. Status aktif memakai indikator beranimasi; klik status membuka seluruh riwayat proses dalam area scroll, sehingga panel tidak terus memanjangkan dashboard.
+- Setiap kartu bot pada Multi memiliki profil GLB di pojok kanan atas. Renderer dibuat sekali per kartu, bertahan selama polling, mengikuti kondisi bot, dan dibersihkan ketika kartu atau dashboard ditutup. Admin melayani profil dari penyimpanan bersama sehingga model tersimpan juga tersedia ketika worker Minecraft berhenti.
+- Kalibrasi profil bertambah `offsetX`/`offsetY` selain ukuran dan rotasi. Kontrol Posisi X/Y serta reset framing tersedia di Multi dan Single; nilainya disimpan per bot dan per model sehingga framing kepala/badan dapat dibuat sendiri.
+- TERUJI TIRUAN: profil 20/20, UI 50/50, integrasi admin termasuk profil offline, sintaks seluruh source terkait, dan Edge admin dua bot lulus. Browser menguji log ringkas/dibuka, Momoi 37 animasi di kartu Multi, autosave offset X/Y, kontrol Single, kestabilan Eagle/first-person, reload sesi, dan viewport mobile. Minecraft/LLM asli BELUM DIUJI.
+
 ## [Agent anti-loop dan eksplorasi wilayah] 2026-10-21
 
 - TERBUKTI dari log pemilik: tujuan rumah mengulang pencarian `oak_log` pada radius maksimum, mengabaikan hasil parsial dua log, dan sesekali menerima keputusan model non-JSON. `mine.collect` sudah mengembalikan `TARGET_NOT_FOUND`; kekurangannya ada pada makna pencarian kosong, pencegahan loop, dan format keputusan LLM.

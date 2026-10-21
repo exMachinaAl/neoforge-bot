@@ -3,15 +3,15 @@ const fs = require('fs')
 const path = require('path')
 const STATES = ['idle', 'working', 'happy', 'tired', 'sad', 'danger']
 const DEFAULTS = {
-  model: null, scale: 1, rotationY: 0, animationMode: 'auto', manualAnimation: null,
+  model: null, scale: 1, rotationY: 0, offsetX: 0, offsetY: 0, animationMode: 'auto', manualAnimation: null,
   animationMap: Object.fromEntries(STATES.map(state => [state, null]))
 }
 const bad = (status, message) => Object.assign(Error(message), { status })
 const validName = name => typeof name === 'string' && /^[^<>:"/\\|?*\x00-\x1f]{1,180}\.glb$/i.test(name)
 const clone = value => JSON.parse(JSON.stringify(value))
 
-function createProfile3d ({ dataDir = process.env.ARCADIA_DATA_DIR || path.join(__dirname, '..', 'data') } = {}) {
-  const modelsDir = path.resolve(process.env.ARCADIA_MODELS_DIR || path.join(dataDir, 'models'))
+function createProfile3d ({ dataDir = process.env.ARCADIA_DATA_DIR || path.join(__dirname, '..', 'data'), modelsDir: configuredModelsDir } = {}) {
+  const modelsDir = path.resolve(configuredModelsDir || process.env.ARCADIA_MODELS_DIR || path.join(dataDir, 'models'))
   const profilesDir = path.resolve(dataDir, 'profiles')
   fs.mkdirSync(modelsDir, { recursive: true })
   fs.mkdirSync(profilesDir, { recursive: true })
@@ -49,6 +49,8 @@ function createProfile3d ({ dataDir = process.env.ARCADIA_DATA_DIR || path.join(
     out.model = typeof value.model === 'string' ? value.model : null
     if (Number.isFinite(value.scale)) out.scale = Math.min(100, Math.max(.01, value.scale))
     if (Number.isFinite(value.rotationY)) out.rotationY = Math.min(180, Math.max(-180, value.rotationY))
+    if (Number.isFinite(value.offsetX)) out.offsetX = Math.min(5, Math.max(-5, value.offsetX))
+    if (Number.isFinite(value.offsetY)) out.offsetY = Math.min(5, Math.max(-5, value.offsetY))
     out.animationMode = value.animationMode === 'manual' ? 'manual' : 'auto'
     out.manualAnimation = typeof value.manualAnimation === 'string' ? value.manualAnimation.slice(0, 160) : null
     for (const state of STATES) {
@@ -79,7 +81,7 @@ function createProfile3d ({ dataDir = process.env.ARCADIA_DATA_DIR || path.join(
       if (patch.model !== previous.model) next = cleanConfig(calibrations[patch.model] || {})
       next.model = patch.model
     }
-    for (const [key, min, max] of [['scale', .01, 100], ['rotationY', -180, 180]]) {
+    for (const [key, min, max] of [['scale', .01, 100], ['rotationY', -180, 180], ['offsetX', -5, 5], ['offsetY', -5, 5]]) {
       if (!Object.hasOwn(patch, key)) continue
       if (!Number.isFinite(patch[key]) || patch[key] < min || patch[key] > max) throw bad(400, key + ' harus ' + min + '..' + max)
       next[key] = patch[key]

@@ -2,6 +2,7 @@ import { h, clear } from './dom.mjs'
 import { createApi, connectEvents } from './api.mjs'
 import { safeViewerUrl } from './viewer.mjs'
 import { agentCard } from './agent.mjs'
+import { createAvatar3d } from './avatar3d.mjs'
 const api = createApi(), root = typeof document !== 'undefined' && typeof document.getElementById === 'function' ? document.getElementById('admin') : null
 const field = (label, input) => h('label', { className: 'admin-field' }, h('span', {}, label), input)
 const button = (text, action, cls = '') => h('button', { className: cls, onclick: action }, text)
@@ -77,9 +78,11 @@ function dashboard () {
   const multiButton=button('Multi',()=>setMode('multi'),'p'), singleButton=button('Single / companion',()=>setMode('single'))
   function setMode (next) {
     if(next==='single'&&!focused){report('Pilih bot dahulu.');return}
+    const previous=mode
     mode=next;multi.style.display=next==='multi'?'':'none';single.style.display=next==='single'?'':'none'
     multiButton.className=next==='multi'?'p':'';singleButton.className=next==='single'?'p':''
     if(next==='single' && singleBot!==focused){clear(single);single.append(h('iframe',{className:'single-frame',src:'/focus/'+focused,title:'Companion '+focused}));singleBot=focused}
+    if(next==='multi'&&previous!=='multi')for(const card of cards.values())card.reloadProfile()
   }
   function focus (id) {
     focused=id
@@ -116,23 +119,32 @@ function dashboard () {
     const id=bot.botId, check=input({type:'checkbox','aria-label':'Pilih '+bot.displayName})
     check.onchange=()=>{check.checked?selected.add(id):selected.delete(id)}
     const name=h('b',{},bot.displayName), status=h('span',{className:'tag'}), vitals=h('div',{className:'bot-vitals'}), activity=h('p'), coords=h('small',{className:'mut'}), warning=h('p',{className:'bad'})
+    const avatarFallback=h('div',{className:'avatar-fallback bot-avatar-fallback'},'3D')
+    const avatar=createAvatar3d(api,()=>id,avatarFallback,{compact:true})
+    const avatarStage=h('div',{className:'bot-avatar-stage'},avatarFallback,avatar.el)
+    const avatarSettings=h('details',{className:'bot-avatar-settings'},h('summary',{},'Atur framing'),avatar.controls)
+    let loadedGeneration=null, profileLoaded=false, currentBot=bot
     const camera=cameraView(id,'first-person',report)
     const start=button('Mulai',()=>act(id,'start')),stop=button('Hentikan bot',()=>act(id,'stop'))
     const remove=button('Hapus',async()=>{if(!confirm('Hapus konfigurasi '+bot.displayName+' dari daftar? Data profil dan misi tetap disimpan.'))return;try{await api.call('/admin/bots/'+id,{method:'DELETE'});await poll()}catch(e){report(e.message)}})
-    const el=h('article',{className:'panel bot-card','data-bot-id':id},h('div',{className:'bot-card-heading'},check,name,status),vitals,activity,coords,warning,
+    const overview=h('div',{className:'bot-card-overview'},h('div',{className:'bot-card-summary'},h('div',{className:'bot-card-heading'},check,name,status),vitals,activity,coords,warning),
+      h('div',{className:'bot-avatar-column'},avatarStage,avatarSettings))
+    const el=h('article',{className:'panel bot-card','data-bot-id':id},overview,
       h('div',{className:'row'},button('Fokus Eagle',()=>focus(id)),button('Single',()=>{focus(id);setMode('single')}),start,stop,remove),
       h('div',{className:'panel-label'},'FIRST PERSON'),camera.el)
-    return {el,camera,update:b=>{name.textContent=b.displayName;status.textContent=b.workerStatus==='retrying'?'Menyambung ulang':b.status;status.className='tag '+(b.status==='online'?'ok':'mut')
+    async function reloadProfile(){try{await avatar.loadProfile();profileLoaded=true}catch(e){report(e.message)}}
+    return {el,camera,avatar,reloadProfile,update:b=>{currentBot=b;name.textContent=b.displayName;avatarFallback.textContent=(b.displayName||'3D').slice(0,2).toUpperCase();status.textContent=b.workerStatus==='retrying'?'Menyambung ulang':b.status;status.className='tag '+(b.status==='online'?'ok':'mut')
       vitals.textContent='♥ '+(b.stale?'—':b.health??'—')+'/20   ·   Hunger '+(b.stale?'—':b.food??'—')+'/20'
       activity.textContent=b.mission?.title||b.currentTask||'Tidak ada kegiatan aktif';coords.textContent=b.pos?Math.round(b.pos.x)+', '+Math.round(b.pos.y)+', '+Math.round(b.pos.z)+' · '+(b.dimension||'')+(b.stale?' · data lama':''):'Koordinat belum tersedia'
-      warning.textContent=b.error||'';start.disabled=['ready','starting','stopping'].includes(b.workerStatus);stop.disabled=b.workerStatus==='stopped';remove.disabled=!['stopped','error'].includes(b.workerStatus);camera.render(b.stale?null:b.viewers?.['first-person'])}}
+      warning.textContent=b.error||'';start.disabled=['ready','starting','stopping'].includes(b.workerStatus);stop.disabled=b.workerStatus==='stopped';remove.disabled=!['stopped','error'].includes(b.workerStatus);camera.render(b.stale?null:b.viewers?.['first-person']);avatar.update(b,{})
+      if(!profileLoaded){profileLoaded=true;reloadProfile()}else if(b.workerStatus==='ready'&&loadedGeneration!==b.generation){loadedGeneration=b.generation;reloadProfile()}else if(b.workerStatus!=='ready')loadedGeneration=null}}
   }
   async function poll () {
     if(stopped)return
     if(polling){pendingPoll=true;return}polling=true
     try{
       bots=await api.bots();if(stopped)return
-      for(const [id,card]of cards)if(!bots.some(b=>b.botId===id)){card.camera.pause();card.el.remove();cards.delete(id);selected.delete(id);eagleViews.get(id)?.pause();eagleViews.get(id)?.el.remove();eagleViews.delete(id);autoOpened.delete(id);if(focused===id){focused=null;clear(single);singleBot=null;setMode('multi')}}
+      for(const [id,card]of cards)if(!bots.some(b=>b.botId===id)){card.camera.pause();card.avatar.dispose();card.el.remove();cards.delete(id);selected.delete(id);eagleViews.get(id)?.pause();eagleViews.get(id)?.el.remove();eagleViews.delete(id);autoOpened.delete(id);if(focused===id){focused=null;clear(single);singleBot=null;setMode('multi')}}
       count.textContent=bots.filter(b=>b.status==='online').length+' / '+bots.length+' online'
       if(!bots.length&&!grid.querySelector('.fleet-empty'))grid.append(h('p',{className:'mut fleet-empty'},'Belum ada bot. Tambah bot untuk mulai membangun ruang kontrol.'))
       if(bots.length)grid.querySelector('.fleet-empty')?.remove()
@@ -145,7 +157,7 @@ function dashboard () {
   }
   const timer=setInterval(()=>{if(!document.hidden)poll()},2000)
   const stopEvents=connectEvents({url:'/events',onEvent:e=>{if(e.type!=='task.progress')poll()}})
-  shutdown=()=>{stopped=true;clearInterval(timer);stopEvents();for(const view of eagleViews.values())view.pause();for(const card of cards.values())card.camera.pause();clear(single)}
+  shutdown=()=>{stopped=true;clearInterval(timer);stopEvents();for(const view of eagleViews.values())view.pause();for(const card of cards.values()){card.camera.pause();card.avatar.dispose()}clear(single)}
   poll()
 }
 function createForm (report, done) {

@@ -1,14 +1,20 @@
-const http = require('http'), path = require('path')
+const fs = require('fs'), http = require('http'), path = require('path')
 const { openState, fail } = require('./state')
 const { createManager } = require('./manager')
 const { createStatic } = require('../control/static')
 const { parseCookies } = require('../control/cookie')
+const { createProfile3d } = require('../control/profile3d')
 
 function createAdmin (options = {}) {
   const dataDir = path.resolve(options.dataDir || process.env.ARCADIA_ADMIN_DATA || path.join(__dirname, '../data/admin'))
   const state = openState(dataDir)
   const manager = createManager({ state, dataDir, ...options.manager })
   const files = createStatic({ root: path.join(__dirname, '../ui'), prefix: '/ui/', maxBytes: 2 * 1024 * 1024 })
+  const profiles = new Map(), modelsDir = path.resolve(process.env.ARCADIA_MODELS_DIR || path.join(__dirname, '../data/models'))
+  const profileFor = id => {
+    if (!profiles.has(id)) profiles.set(id, createProfile3d({ dataDir: path.join(dataDir, 'bots', id), modelsDir }))
+    return profiles.get(id)
+  }
   const streams = new Set(), sockets = new Set(), attempts = new Map(), llmCalls = []
   const bind = options.bind || process.env.ARCADIA_ADMIN_BIND || '127.0.0.1'
   const publicOrigin = options.origin || process.env.ARCADIA_ADMIN_ORIGIN || null
@@ -105,6 +111,16 @@ function createAdmin (options = {}) {
       if (botRoute) {
         const id = botRoute[1]; access(user,id)
         if (!botRoute[2] && method === 'GET') { send(res,200,manager.summary(manager.get(id))); return }
+        if (botRoute[2] === '/profile' && method === 'GET') { send(res,200,profileFor(id).publicProfile(id)); return }
+        if (botRoute[2] === '/profile' && method === 'POST') { const profile=profileFor(id);profile.update(id,await read(req));send(res,200,profile.publicProfile(id));return }
+        const profileModel = botRoute[2]?.match(/^\/profile\/model\/(.+)$/)
+        if (profileModel && (method === 'GET' || method === 'HEAD')) {
+          let name; try { name = decodeURIComponent(profileModel[1]) } catch (_) { throw fail(400,'nama model tidak valid') }
+          const model = profileFor(id).resolveModel(name)
+          res.writeHead(200,{'content-type':'model/gltf-binary','content-length':model.size,'cache-control':'no-store','x-content-type-options':'nosniff'})
+          if(method==='HEAD')res.end();else fs.createReadStream(model.full).pipe(res)
+          return
+        }
         const w = manager.target(id)
         if (botRoute[2] === '/killswitch' && method === 'POST') { send(res,200,await manager.request(id,'/killswitch','POST',{})); return }
         if (botRoute[2] === '/viewer') {

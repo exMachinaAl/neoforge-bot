@@ -71,7 +71,7 @@ function release (root) {
   for (const skeleton of skeletons) skeleton.dispose()
 }
 
-export function createAvatar3d (api, getId, fallback) {
+export function createAvatar3d (api, getId, fallback, { compact = false } = {}) {
   const canvas = h('canvas', { className: 'avatar-canvas', 'aria-label': 'Model 3D bot; geser untuk memutar' })
   const host = h('div', { className: 'avatar-render' }, canvas)
   const status = h('div', { className: 'avatar-status mut', role: 'status' })
@@ -82,7 +82,10 @@ export function createAvatar3d (api, getId, fallback) {
   const manualSel = h('select', { 'aria-label': 'Clip animasi', className: 'avatar-clip' })
   const scale = h('input', { type: 'range', min: .1, max: 5, step: .01, 'aria-label': 'Ukuran model' })
   const rotation = h('input', { type: 'range', min: -180, max: 180, step: 1, 'aria-label': 'Rotasi model' })
+  const offsetX = h('input', { type: 'range', min: -5, max: 5, step: .01, 'aria-label': 'Posisi horizontal model' })
+  const offsetY = h('input', { type: 'range', min: -5, max: 5, step: .01, 'aria-label': 'Posisi vertikal model' })
   const refresh = h('button', { type: 'button' }, 'Muat ulang model')
+  const resetFraming = h('button', { type: 'button' }, 'Reset framing')
   let profile, clips = [], desired = 'idle', renderer, scene, camera, mixer, model, pivot, currentAction
   let generation = 0, controller, raf = 0, previousTime = 0, lastWidth = 0, lastHeight = 0
   let saveTimer, saveChain = Promise.resolve(), saveVersion = 0, profileVersion = 0, modelVersion = 0, profileId, disposed = false, dragX = null
@@ -138,6 +141,7 @@ export function createAvatar3d (api, getId, fallback) {
     if (!pivot || !profile) return
     pivot.scale.setScalar(profile.config.scale || 1)
     pivot.rotation.y = THREE.MathUtils.degToRad(profile.config.rotationY || 0)
+    pivot.position.set(profile.config.offsetX || 0, profile.config.offsetY || 0, 0)
   }
   function play () {
     if (!model || !profile) return
@@ -164,6 +168,8 @@ export function createAvatar3d (api, getId, fallback) {
     scale.max = Math.max(5, profile.config.scale || 1)
     scale.value = profile.config.scale || 1
     rotation.value = profile.config.rotationY || 0
+    offsetX.value = profile.config.offsetX || 0
+    offsetY.value = profile.config.offsetY || 0
     clear(manualSel); manualSel.append(h('option', { value: '' }, 'Pilih animasi'))
     for (const clip of clips) manualSel.append(h('option', { value: clip.name }, clip.name))
     manualSel.value = profile.config.manualAnimation || ''
@@ -176,10 +182,15 @@ export function createAvatar3d (api, getId, fallback) {
       mapBox.append(h('label', {}, state, select))
     }
     clear(controls)
-    controls.append(modelSel, refresh, h('div', { className: 'avatar-control-row' }, modeSel, manualSel),
+    if (!compact) controls.append(modelSel, refresh, h('div', { className: 'avatar-control-row' }, modeSel, manualSel))
+    controls.append(h('div', { className: 'avatar-framing-label' }, 'FRAMING MODEL'),
       h('label', { className: 'scale-row' }, 'Ukuran', scale),
       h('label', { className: 'scale-row' }, 'Rotasi', rotation),
-      h('details', {}, h('summary', {}, 'Pemetaan animasi'), mapBox), status, saved)
+      h('label', { className: 'scale-row' }, 'Posisi X', offsetX),
+      h('label', { className: 'scale-row' }, 'Posisi Y', offsetY),
+      resetFraming)
+    if (!compact) controls.append(h('details', {}, h('summary', {}, 'Pemetaan animasi'), mapBox))
+    controls.append(status, saved)
   }
   function persist () {
     clearTimeout(saveTimer); saveTimer = null
@@ -299,6 +310,12 @@ export function createAvatar3d (api, getId, fallback) {
   manualSel.onchange = () => { modeSel.value = 'manual'; change({ animationMode: 'manual', manualAnimation: manualSel.value || null }) }
   scale.oninput = () => change({ scale: Number(scale.value) })
   rotation.oninput = () => change({ rotationY: Number(rotation.value) })
+  offsetX.oninput = () => change({ offsetX: Number(offsetX.value) })
+  offsetY.oninput = () => change({ offsetY: Number(offsetY.value) })
+  resetFraming.onclick = () => {
+    scale.value = 1; rotation.value = 0; offsetX.value = 0; offsetY.value = 0
+    change({ scale: 1, rotationY: 0, offsetX: 0, offsetY: 0 })
+  }
   canvas.onpointerdown = event => { dragX = event.clientX; canvas.setPointerCapture(event.pointerId) }
   canvas.onpointermove = event => {
     if (dragX === null || !pivot) return

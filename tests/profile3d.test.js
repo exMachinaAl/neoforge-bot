@@ -3,7 +3,7 @@ const fs=require('fs');const os=require('os');const path=require('path');const {
 let pass=0,fail=0;const ok=(v,m)=>{v?pass++:fail++;console.log((v?'PASS ':'FAIL ')+m)}
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),'arcadia-profile-'));const models=path.join(dir,'models');fs.mkdirSync(models,{recursive:true});fs.writeFileSync(path.join(models,'A model.glb'),Buffer.from([0x67,0x6c,0x54,0x46]));fs.writeFileSync(path.join(models,'abaikan.txt'),'x')
 const p=createProfile3d({dataDir:dir});let x=p.publicProfile('BotAlpha');ok(x.models.length===1&&x.models[0]==='A model.glb'&&x.config.model===null,'hanya .glb didaftarkan; default tanpa model')
-x=p.update('BotAlpha',{model:'A model.glb',scale:1.25,animationMode:'manual',manualAnimation:'Wave',animationMap:{idle:'Idle'}});ok(x.model==='A model.glb'&&x.scale===1.25&&x.animationMap.idle==='Idle','kalibrasi model/scale/animasi tersimpan')
+x=p.update('BotAlpha',{model:'A model.glb',scale:1.25,offsetX:.4,offsetY:1.2,animationMode:'manual',manualAnimation:'Wave',animationMap:{idle:'Idle'}});ok(x.model==='A model.glb'&&x.scale===1.25&&x.offsetX===.4&&x.offsetY===1.2&&x.animationMap.idle==='Idle','kalibrasi model/framing/animasi tersimpan')
 x=p.publicProfile('BotAlpha');ok(/A%20model.glb$/.test(x.modelUrl)&&x.states.includes('working'),'URL model di-encode dan state otomatis tersedia')
 const f=p.resolveModel('A model.glb');ok(f.size===4&&f.full.startsWith(fs.realpathSync(models)),'model sah diselesaikan di dalam data/models')
 for(const bad of ['../x.glb','x.txt','xXglb','C:\\x.glb']){let e;try{p.resolveModel(bad)}catch(x){e=x}ok(e&&e.status>=400,'path/ekstensi ditolak: '+bad)}
@@ -18,12 +18,12 @@ p.update('BotAlpha', {model:'B.glb'})
 ok(p.load('BotAlpha').scale===1&&p.load('BotAlpha').animationMode==='auto', 'model baru tidak mewarisi kalibrasi model lama')
 p.update('BotAlpha', {scale:2,rotationY:-30})
 p.update('BotAlpha', {model:'A model.glb'})
-ok(p.load('BotAlpha').manualAnimation==='Wave'&&p.load('BotAlpha').scale===1.25&&p.load('BotAlpha').rotationY===45, 'kembali ke model memulihkan clip, ukuran, rotasi')
+ok(p.load('BotAlpha').manualAnimation==='Wave'&&p.load('BotAlpha').scale===1.25&&p.load('BotAlpha').rotationY===45&&p.load('BotAlpha').offsetX===.4&&p.load('BotAlpha').offsetY===1.2, 'kembali ke model memulihkan clip, ukuran, rotasi, posisi')
 const reopened=createProfile3d({dataDir:dir})
 reopened.update('BotAlpha',{model:'B.glb'})
 ok(reopened.load('BotAlpha').scale===2&&reopened.load('BotAlpha').rotationY===-30, 'kalibrasi bertahan setelah membuka ulang penyimpanan')
 ok(reopened.load('OtherBot').model===null, 'profil bot lain terisolasi')
-for(const patch of [{scale:null},{rotationY:181},{animationMap:[]},{animationMap:{unknown:'Idle'}}]){
+for(const patch of [{scale:null},{rotationY:181},{offsetX:5.1},{offsetY:-5.1},{animationMap:[]},{animationMap:{unknown:'Idle'}}]){
   let error;try{reopened.update('BotAlpha',patch)}catch(e){error=e}
   ok(error?.status===400,'kalibrasi invalid ditolak: '+JSON.stringify(patch))
 }
