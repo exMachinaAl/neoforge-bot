@@ -144,6 +144,32 @@ test('rate limit ditunggu; batas keputusan dan tiga kegagalan identik menghentik
   assert.equal(f.goal().decisions, 1)
 })
 
+test('aksi pencarian identik tanpa perubahan tidak dieksekusi ulang', async t => {
+  const f = fixture(t, () => skill('world.inspect', { blocks: ['oak_log'], radius: 64 }), {
+    execute: () => ({ ok: true, code: 'OK', data: { nearby: [], found: 0, exhausted: true } })
+  })
+  f.agent.start({ goal: 'Cari kayu' })
+  await until(() => f.goal().status === 'blocked')
+  assert.equal(f.calls.length, 1)
+  assert.equal(f.goal().steps.filter(s => s.result?.code === 'NO_PROGRESS').length, 2)
+  assert.match(f.goal().reason, /tanpa perubahan|token/i)
+})
+
+test('area mining yang habis harus dieksplorasi sebelum mencoba blok yang sama', async t => {
+  const f = fixture(t, (ctx, n) => n === 1
+    ? skill('mine.collect', { block: 'oak_log', count: 16, maxDistance: 64 })
+    : n === 2 ? skill('mine.collect', { block: 'oak_log', count: 14, maxDistance: 64 })
+      : { kind: 'ask', reason: 'Wilayah lokal habis', question: 'Boleh hentikan pencarian?' }, {
+    execute: () => ({ ok: false, code: 'TARGET_NOT_FOUND', error: 'tidak ada oak_log',
+      data: { collected: 2, partial: true, searchExhausted: true } })
+  })
+  f.agent.start({ goal: 'Kumpulkan 16 kayu' })
+  await until(() => f.goal().status === 'needs_input')
+  assert.equal(f.calls.length, 1)
+  assert.equal(f.goal().steps[1].result.code, 'NO_PROGRESS')
+  assert.match(f.goal().steps[1].result.error, /world\.explore/)
+})
+
 test('tool dibuat, diuji, dipakai; output task divalidasi dan gagal membatalkan sisa metode', async t => {
   const f = fixture(t, (ctx, n) => {
     if (n === 1) return { kind: 'tool.create', reason: 'Metode perjalanan', name: 'rute',
@@ -214,8 +240,38 @@ test('Director agent memakai kontrak terstruktur dan hasil native, tanpa key di 
     cfg: { key: 'TEST-SECRET', rpm: 10, provider: 'openai', model: 'mock' },
     llm: async (_, request) => { sent = request; return { text: JSON.stringify(skill('inv.store', { includeModded: true })), usage: { in: 2, out: 3 } } } })
   const out = await director.decide({ goal: 'Mine batu', history: [{ result: { error: 'Simpan item modded ke chest' } }] })
-  assert.equal(out.kind, 'skill'); assert.equal(sent.tool.name, 'agent_decision')
+  assert.equal(out.kind, 'skill'); assert.equal(sent.tool.name, 'agent_decision'); assert.equal(sent.tool.required, true)
   assert.match(sent.user, /Simpan item modded/); assert.equal(sent.user.includes('TEST-SECRET'), false)
+})
+
+test('Director agent memperbaiki satu balasan non-JSON sebelum gagal', async t => {
+  const f = fixture(t, () => {})
+  let calls = 0, second
+  const director = createDirector({ bot: f.bot, runner: f.runner, engine: f.engine, auditFile: 'off',
+    cfg: { key: '', needsKey: false, rpm: 10, provider: 'openai', model: 'mock' },
+    llm: async (_, request) => {
+      calls++; if (calls === 1) return { text: 'bukan json', usage: { in: 2, out: 1 } }
+      second = request
+      return { text: JSON.stringify(skill('world.inspect', { blocks: ['oak_log'] })), usage: { in: 3, out: 2 } }
+    } })
+  const out = await director.decide({ goalId: 'g', goal: 'Cari kayu' })
+  assert.equal(calls, 2); assert.equal(out.kind, 'skill'); assert.deepEqual(out.usage, { in: 5, out: 3 })
+  assert.match(second.user, /TIDAK VALID/); assert.equal(second.tool.required, true)
+})
+
+test('Director agent fallback bila endpoint menolak forced tool choice', async t => {
+  const f = fixture(t, () => {})
+  let calls = 0, fallback
+  const director = createDirector({ bot: f.bot, runner: f.runner, engine: f.engine, auditFile: 'off',
+    cfg: { key: '', needsKey: false, rpm: 10, provider: 'openai', model: 'mock' },
+    llm: async (_, request) => {
+      calls++; if (calls === 1) throw Object.assign(Error('tool_choice unsupported'), { httpStatus: 400 })
+      fallback = request
+      return { text: JSON.stringify(skill('world.inspect', { blocks: ['oak_log'] })), usage: { in: 3, out: 2 } }
+    } })
+  const out = await director.decide({ goalId: 'g', goal: 'Cari kayu' })
+  assert.equal(calls, 2); assert.equal(out.kind, 'skill'); assert.equal(fallback.tool.required, false)
+  assert.match(fallback.user, /Endpoint menolak/)
 })
 
 test('world.inspect dan world.place memeriksa dunia dan konfirmasi, tidak menimpa blok', async () => {

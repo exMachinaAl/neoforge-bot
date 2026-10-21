@@ -1,5 +1,10 @@
 # HANDOFF neoforge-bot / Arcadia (checkpoint #12)
 
+## Anti-loop pencarian (2026-10-21, terbaru)
+- TERBUKTI dari pengalaman agent pemilik: tujuan rumah berulang kali mencari `oak_log` di area/radius sama; dua log yang sempat terkumpul tidak dipakai sebagai progres; Ollama Cloud sesekali menjawab tanpa JSON. Ini dua jalur berbeda: native mining memberi `TARGET_NOT_FOUND`, sedangkan error JSON berasal dari keputusan model.
+- Fix source: metadata pencarian eksplisit pada `world.inspect`/`mine.collect`, normalisasi hasil semua skill, forced tool call + satu koreksi keputusan invalid, pengaman `NO_PROGRESS`, dan skill gerak-baca `world.explore` untuk memuat wilayah baru. Checkpoint status lama juga direkonsiliasi dari hasil tersimpan.
+- TERUJI TIRUAN: skill 50, agent 17, Director 50, check 41 kontrak/17 skill/8 makro. Server/LLM asli untuk fix ini BELUM DIUJI; restart worker diperlukan sebelum uji ulang. Jangan menghapus pengaman dengan menaikkan radius di atas 64: gunakan `world.explore`.
+
 ## Agent berulang (2026-10-21, terbaru)
 - Pemilik menyetujui build full agent: LLM memilih tindakan/pemulihan dari log native; slider Observasi/Semi/Penuh; metode sendiri; sandbox dan debug-only pelonggaran host. Implementasi langsung di source, bukan upgrader. Baca [AGENT_RUNTIME.md](AGENT_RUNTIME.md).
 - `agent/` berisi runtime, izin, schema keputusan, QuickJS/WASM worker, dan command Docker. `Director.decide()` memakai klien/config LLM yang sama; data hasil native kembali ke model. UI Single/Multi tujuan baru memakai `/agent/goals`; `/missions` tetap offline/legacy.

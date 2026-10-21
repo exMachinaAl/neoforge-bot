@@ -59,7 +59,8 @@ async function run (bot, p, ctx) {
 
   // pra-cek: alat yang boleh memanen blok ini harus ada (stone tanpa pickaxe tidak menjatuhkan apa pun)
   const probe = bot.findBlock({ matching: blockInfo.id, maxDistance, useExtraInfo: x => safeTarget(bot, x) })
-  if (!probe) return { ok: false, code: 'TARGET_NOT_FOUND', error: 'tidak ada ' + p.block + ' dalam ' + maxDistance + ' blok' }
+  if (!probe) return { ok: false, code: 'TARGET_NOT_FOUND', error: 'tidak ada ' + p.block + ' dalam ' + maxDistance + ' blok',
+    data: { query: { block: p.block, radius: maxDistance, count }, collected: 0, searchExhausted: true, stage: 'search' } }
   let bt = U.bestTool(bot, probe, md)
   let preparation = []
   if (!bt.canHarvest && p.prepare !== false && p.prepare !== 'false') {
@@ -78,7 +79,10 @@ async function run (bot, p, ctx) {
   const bad = new Set(); const reasons = []
   let fails = 0; let collected = null; let dug = 0
   const why = m => { reasons.push(m); if (reasons.length > 6) reasons.shift() }
-  const res = (ok, code, error, extra) => ({ ok, code, error, data: Object.assign({ collected: collected ?? got(), items: dropNames, dug, fights: (ctx.stats && ctx.stats.fights) || 0, reasons, preparation }, extra) })
+  const res = (ok, code, error, extra) => ({ ok, code, error, data: Object.assign({
+    query: { block: p.block, radius: maxDistance, count }, collected: collected ?? got(), items: dropNames,
+    dug, fights: (ctx.stats && ctx.stats.fights) || 0, reasons, preparation
+  }, extra) })
   const mv = ctx.movements('mine', { dig, keepIds: [blockInfo.id] })
   const gotoLook = pos => U.approach(bot, pos, ctx, 45000)
 
@@ -86,9 +90,9 @@ async function run (bot, p, ctx) {
   while (got() < count) {
     if (ctx.signal.aborted) return res(false, 'ABORTED')
     if (useGuard) { const g = await U.guard(bot, ctx, { minHealth: p.minHealth }); if (g) return res(false, g.code, g.error) }
-    if (fails >= 5) return res(false, 'TARGET_NOT_FOUND', 'terlalu banyak kegagalan beruntun; lihat data.reasons')
+    if (fails >= 5) return res(false, 'TARGET_NOT_FOUND', 'terlalu banyak kegagalan beruntun; lihat data.reasons', { stage: 'path', searchExhausted: true })
     const b = bot.findBlock({ matching: blockInfo.id, maxDistance, useExtraInfo: x => !bad.has(key(x.position)) && safeTarget(bot, x) })
-    if (!b) return res(false, 'TARGET_NOT_FOUND', bad.size ? 'semua ' + bad.size + ' kandidat ' + p.block + ' gagal; lihat data.reasons' : 'tidak ada ' + p.block + ' dalam ' + maxDistance + ' blok')
+    if (!b) return res(false, 'TARGET_NOT_FOUND', bad.size ? 'semua ' + bad.size + ' kandidat ' + p.block + ' gagal; lihat data.reasons' : 'tidak ada ' + p.block + ' dalam ' + maxDistance + ' blok', { stage: 'search', searchExhausted: true })
     try { await gotoLook(b.position) } catch (e) {
       if (ctx.signal.aborted) return res(false, 'ABORTED')
       why('jalan ke ' + key(b.position) + ': ' + e.name); bad.add(key(b.position)); fails++; continue
@@ -114,7 +118,7 @@ async function run (bot, p, ctx) {
   let chestInfo = null
   if (p.chest && p.chest !== 'false' && p.chest !== '0') {
     const f = U.findContainer(bot, md, p.chest, 48)
-    if (!f.block) return res(false, 'TARGET_NOT_FOUND', 'tidak ada chest/barrel yang ditemukan' + (f.seen ? ' (blok di koordinat itu: ' + f.seen + ')' : '') + (f.nearest ? '; terdekat di ' + f.nearest.x + ',' + f.nearest.y + ',' + f.nearest.z : ''))
+    if (!f.block) return res(false, 'TARGET_NOT_FOUND', 'tidak ada chest/barrel yang ditemukan' + (f.seen ? ' (blok di koordinat itu: ' + f.seen + ')' : '') + (f.nearest ? '; terdekat di ' + f.nearest.x + ',' + f.nearest.y + ',' + f.nearest.z : ''), { stage: 'storage' })
     const cb = f.block
     chestInfo = { x: cb.position.x, y: cb.position.y, z: cb.position.z, how: f.how }
     bot.pathfinder.setMovements(ctx.movements('walk'))

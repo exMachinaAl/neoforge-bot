@@ -198,18 +198,45 @@ function createDirector ({ bot, runner, engine, llm, cfg, now, deny, autoApprove
     signal?.addEventListener('abort', abort, { once: true }); active.add(ac)
     try {
       if (ac.signal.aborted) throw fail(409, 'keputusan dibatalkan')
-      reserve()
       const manifests = Object.values(runner.skills).map(s => ({ name: s.manifest.name,
         description: s.manifest.description, params: s.manifest.paramsSchema }))
-      const result = await call(cfg, { system: agent.SYSTEM,
-        user: JSON.stringify({ ...context, world: buildContext(), skills: manifests, deny }),
-        signal: ac.signal, onRetry: reserve,
-        tool: { name: 'agent_decision', description: 'Pilih satu aksi agent berikutnya berdasarkan hasil native.', schema: agent.schema } })
-      if (ac.signal.aborted || version !== generation) throw fail(409, 'keputusan dibatalkan')
-      for (const k of ['in', 'out']) usage[k] += Math.max(0, Number(result.usage?.[k]) || 0)
-      const decision = agent.validateDecision(extractJson(result.text), runner.skills, deny)
-      audit('agent.decision', { goalId: context.goalId, decision, usage: result.usage })
-      return sanitize({ ...decision, usage: result.usage })
+      const payload = JSON.stringify({ ...context, world: buildContext(), skills: manifests, deny })
+      const totalUsage = { in: 0, out: 0 }
+      let correction = '', lastError, forceTool = true
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        reserve()
+        let result
+        try {
+          result = await call(cfg, { system: agent.SYSTEM,
+            user: payload + correction,
+            signal: ac.signal, onRetry: reserve,
+            tool: { name: 'agent_decision', description: 'Pilih satu aksi agent berikutnya berdasarkan hasil native.', schema: agent.schema, required: forceTool } })
+        } catch (e) {
+          // Sebagian endpoint OpenAI-compatible menerima tools tetapi menolak forced tool_choice.
+          if (attempt === 1 && e.httpStatus === 400 && forceTool) {
+            forceTool = false; lastError = e
+            correction = '\nEndpoint menolak forced tool call. Balas objek JSON yang tepat atau gunakan tool agent_decision bila didukung.'
+            audit('agent.tool_fallback', { goalId: context.goalId, error: String(e.message).slice(0, 500) })
+            continue
+          }
+          throw e
+        }
+        if (ac.signal.aborted || version !== generation) throw fail(409, 'keputusan dibatalkan')
+        for (const k of ['in', 'out']) {
+          const n = Math.max(0, Number(result.usage?.[k]) || 0)
+          usage[k] += n; totalUsage[k] += n
+        }
+        try {
+          const decision = agent.validateDecision(extractJson(result.text), runner.skills, deny)
+          audit('agent.decision', { goalId: context.goalId, decision, usage: totalUsage, attempts: attempt })
+          return sanitize({ ...decision, usage: totalUsage })
+        } catch (e) {
+          lastError = e
+          audit('agent.invalid', { goalId: context.goalId, attempt, error: String(e.message).slice(0, 500) })
+          correction = '\nBALASAN SEBELUMNYA TIDAK VALID: ' + String(e.message).slice(0, 500) + '. Panggil tool agent_decision sekali dengan argumen yang valid.'
+        }
+      }
+      throw lastError
     } catch (e) {
       const error = fail(e.status || (e.httpStatus === 429 ? 429 : 502), sanitize(String(e.message)).slice(0, 1000))
       if (error.status === 429) error.retryAfterMs = Math.max(1000, (calls[0] || now()) + 60010 - now())

@@ -6,6 +6,7 @@ function scopeOf (decision) {
   if (decision.kind !== 'skill') return 'read'
   const name = decision.skill
   if (['world.inspect', 'inv.snapshot'].includes(name)) return 'read'
+  if (name === 'world.explore') return 'move'
   if (name === 'world.place') return 'place'
   if (name.startsWith('nav.')) return 'move'
   if (name.startsWith('inv.')) return 'inventory'

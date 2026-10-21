@@ -2,6 +2,33 @@
 const fs = require('fs')
 const path = require('path')
 const { pathfinder, Movements } = require('mineflayer-pathfinder')
+const ERROR_CODES = new Set(['OK', 'PRECONDITION_FAILED', 'TARGET_NOT_FOUND', 'NO_PATH', 'TIMEOUT', 'ABORTED',
+  'INTERRUPTED', 'DIED', 'INVENTORY_FULL', 'PROTOCOL_UNSUPPORTED', 'SERVER_REJECTED', 'UNKNOWN'])
+
+function normalizeSkillOutput (out) {
+  if (!out || typeof out !== 'object' || Array.isArray(out) || typeof out.ok !== 'boolean') {
+    return { ok: false, code: 'UNKNOWN', error: 'skill tidak mengembalikan objek hasil {ok, code, data?, error?}' }
+  }
+  let data
+  if (out.data !== undefined) {
+    if (!out.data || typeof out.data !== 'object' || Array.isArray(out.data)) {
+      return { ok: false, code: 'UNKNOWN', error: 'skill mengembalikan data yang bukan objek JSON' }
+    }
+    try { data = JSON.parse(JSON.stringify(out.data)) } catch (_) {
+      return { ok: false, code: 'UNKNOWN', error: 'skill mengembalikan data yang tidak dapat diserialkan sebagai JSON' }
+    }
+  }
+  let code = typeof out.code === 'string' ? out.code : (out.ok ? 'OK' : 'UNKNOWN')
+  let error = out.error === undefined ? '' : String(out.error)
+  if (!ERROR_CODES.has(code)) {
+    error = 'skill mengembalikan code tidak dikenal: ' + code + (error ? '; ' + error : '')
+    code = 'UNKNOWN'
+  }
+  if (!out.ok && !error) error = 'skill gagal tanpa rincian; periksa data hasil dan log task'
+  if (!out.ok && data && ['collected', 'dug', 'harvested', 'catches', 'kills', 'placed', 'deposited']
+    .some(k => Number(data[k]) > 0)) data.partial = true
+  return { ok: out.ok, code, ...(data ? { data } : {}), ...(error ? { error } : {}) }
+}
 
 function loadSkills () {
   const out = {}
@@ -36,6 +63,7 @@ function createRunner (bot) {
   const events = new (require('events'))()
 
   const finish = (task, t0, out) => {
+    out = normalizeSkillOutput(out)
     const r = { taskId: task.id, skill: task.skill, ok: !!out.ok, code: out.code || (out.ok ? 'OK' : 'UNKNOWN'), durationMs: Date.now() - t0 }
     if (out.data) r.data = out.data
     if (out.error) r.error = String(out.error)
@@ -78,11 +106,14 @@ function createRunner (bot) {
       bot.pathfinder.bestHarvestTool = block => U.bestTool(bot, block, mcData).tool // pemilihan alat yang menghormati harvestTools
       out = await skill.run(bot, params, { signal: ac.signal, mcData, movements: movementsFor, progress })
     } catch (e) { out = { ok: false, code: 'UNKNOWN', error: e && e.message } }
+    out = normalizeSkillOutput(out)
     clearTimeout(timer)
     try { bot.pathfinder.stop() } catch (e) {}
     ;['forward', 'back', 'left', 'right', 'jump', 'sprint'].forEach(k => bot.setControlState(k, false))
     if (ac.signal.aborted && !out.ok && (!out.code || out.code === 'ABORTED' || out.code === 'UNKNOWN')) out.code = ac.signal.reason === 'DIED' ? 'DIED' : ac.signal.reason === 'TIMEOUT' ? 'TIMEOUT' : 'ABORTED'
-    if (ac.signal.aborted && !out.ok && !out.error) out.error = 'dihentikan: ' + String(ac.signal.reason)
+    if (ac.signal.aborted && !out.ok && (!out.error || out.error === 'skill gagal tanpa rincian; periksa data hasil dan log task')) {
+      out.error = 'dihentikan: ' + String(ac.signal.reason)
+    }
     current = null
     return finish(task, t0, out)
   }
@@ -124,4 +155,4 @@ function createRunner (bot) {
   return { run, cli, skills, events, parse, abort: r => current && current.abort(r || 'ABORTED'), current: () => current && { id: current.task.id, skill: current.task.skill, params: current.task.params, startedAt: current.task.createdAt } }
 }
 
-module.exports = { createRunner }
+module.exports = { createRunner, normalizeSkillOutput }

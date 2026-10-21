@@ -1,6 +1,6 @@
 # Agent berulang, izin, dan sandbox
 
-Implementasi 2026-10-21. **TERUJI TIRUAN**: loop agent, sandbox JavaScript nyata, API dan browser desktop/HP. Pemulihan di Minecraft/NeoForge dan keputusan Ollama Cloud sungguhan pada jalur baru ini **BELUM DIUJI**.
+Implementasi 2026-10-21. **TERBUKTI dari log pemilik**: loop agent dan Ollama Cloud berjalan di Minecraft/NeoForge, termasuk pemulihan beberapa task dan kasus gagal pencarian kayu. Perbaikan anti-loop/eksplorasi terbaru **TERUJI TIRUAN** dan belum diuji ulang pada server asli. Sandbox JavaScript, API dan browser desktop/HP juga TERUJI TIRUAN.
 
 ## Mulai dari UI
 
@@ -22,11 +22,13 @@ Cakupan: read, move, mine, inventory, craft, combat, place, survival, tools, com
 `agent/runtime.js`: tujuan → keadaan/hasil native → `Director.decide()` → satu tindakan → hasil → keputusan berikutnya. Kegiatan offline dan API `/missions` lama tetap menggunakan `lifecycle/missions.js`; kedua runner tidak menguasai executor bersamaan. Chat companion menerima ringkasan agent, tetapi Kirim pesan tetap percakapan.
 
 - Log native, termasuk kode/error/data, diberikan kembali ke model. Kegagalan biasa memberi kesempatan LLM memilih pemulihan. Contoh crafting bermasalah: `inv.store includeModded=true`, pertahankan bahan melalui `keep`, lalu coba crafting/mining kembali. Pemilihan ini oleh LLM, bukan pemulihan hardcoded untuk setiap error.
-- `world.inspect` membaca blok/entitas pada chunk yang dimuat, memeriksa koordinat, dan mengambil resep vanilla. `world.place` memasang satu blok inventory di ruang kosong dan memverifikasi konfirmasi server; tidak menimpa blok.
+- `world.inspect` membaca blok/entitas pada chunk yang dimuat, memeriksa koordinat, dan mengambil resep vanilla. Hasil pencarian kosong memiliki `found:0` dan `exhausted:true`; ini fakta area lokal, bukan alasan untuk mengulang query sama. `world.explore` berjalan secara berbatas tanpa menggali/menaruh blok untuk memuat area lain dan mencari target. `world.place` memasang satu blok inventory di ruang kosong dan memverifikasi konfirmasi server; tidak menimpa blok.
 - Tujuan selesai melalui keputusan `finish` dengan ID hasil native sukses sebagai evidence. Referensi palsu, hasil gagal/parsial, dan hasil tool saja ditolak. Kesesuaian semantik bukti terhadap tujuan tetap dinilai LLM, bukan pembuktian universal bahwa rumah/portal sudah benar.
 - `ask` untuk informasi pemilik yang benar-benar kurang. UI menyediakan jawaban/koreksi. Izin Semi dikelola engine, bukan pertanyaan LLM berulang.
 
-Default: **40 keputusan, 30 menit, maksimum 128 langkah** per tujuan. API menerima 1–100 keputusan dan 1–120 menit. Tiga kegagalan identik menghentikan loop; counter tidak dihapus oleh Lanjutkan. Rate limit LLM ditunggu, dengan deadline tetap berlaku. Budget LLM worker berlaku per bot, bukan kuota total lintas worker.
+Default: **40 keputusan, 30 menit, maksimum 128 langkah** per tujuan. API menerima 1–100 keputusan dan 1–120 menit. Tiga kegagalan identik menghentikan loop. Inspeksi identik atau mining pada area pencarian yang sudah habis ditolak sebagai `NO_PROGRESS`; dua penolakan identik memblokir tujuan. Perpindahan dengan `world.explore` membuat area baru sah dicari. Counter tidak dihapus oleh Lanjutkan. Rate limit LLM ditunggu, dengan deadline tetap berlaku. Budget LLM worker berlaku per bot, bukan kuota total lintas worker.
+
+Semua keluaran skill dinormalkan sebelum masuk engine: `ok` wajib boolean, kode harus berasal dari kontrak, `data` harus objek JSON, dan kegagalan tanpa rincian mendapat error eksplisit. Kegagalan yang sudah menghasilkan item/aksi diberi `data.partial:true`. Keputusan agent memakai forced tool call; endpoint kompatibel OpenAI yang menolaknya mendapat satu fallback JSON. Balasan model non-JSON atau melanggar schema juga dicoba diperbaiki satu kali.
 
 ## Metode buatan agent
 

@@ -1,8 +1,8 @@
 # TODO (checkpoint #4)
 ## Pembaruan 2026-10-21 — agent berulang
-- [~] Loop keputusan/pemulihan LLM, izin per bot, checkpoint/recovery, metode JS sandbox, primitives world.inspect/world.place dan dataset pengalaman: TERUJI TIRUAN, lihat docs/AGENT_RUNTIME.md.
-- [ ] Uji tujuan mining dan pemulihan modded di Minecraft + Ollama asli; uji command Docker serta Linux/Termux fisik.
-- [ ] Perluasan native smelting/portal/eksplorasi, validasi tujuan bangunan, training ML dari pengalaman, budget LLM bersama lintas worker.
+- [~] Loop keputusan/pemulihan LLM, izin per bot, checkpoint/recovery, metode JS sandbox, world.inspect/world.place/world.explore dan dataset pengalaman: agent+Ollama TERBUKTI dari log; fix anti-loop TERUJI TIRUAN, lihat docs/AGENT_RUNTIME.md.
+- [ ] Uji ulang tujuan pencarian/mining dan pemulihan modded di Minecraft + Ollama setelah restart; uji command Docker serta Linux/Termux fisik.
+- [ ] Perluasan native smelting/portal, validasi tujuan bangunan, training ML dari pengalaman, budget LLM bersama lintas worker.
 
 ## Pembaruan 2026-10-21 — prasyarat mining
 - [~] Namespace vanilla + bootstrap wooden_pickaxe dari log/papan, pemasangan meja, progres dan stop: TERUJI TIRUAN; lihat docs/MINING_PREPARATION.md.

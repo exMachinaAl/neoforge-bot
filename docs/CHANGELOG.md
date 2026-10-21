@@ -2,6 +2,15 @@
 Format: Ditambah / Diubah / Diperbaiki / Catatan keamanan / Diketahui bermasalah. Label status: TERBUKTI (log pemilik) | DILAPORKAN | TERUJI TIRUAN | BELUM DIUJI.
 Tanggal paket sebelum 2026-10-12 tidak tercatat; urutan di bawah = urutan pengiriman.
 
+## [Agent anti-loop dan eksplorasi wilayah] 2026-10-21
+
+- TERBUKTI dari log pemilik: tujuan rumah mengulang pencarian `oak_log` pada radius maksimum, mengabaikan hasil parsial dua log, dan sesekali menerima keputusan model non-JSON. `mine.collect` sudah mengembalikan `TARGET_NOT_FOUND`; kekurangannya ada pada makna pencarian kosong, pencegahan loop, dan format keputusan LLM.
+- `world.inspect` kini mengembalikan query, jumlah temuan, dan `exhausted`; `mine.collect` menandai tahap, cakupan pencarian, `searchExhausted`, dan hasil parsial. Runner menormalkan setiap keluaran skill menjadi kontrak JSON yang valid dan memberi error eksplisit bila implementasi skill mengembalikan nilai kosong/rusak.
+- Skill `world.explore` berjalan tanpa menggali/menaruh blok, memuat wilayah baru secara berbatas, lalu mencari blok pada setiap titik. Agent menolak inspeksi identik dan mining pada area yang sudah habis; dua keputusan `NO_PROGRESS` identik memblokir tujuan agar token tidak terus terbakar.
+- Keputusan agent memaksa satu tool call terstruktur, dengan fallback JSON bila endpoint kompatibel OpenAI menolak forced tool choice. Balasan non-JSON/invalid dikoreksi satu kali dan penggunaan token kedua percobaan tetap dihitung. Prompt menghitung hasil parsial dan mengarahkan eksplorasi sebelum pencarian ulang.
+- Checkpoint lama yang sudah mempunyai hasil tetapi status langkah masih `running` direkonsiliasi saat load.
+- TERUJI TIRUAN: skill 50, agent 17, Director 50, kontrak/17 manifest/makro lulus. Perilaku baru pada server Minecraft dan Ollama Cloud setelah restart BELUM DIUJI.
+
 ## [Agent berulang, izin dan sandbox] 2026-10-21
 
 - Tujuan baru di UI Single/Multi kini memakai `agent/runtime.js`: LLM mengambil keputusan setelah hasil native, memilih pemulihan, dan melanjutkan tujuan. Runner offline/legacy dipertahankan dengan pengaman executor bersama.

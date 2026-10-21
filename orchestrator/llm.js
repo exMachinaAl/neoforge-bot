@@ -36,8 +36,14 @@ async function callModel (cfg, { system, user, signal, tool, onRetry }) {
   }
   // structured-tools-v1: tool hanya membawa usulan, tidak pernah langsung mengeksekusi skill.
   if (tool) {
-    if (cfg.provider === 'anthropic') { body.tools=[{name:tool.name,description:tool.description,input_schema:tool.schema}];body.tool_choice={type:'auto',disable_parallel_tool_use:true} }
-    else { body.tools=[{type:'function',function:{name:tool.name,description:tool.description,parameters:tool.schema,strict:false}}];body.tool_choice='auto';body.parallel_tool_calls=false }
+    if (cfg.provider === 'anthropic') {
+      body.tools=[{name:tool.name,description:tool.description,input_schema:tool.schema}]
+      body.tool_choice=tool.required ? {type:'tool',name:tool.name,disable_parallel_tool_use:true} : {type:'auto',disable_parallel_tool_use:true}
+    } else {
+      body.tools=[{type:'function',function:{name:tool.name,description:tool.description,parameters:tool.schema,strict:false}}]
+      body.tool_choice=tool.required ? {type:'function',function:{name:tool.name}} : 'auto'
+      body.parallel_tool_calls=false
+    }
   }
   try {
     let res

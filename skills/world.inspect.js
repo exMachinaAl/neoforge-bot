@@ -29,6 +29,13 @@ async function run (bot, p, ctx) {
   })
   const entities = Object.values(bot.entities || {}).filter(e => e !== bot.entity && e.position &&
     e.position.distanceTo(bot.entity.position) <= radius).slice(0, 24).map(e => ({ name: e.name || e.username, type: e.type, position: e.position }))
-  return { ok: true, code: 'OK', data: { nearby, positions, recipes, entities, radius, loadedChunksOnly: true } }
+  return { ok: true, code: 'OK', data: {
+    query: { blocks: requested.map(name), radius, count }, nearby, found: nearby.length,
+    exhausted: ids.length > 0 && nearby.length === 0,
+    positions, recipes, entities, radius, loadedChunksOnly: true,
+    note: ids.length > 0 && nearby.length === 0
+      ? 'Tidak ada blok yang diminta pada chunk termuat dalam radius ini; bergerak dengan world.explore sebelum mencari ulang.'
+      : undefined
+  } }
 }
 module.exports = { manifest, run, posSchema }

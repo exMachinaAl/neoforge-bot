@@ -9,6 +9,15 @@ const copy = x => JSON.parse(JSON.stringify(x))
 const fail = (status, text) => Object.assign(Error(text), { status })
 const terminal = g => ['finished', 'cancelled'].includes(g.status)
 const active = status => ['dispatching', 'running'].includes(status)
+const stable = value => {
+  if (Array.isArray(value)) return value.map(stable)
+  if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map(k => [k, stable(value[k])]))
+  return value
+}
+const actionKey = d => JSON.stringify(stable({ kind: d.kind, skill: d.skill, params: d.params, name: d.name, input: d.input, command: d.command }))
+const positionKey = st => st?.pos ? [Math.floor(st.pos.x), Math.floor(st.pos.y), Math.floor(st.pos.z)].join(',') : 'unknown'
+const stateKey = st => JSON.stringify({ pos: positionKey(st), health: st?.health, food: st?.food,
+  inventory: (st?.inventory?.items || []).map(i => [i.name, i.count]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))) })
 
 function createAgent ({ engine, runner, director, dataDir = process.env.ARCADIA_DATA_DIR || './data',
   canRun = () => null, sandbox: injectedSandbox, env = process.env }) {
@@ -22,6 +31,10 @@ function createAgent ({ engine, runner, director, dataDir = process.env.ARCADIA_
   if (fs.existsSync(file)) {
     db = JSON.parse(fs.readFileSync(file, 'utf8'))
     if (db.version !== 1 || !MODES.includes(db.mode) || !Array.isArray(db.goals)) throw Error('checkpoint agent tidak valid')
+    for (const goal of db.goals) for (const step of (goal.steps || [])) {
+      // checkpoint versi awal dapat menyimpan hasil final saat status langkah masih running.
+      if (step.result && active(step.status)) step.status = step.result.ok ? 'done' : 'failed'
+    }
     for (const goal of db.goals) if (!terminal(goal)) {
       goal.status = 'paused'; goal.pending = null; goal.queue = []
       goal.reason = 'Dipulihkan setelah restart. Lanjutkan untuk mengamati dunia dan merencanakan kembali.'
@@ -90,10 +103,39 @@ function createAgent ({ engine, runner, director, dataDir = process.env.ARCADIA_
       g.queue = []
       const sig = JSON.stringify([decision.kind, decision.skill, decision.params, decision.name, decision.command, result.code, result.error])
       g.failures[sig] = (g.failures[sig] || 0) + 1
-      if (g.failures[sig] >= 3) { g.status = 'blocked'; g.reason = 'Tiga kegagalan identik. Ubah kondisi atau tujuan sebelum melanjutkan.' }
+      const limit = result.code === 'NO_PROGRESS' ? 2 : 3
+      if (g.failures[sig] >= limit) { g.status = 'blocked'; g.reason = result.code === 'NO_PROGRESS'
+        ? 'Agent mengulang tindakan tanpa perubahan keadaan. Tujuan dihentikan agar tidak menghabiskan token.'
+        : 'Tiga kegagalan identik. Ubah kondisi atau tujuan sebelum melanjutkan.' }
     }
     changed(g)
     return step
+  }
+  function noProgressReason (g, decision, state) {
+    if (decision.kind !== 'skill') return null
+    const key = actionKey(decision), stateNow = stateKey(state), posNow = positionKey(state)
+    if (['world.inspect', 'inv.snapshot'].includes(decision.skill)) {
+      const exact = [...g.steps].reverse().find(s => s.result && actionKey(s.decision) === key && s.beforeState === stateNow &&
+        !['ABORTED', 'DIED', 'INTERRUPTED', 'TIMEOUT'].includes(s.result.code))
+      if (exact) return 'Observasi identik sudah menghasilkan ' + exact.result.code + ' pada posisi dan inventory yang sama. Gunakan hasilnya atau ubah wilayah pencarian.'
+    }
+    if (decision.skill === 'world.inspect') {
+      const blocks = [...(decision.params?.blocks || [])].map(x => String(x).replace(/^minecraft:/, '')).sort().join('|')
+      const radius = decision.params?.radius || 32
+      const seen = [...g.steps].reverse().find(s => s.result && s.decision?.skill === 'world.inspect' && s.beforePos === posNow &&
+        [...(s.decision.params?.blocks || [])].map(x => String(x).replace(/^minecraft:/, '')).sort().join('|') === blocks &&
+        (s.decision.params?.radius || 32) >= radius)
+      if (blocks && seen) return 'Area dan blok yang sama sudah diperiksa pada radius yang sama atau lebih luas. Bergerak dengan world.explore atau gunakan hasil yang ada.'
+    }
+    if (decision.skill === 'mine.collect') {
+      const block = String(decision.params?.block || '').replace(/^minecraft:/, '')
+      const radius = decision.params?.maxDistance || 32
+      const exhausted = [...g.steps].reverse().find(s => s.result?.code === 'TARGET_NOT_FOUND' && s.decision?.skill === 'mine.collect' &&
+        s.beforePos === posNow && String(s.decision.params?.block || '').replace(/^minecraft:/, '') === block &&
+        (s.decision.params?.maxDistance || 32) >= radius && (s.result.data?.searchExhausted || /tidak ada|semua .* kandidat|kegagalan beruntun/i.test(s.result.error || '')))
+      if (exhausted) return 'Pencarian ' + block + ' pada area ini sudah habis. Hasil parsial tetap sah; gunakan world.explore sebelum menambang lagi.'
+    }
+    return null
   }
   function context (g) {
     const summary = (result, limit = 2500) => {
@@ -142,6 +184,13 @@ function createAgent ({ engine, runner, director, dataDir = process.env.ARCADIA_
       if (g.needsObservation && d.kind !== 'ask' && !(d.kind === 'skill' && scopeOf(d) === 'read')) {
         throw Error('Setelah restart/hasil uncertain, lakukan world.inspect atau inv.snapshot sebelum aksi lain atau finish.')
       }
+      const before = engine.state()
+      const repeated = noProgressReason(g, d, before)
+      if (repeated) {
+        record(g, d, { ok: false, code: 'NO_PROGRESS', error: repeated })
+        if (g.status !== 'blocked') { g.status = 'running'; g.reason = repeated; changed(g) }
+        return
+      }
       const missing = missingScopes(db.mode, g.grants, d)
       // finish/ask tidak memodifikasi dunia; observasi tetap boleh menyampaikan usulan.
       if (!['finish', 'ask'].includes(d.kind) && missing.length) {
@@ -171,7 +220,8 @@ function createAgent ({ engine, runner, director, dataDir = process.env.ARCADIA_
           changed(g)
         }
       } else if (d.kind === 'skill') {
-        const step = { id: crypto.randomUUID(), decision: d, status: 'dispatching', taskId: null, startedAt: Date.now() }
+        const step = { id: crypto.randomUUID(), decision: d, status: 'dispatching', taskId: null, startedAt: Date.now(),
+          beforeState: stateKey(before), beforePos: positionKey(before) }
         g.steps.push(step); changed(g) // Checkpoint wajib sebelum mengubah dunia.
         try {
           const task = engine.enqueue({ skill: d.skill, params: d.params || {}, source: 'planner', priority: 50, batchId: g.id })

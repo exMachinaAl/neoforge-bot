@@ -1,6 +1,6 @@
 const { Vec3 } = require('vec3')
 const { mk, mkBlock, mcData, bi, it } = require('./mock')
-const { createRunner } = require('../skills')
+const { createRunner, normalizeSkillOutput } = require('../skills')
 const U = require('../skills/_util')
 let pass = 0, fail = 0
 const ok = (c, m) => { c ? pass++ : fail++; console.log((c ? 'PASS ' : 'FAIL ') + m) }
@@ -23,6 +23,16 @@ const ok = (c, m) => { c ? pass++ : fail++; console.log((c ? 'PASS ' : 'FAIL ') 
   b = mk({ gotoErr: 'Timeout', gotoMove: { x: 30.5, z: 20.5 } }); r = createRunner(b); o = await r.run('nav.goto', { x: 30, z: 20, y: 70, strictY: true }); ok(!o.ok && o.code === 'TIMEOUT', 'nav: strictY -> TIMEOUT')
   b = mk(); r = createRunner(b); o = await r.run('nav.goto', { x: 10, z: 5 }); ok(o.ok && o.data.mode === 'xz' && b._goals[0] === 'GoalNearXZ', 'nav: tanpa y -> GoalNearXZ')
   b = mk({ gotoErr: 'NoPath' }); r = createRunner(b); o = await r.run('nav.goto', { x: 50, z: 50 }); ok(!o.ok && o.code === 'NO_PATH', 'nav: jauh + NoPath -> NO_PATH')
+  // observasi kosong adalah fakta; eksplorasi memindahkan bot untuk memuat area baru.
+  b = mk(); r = createRunner(b); o = await r.run('world.inspect', { blocks: ['oak_log'], radius: 64 });
+  ok(o.ok && o.data.exhausted === true && o.data.found === 0 && o.data.query.radius === 64, 'inspect kosong -> hasil pencarian eksplisit')
+  b = mk({ blocks: [mkBlock('oak_log', 40, 64, 0)] }); r = createRunner(b); o = await r.run('world.explore', { blocks: ['oak_log'], direction: 'east', distance: 48, scanRadius: 16 })
+  ok(o.ok && o.data.found === 1 && o.data.visited.length >= 1 && b.entity.position.x > 1, 'explore bergerak lalu menemukan blok di luar radius lokal')
+  b = mk(); r = createRunner(b); o = await r.run('world.explore', { blocks: ['oak_log'], direction: 'east', distance: 32, scanRadius: 16 })
+  ok(!o.ok && o.code === 'TARGET_NOT_FOUND' && o.data.exhausted && o.data.visited.length === 2, 'explore habis -> TARGET_NOT_FOUND dengan cakupan')
+  o = normalizeSkillOutput(undefined); ok(!o.ok && o.code === 'UNKNOWN' && /tidak mengembalikan/.test(o.error), 'runner menormalkan hasil skill kosong')
+  o = normalizeSkillOutput({ ok: false, code: 'ANEH', data: { collected: 2 } });
+  ok(o.code === 'UNKNOWN' && o.data.partial === true && /code tidak dikenal/.test(o.error), 'runner menormalkan code dan menandai hasil parsial')
   // mine
   b = mk({ mode: 'creative', blocks: [mkBlock('stone', 4, 64, 2)] }); r = createRunner(b); o = await r.run('mine.collect', { block: 'stone', count: 1 }); ok(o.code === 'PRECONDITION_FAILED' && /creative/.test(o.error), 'mine: creative ditolak -> ' + o.error)
   b = mk({ blocks: [mkBlock('stone', 4, 64, 2)] }); r = createRunner(b); o = await r.run('mine.collect', { block: 'stone', count: 1 }); ok(o.code === 'PRECONDITION_FAILED' && /wooden_pickaxe/.test(o.error), 'mine: stone tanpa pickaxe ditolak -> ' + o.error)
