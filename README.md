@@ -1,112 +1,94 @@
-# neoforge-bot
+# Arcadia / neoforge-bot
 
-**Agent berulang:** Mulai kegiatan/Jalankan tujuan kini memakai loop LLM, pemulihan otomatis, slider izin per bot, dan metode buatan agent dalam sandbox. [Panduan dan batas kemampuan](docs/AGENT_RUNTIME.md). Restart bot lalu pilih **Penuh** untuk eksekusi tanpa persetujuan per langkah.
+Arcadia adalah aplikasi Node.js dengan panel web untuk mengelola companion AI di Minecraft Java/NeoForge 1.21.1. Bot memakai Mineflayer, skill native proyek, antrean engine, dan keputusan LLM; lifecycle menyediakan kegiatan offline berbasis aturan dan skor.
 
-**Setup LLM Windows/Termux/Linux:** [panduan langkah demi langkah](docs/LLM_SETUP.md). `.env` di root kini dibaca otomatis; `npm run llm:status` memeriksa konfigurasi tanpa menampilkan key, `npm run llm:test -- "tujuan"` menguji model tanpa Minecraft. Ollama memakai `ARCADIA_LLM_PROVIDER=openai`.
+**Status native:** fitur saat ini sudah terintegrasi langsung dalam source repository. Jalankan aplikasi dari folder proyek; tidak perlu installer `fix.js` atau paket upgrade berantai. Istilah ini berarti integrasi source Node.js/web, bukan mod Java NeoForge, aplikasi desktop biner, atau produk resmi Mojang/Microsoft.
 
-**Panel admin multi-bot:** `npm run admin`, lalu buka `http://localhost:8788` untuk setup/login owner. Dashboard multi menyediakan Eagle bot fokus + first-person tiap bot; Single membuka companion lengkap. [Panduan admin, Ollama, import BotAlpha, dan hasil uji](docs/ADMIN_PANEL.md).
+**Kelayakan main:** lihat [audit 29 Oktober 2026](docs/PROJECT_STATUS.md). Implementasi tersedia dan memiliki pengujian, tetapi promosi tanpa syarat ke `main` belum direkomendasikan sampai temuan kebersihan repository serta instalasi bersih ditutup. Branch pengembangan utama tidak sama dengan rilis production stabil.
 
-UI companion dan runner kegiatan terpadu: [cara memakai, recovery, dan API](docs/MISSIONS.md). Setelah memperbarui source, restart proses bot lalu refresh UI; tidak perlu menjalankan upgrader.
+## Kemampuan saat ini
 
-Bot mineflayer (1.21.1, auth offline) yang bisa masuk dan bertahan di server NeoForge bermod, belajar sendiri saat mod berubah (`npm run adapt`),
-dan menjalankan task (jalan, tambang, pancing, panen, berburu) lewat CLI. Konteks lengkap untuk AI agent: `docs/HANDOFF.md`, aturan: `AGENTS.md`, backlog: `TODO.md`.
+- Admin dengan login owner, pembuatan banyak bot, proses per bot, kontrol tunggal/massal, sesi dan data terpisah.
+- Multi menampilkan Eagle bot fokus, first-person per bot, dan profil GLB pada setiap kartu; Single menyediakan companion, percakapan, tujuan, ingatan, dan statistik.
+- Profil 3D memiliki animasi otomatis/manual, skala, rotasi, posisi X/Y, serta kalibrasi per model/per bot.
+- Agent mengamati hasil skill, memilih tindakan/pemulihan, menyimpan checkpoint, dan mengikuti izin Observasi/Semi/Penuh. Log ringkas dapat dibuka untuk melihat seluruh proses.
+- Kegiatan offline bertajuk dengan beberapa task, dependency, skor faktor, dan pemulihan misi.
+- Native skills untuk navigasi, mining, farming, fishing, hunting, inventory, crafting, breeding, sleep, guard, inspeksi, eksplorasi, dan placement.
 
-## Mulai
+ML terlatih, pembuatan rumah/portal universal, dukungan penuh item modded, dan manajemen customer lengkap **belum tersedia**. Batas agent: [AGENT_RUNTIME.md](docs/AGENT_RUNTIME.md).
+
+## Menjalankan proyek
+
+Gunakan Node.js 22 atau lebih baru, npm, dan Git. Target penggunaan: Windows, Linux, dan Android melalui Termux. Pengujian fisik seluruh dependency di Linux/Termux belum lengkap; viewer/canvas dapat membutuhkan dependency build platform.
+
+1. Dari root checkout proyek, pasang dependency terkunci:
+
+```sh
+npm ci
 ```
-git clone https://github.com/exMachinaAl/neoforge-bot && cd neoforge-bot
-npm install          # postinstall memasang 4 patch di node_modules
-npm run check        # validasi kontrak + skill
-npm start
+
+Postinstall menjalankan empat patch kompatibilitas dependency yang memang bagian runtime. Periksa keluarannya: saat ini `patch-all.js` mencetak kegagalan tanpa menetapkan exit code gagal; hasil instalasi saja belum menjamin semua patch berhasil.
+
+2. Salin `.env.example` menjadi `.env` lewat editor, lalu atur koneksi/provider. Jangan kirim API key ke chat. Ikuti [setup LLM lintas OS](docs/LLM_SETUP.md); Ollama memakai jalur kompatibel OpenAI (`ARCADIA_LLM_PROVIDER=openai`).
+
+3. Validasi kontrak:
+
+```sh
+npm run check
 ```
-Server lokal: taruh di `server/` (tidak ikut git), `online-mode=false`. Server lain: buat `mc.local.json` (jangan di-push):
-`{ "host": "IP", "port": 25565, "logCmd": "ssh -p PORT -i ~/.ssh/botlog -o BatchMode=yes USER@IP 'cat /path/ke/logs/latest.log'" }`
-Prioritas konfigurasi: env `MC_HOST`, `MC_PORT`, `MC_LOG`, `MC_LOG_CMD` > `mc.local.json` > bawaan (localhost:25565, `server/logs/latest.log`). Jangan pakai env bernama `HOST`.
-Di Termux, jalankan `termux-wake-lock` sebelum task panjang.
 
-## Perintah CLI (ketik di terminal bot)
-- `!test [nama...]` / `!test list`: uji fungsi (state look walk jump blocks inventory equip modblock chest dig place attack probe); keluaran `SELFTEST_JSON`.
-- `!task list | status | stop`; `!task <skill> k=v ...` atau `!task <skill> {json}`; hasil: baris `SKILLRESULT {...}`.
-- `!channels [kata kunci]`: tabel channel mod masuk/keluar (diagnosis YSM/Epic Fight). `!hit`: serang mob terdekat. `!quit`.
+4. Untuk Eagle/first-person, pasang dependency viewer opsional:
 
-## Skill
-| Skill | Contoh |
-|---|---|
-| `nav.goto` | `!task nav.goto x=20 z=30` (tanpa y) atau `!task nav.goto 20 70 30` |
-| `mine.collect` | `!task mine.collect block=stone count=8` (survival; persiapan wooden_pickaxe otomatis bila belum punya alat) |
-| `fish.cast` | `!task fish.cast count=3` (dekat air, bawa fishing_rod) |
-| `farm.harvest` | `!task farm.harvest {"crops":["wheat"],"count":6}` |
-| `hunt.kill` | `!task hunt.kill mob=cow count=2` |
-Syarat umum: mode survival, hanya blok/item/entitas vanilla. Kegagalan dijelaskan di `SKILLRESULT.data.reasons`.
+```sh
+npm run viewer:install
+```
 
-## Menambah mod baru
-1. Hentikan bot. Commit kondisi sekarang: `git add -A && git commit -m "sebelum mod X"`.
-2. Pasang jar, restart server, tunggu log memuat `Done`.
-3. `npm run adapt` (1-5 menit; sukses berakhir `SELESAI`). `adapt` membaca log server (lokal atau `logCmd`) untuk channel opsional.
-4. `npm start` minimal 1 menit. Sehat bila: `CHANNELS OK`, `EVENT spawn`, `CEK10s` paket ribuan dengan posisi bukan `0,0,0`, log server tanpa `Timed out` / `Invalid player data` / `Incompatible client`.
-5. `git diff --stat`, lalu commit + push (`ids.json flows.json versions.json config.json argtypes.json`).
-Mengurangi mod: tidak perlu apa-apa. Fresh clone dengan mod yang sama: `npm install && npm start`.
+Paket viewer/canvas belum dikunci sebagai dependency langsung dalam package manifest. Setelah instalasi dependency, pastikan keluaran postinstall tetap berhasil; jika diperlukan jalankan `node patch-all.js`.
 
-## Kalau adapt berhenti
-| Pesan | Artinya | Tindakan |
-|---|---|---|
-| `patch-gagal` | versi dependency berubah | kirim pesan error |
-| `MACET: tipe X sudah terdaftar` | argumen command punya properti | baca dari kode mod |
-| `MACET: X tetap ditolak server` | payload opsional salah versi/flow | kirim 20 baris log server |
-| `MACET: ... fase konfigurasi` | channel konfigurasi tetap hilang | kirim output + `xxd lastfail.bin \| head -40` |
-| kick `mandatory registry data maps` | channel data map tidak terdaftar | sudah ditangani di `modchannels.js`; pastikan kode terbaru |
-| kick `invalid_player_data` | channel opsional tanpa cek di mod | pastikan log server terbaca; `adapt` mendaftarkannya |
-| `TAK TERBACA` | format pesan server berbeda | kirim barisnya |
-| `PARSE GAGAL` / `SKIP paket gagal` | item bermod tak terbaca, paket dibuang | normal |
+5. Jalankan admin:
 
-## Uji (urut; berhenti dan kirim hasil di langkah yang gagal)
-Siapkan: `/difficulty peaceful`, `/gamemode survival BotAlpha`, lalu `/give BotAlpha minecraft:iron_pickaxe`, `iron_sword`, `fishing_rod`, `wheat_seeds 8`, `bread 8`.
-1. `!test` tanpa FAIL; `walk` >= 4 blok. 2. `nav.goto x=20 z=30` lalu `/data get entity BotAlpha Pos` (ukuran gerak = posisi server, bukan animasi).
-3. `nav.goto 0 70 90` (y di tanah) = OK dengan `note`. 4. `mine.collect block=dirt count=6` dan `block=stone count=8` (cobblestone, `dug` >= 8, blok buatan tidak rusak).
-5. Tanpa pickaxe: siapkan kayu/papan, stick dan meja otomatis; `prepare=false` atau creative = `PRECONDITION_FAILED`. 6. `mine.collect` dengan `chest` = `deposited` benar. 7. `hunt.kill mob=cow count=2`, lalu `/difficulty normal` + zombie.
-8. `farm.harvest` gandum matang. 9. `fish.cast count=3`. 10. `!task stop` = `ABORTED`; `/kill BotAlpha` saat task = `DIED`. 11. Malam + `mine.collect`: `fights` > 0, bot tidak mati.
-12. T-pose: `!channels ysm epicfight yes_steve`; bandingkan `npm start` dengan `ARCADIA_UNKNOWN_EMPTY=1 npm start`.
-Kirim: `grep -a "TASK\|SKILLRESULT\|TEST\|CH \|EVENT\|SKIP\|ERR\|KICK" bot.log`
+```sh
+npm run admin
+```
 
-## Struktur
-`bot.js` (entri) | `modchannels.js channels.js ids/flows/versions/config/argtypes.json` (channel hasil belajar) | `learn.js adapt.js` | `config.js logsrc.js` | `patch-*.js` (postinstall) |
-`selftest.js sniff.js` | `contracts/` (skema + check) | `skills/` (runner + skill) | `unknownblocks.json`. Server selalu di `server/` (tidak ikut git). Jalankan dari root proyek.
+Buka **http://localhost:8788**, buat akun owner, tambah bot dengan host/port server, lalu tekan **Mulai**. Admin tidak otomatis menyalakan Minecraft server. Panduan lengkap: [ADMIN_PANEL.md](docs/ADMIN_PANEL.md).
 
-## Antrean, API & UI
-- Antrean berprioritas: `!queue add <skill> k=v ...`, `!queue list|clear|pause|resume|cancel <id>|kill`. `!task` tetap menjalankan satu task langsung.
-- Saat `npm start`, bot mencetak `API siap: http://127.0.0.1:8787/?token=...`. Buka URL itu di browser (HP yang sama) untuk UI: status bot, antrean, riwayat, chat, kill switch, form task dari manifest skill.
-- API (header `Authorization: Bearer TOKEN`): `GET /bots`, `GET /bots/me` (BotState), `GET|POST /bots/me/tasks`, `DELETE /bots/me/tasks/<id>`, `POST /bots/me/commands` (enqueue cancel pause resume clear stop say), `GET /skills`, `POST /killswitch`, `GET /events` (SSE).
-- Env: `ARCADIA_TOKEN` (tetap), `ARCADIA_PORT` (8787), `ARCADIA_BIND` (127.0.0.1; 0.0.0.0 membuka ke jaringan, hati-hati), `ARCADIA_API=0` mematikan API.
-- Kegagalan task yang mematikan bot (`DIED`/`INTERRUPTED`) menjeda antrean; lanjutkan manual (`!queue resume` atau tombol Lanjut).
-- `mine.collect ... chest=true` (atau `"chest":"auto"`) menyimpan ke chest/barrel terdekat; `chest` berkoordinat memakai wadah di/dekat koordinat itu.
-- Tes otomatis (bot tiruan): `npm test`.
+Untuk satu bot standalone, gunakan `npm start`; buka URL autentikasi yang dicetak terminal (bawaan port 8787). Jangan menjalankan username sama dari standalone dan admin bersamaan.
 
-## Log task (tasks.log)
-Tiap task menulis satu baris JSON (params + hasil utuh) ke `tasks.log` (diabaikan git; `ARCADIA_TASKLOG=off` mematikan, atau isi path lain). Terminal mencetak `SKILLRESULT {...}` untuk task antrean juga.
-Lihat detail kegagalan: `tail -n 3 tasks.log`. Di UI, ketuk baris Riwayat untuk membuka params + hasil lengkap. Params divalidasi terhadap manifest skill (HTTP 400 bila salah).
+## Konfigurasi Minecraft dan model
 
-## Director (uji model langsung)
-Model HANYA mengusulkan task; tidak ada yang berjalan sebelum disetujui (otonomi MATI). Kunci hanya dari env, tidak pernah ke UI/log.
-- Uji tanpa server/bot: `ARCADIA_LLM_KEY=sk-... node orchestrator/try.js "kumpulkan 8 kayu lalu tidur" --inv bread:3 --hp 20` (tambahkan `--dry` untuk melihat prompt tanpa memanggil model).
-- Env: `ARCADIA_LLM_PROVIDER` (anthropic|openai; openai juga untuk server lokal via `ARCADIA_LLM_URL`, mis. http://127.0.0.1:11434/v1 tanpa kunci), `ARCADIA_LLM_KEY` (atau ANTHROPIC_API_KEY/OPENAI_API_KEY), `ARCADIA_LLM_MODEL`, `ARCADIA_LLM_RPM` (anggaran/menit, bawaan 6), `ARCADIA_LLM_MAX_TOKENS`, `ARCADIA_LLM_TIMEOUT_MS`, `ARCADIA_DIRECTOR_DENY` (skill terlarang, koma), `ARCADIA_DIRECTOR_AUTO` (skill yang disetujui otomatis; bawaan kosong).
-- Di UI: kartu "Director (model)" -> tanya -> Setujui/Tolak. API: `POST /bots/{id}/director/ask`, `/director/proposals/{pid}/approve|reject`, `GET /bots/{id}/director`.
-## UI baru, peta, viewer
-- Buka URL `API siap: http://127.0.0.1:8787/?token=...` sekali; cookie HttpOnly (per port) dipasang dan token dihapus dari URL. UI modular di `ui/` (modul ES, tanpa HTML dinamis).
-- Peta 2D: `GET /bots/{id}/map?r=24`. Setelah paket dipasang sekali lewat `npm run viewer:install`, Viewer 3D eagle aktif otomatis saat bot hidup; tidak perlu env khusus. Matikan/nyalakan dari menu **Pengaturan** atau tombol di Eagle View. Preferensi disimpan per bot. Port dasar 3007 dan otomatis mencari port berikutnya bila terpakai; bind tetap 127.0.0.1.
-- UI berbentuk controller AI Life: Eagle View tidak dibuat ulang oleh polling, statistik persona/afeksi, task, lifecycle, Director, inventory, chat, serta identitas akun/tenant lokal. `GET /auth/session` menjadi kontrak awal untuk login pelanggan; autentikasi saat ini masih token lokal melalui cookie HttpOnly.
-- `/openapi.json` memuat rute dan skema skill dari manifest.
+Standalone membaca `MC_HOST`, `MC_PORT`, `MC_LOG`, `MC_LOG_CMD` sebelum `mc.local.json`; bawaan host `localhost`, port `25565`, log `server/logs/latest.log`. Admin menyimpan koneksi setiap bot lewat form. Server saat ini memakai auth offline.
 
-<!-- profile3d-lifecycle-v1 -->
-## Profil bot 3D dan generator kegiatan
-- Salin GLB 2.0 ke `data/models/` (maksimum 100 MB), tekan **Muat ulang model**, lalu pilih file. Pilihan langsung berlaku; ukuran, rotasi, clip manual, dan mapping tersimpan otomatis per model/per bot. Tekstur/buffer harus tertanam di GLB. FBX/PMX/VRM khusus dan GLB dengan Draco/KTX2/Meshopt belum didukung; ekspor GLB tanpa kompresi tersebut terlebih dahulu. Model hanya dilayani ke sesi terautentikasi.
-- Tiap bot menyimpan model, skala, mode animasi otomatis/manual, dan pemetaan clip di 'data/profiles/<bot>.json'. Kondisi otomatis: 'idle', 'working', 'happy', 'tired', 'sad', dan 'danger'. Nama clip dibaca dari GLB; pemetaan bisa dikalibrasi di panel **AI Life**.
-- Renderer memakai Three.js + GLTFLoader lokal di 'ui/vendor/'; tidak mengambil skrip dari CDN. Lisensi vendornya ada di 'ui/vendor/THREE-LICENSE.txt'.
-- Lifecycle dapat memilih satu template sebagai kegiatan berjudul yang berisi beberapa task berurutan. Contoh 'Hari yang Indah untuk Bertanam' berisi panen, memancing, lalu snapshot inventory. Persetujuan tetap wajib sebelum seluruh task masuk antrean.
-- 'selectionScore' dan 'selectionFactors' menyimpan faktor numerik konteks, persona, riwayat sukses, kecepatan, pengalaman, dan novelty. Ini dataset awal untuk ranker offline; belum ada model ML yang dilatih.
+Taruh GLB 2.0 bertekstur/buffer tertanam di `data/models/`, lalu pilih model melalui **Single → Model & animasi**. Batas 100 MB; decoder Draco/KTX2/Meshopt belum tersedia. Atur ukuran dan posisi X/Y untuk framing kepala atau badan. **Multi → Atur framing** menyediakan kontrol ringkas yang sama. Profil dapat dimuat ketika worker offline.
 
-## Pembaruan v2.5 (UI, Director, viewer)
-Ringkas; rincian di `docs/USAGE_UPDATE.md`, riwayat di `docs/CHANGELOG.md`, rencana di `docs/ORCHESTRATOR_PLAN.md` dan `docs/UI_PLAN_ADDENDUM_v1.2.md`.
-- **UI baru:** `npm start` mencetak `API siap: http://127.0.0.1:8787/?token=...`; buka sekali, cookie `arcadia_<port>` (HttpOnly) dipasang dan token hilang dari URL. UI modular di `ui/` (modul ES, tanpa build, tanpa HTML dinamis), botId-first.
-- **Uji model langsung:** `node orchestrator/try.js "tujuan" --dry` (lihat prompt) lalu `ARCADIA_LLM_KEY=... node orchestrator/try.js "tujuan"`. Model HANYA mengusulkan; task jalan setelah Setujui di UI. Otonomi MATI.
-- **Viewer 3D:** panel kelas satu aktif otomatis setelah paket opsional dipasang (`npm run viewer:install`), mode `firstPerson:false`/eagle, satu instance dan port bebas per bot, toggle tersimpan di UI, serta iframe aman hanya ke loopback dan tidak restart saat polling. Peta 2D tetap cadangan ringan.
-- **Pasang pembaruan:** `unzip -o arcadia-ui-director.zip && node install/fix-ui3b.js && npm test`. Batalkan: `git checkout bot.js` atau `ARCADIA_API=0 npm start`.
-- **Status viewer:** TERBUKTI di server asli dan browser laptop; browser HP/Termux serta tekstur blok modded masih BELUM DIUJI. Model sungguhan BELUM DIUJI.
+Kalibrasi tersimpan bersama per bot/model; Single yang sudah terbuka dapat masih memegang nilai lama dari Multi: gunakan **Muat ulang model** bila perlu. Ini belum sinkron langsung antar-renderer. Animasi GLB tidak mengubah tampilan skin/YSM bot di dunia Minecraft.
+
+## Pengujian
+
+Status konfigurasi LLM tanpa menampilkan key atau memanggil cloud:
+
+```sh
+npm run llm:status
+```
+
+Uji model tanpa Minecraft (benar-benar memakai API provider):
+
+```sh
+npm run llm:test -- "kumpulkan 8 kayu"
+```
+
+Regresi otomatis:
+
+```sh
+npm test
+```
+
+Admin memakai suite terpisah `npm run test:admin`; konfigurasi env memakai `npm run test:llm-config`. Viewer opsional harus terpasang untuk tes admin; uji browser memakai helper Edge Windows dan aset GLB lokal. Rincian bukti serta checklist lapangan: [PROJECT_STATUS.md](docs/PROJECT_STATUS.md) dan [FIELD_TESTS.md](docs/FIELD_TESTS.md).
+
+CLI standalone: `!test list`, `!task list`, `!task <skill> k=v`, `!task stop`, `!queue list`, `!channels`, `!quit`. Hasil task dicatat sebagai `SKILLRESULT` dan di `tasks.log`. Untuk perubahan mod, `npm run adapt` mempelajari channel dari kegagalan negosiasi/log server; ini bukan training ML.
+
+## Pengembangan dan dokumentasi
+
+**Codex / Claude Code / Antigravity:** wajib edit langsung di folder lokal. **Claude / ChatGPT / Gemini tanpa akses folder:** upgrade berbentuk ZIP berisi source final. Dilarang memakai `fix.js` sebagai mekanisme perubahan source. Ketentuan lengkap: [AGENTS.md](AGENTS.md) dan [WORKFLOW.md](docs/WORKFLOW.md).
+
+Mulai dari [indeks dokumentasi](docs/README.md), [handoff aktif](docs/HANDOFF.md), [peta source](docs/MAP.md), dan [backlog](TODO.md). Riwayat perubahan ada di [CHANGELOG.md](docs/CHANGELOG.md); rencana lama ditandai **ARSIP**.

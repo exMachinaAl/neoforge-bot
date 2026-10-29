@@ -1,4 +1,6 @@
-# Persiapan menambang (2026-10-21)
+# Persiapan menambang
+
+Panduan fitur yang diimplementasikan 21 Oktober 2026. Bukti audit terbaru: [PROJECT_STATUS.md](PROJECT_STATUS.md); aturan perubahan source: [WORKFLOW.md](WORKFLOW.md).
 
 TERBUKTI dari log pemilik: `mine.collect` menolak `minecraft:stone` sebagai blok tidak dikenal. Lookup skill sebelumnya hanya menerima `stone`; error ini bukan kegagalan API Ollama.
 

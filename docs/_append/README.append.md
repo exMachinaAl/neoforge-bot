@@ -1,3 +1,5 @@
+> **ARSIP FRAGMEN INSTALLER — JANGAN DITERAPKAN.** Isi ini berasal dari distribusi lama dan tidak boleh ditambahkan kembali ke README/MAP/TODO. Gunakan [indeks aktif](../README.md) dan [WORKFLOW](../WORKFLOW.md); upgrade source tidak memakai fix.js.
+
 ## Pembaruan v2.5 (UI, Director, viewer)
 Ringkas; rincian di `docs/USAGE_UPDATE.md`, riwayat di `docs/CHANGELOG.md`, rencana di `docs/ORCHESTRATOR_PLAN.md` dan `docs/UI_PLAN_ADDENDUM_v1.2.md`.
 - **UI baru:** `npm start` mencetak `API siap: http://127.0.0.1:8787/?token=...`; buka sekali, cookie `arcadia_<port>` (HttpOnly) dipasang dan token hilang dari URL. UI modular di `ui/` (modul ES, tanpa build, tanpa HTML dinamis), botId-first.

@@ -4,10 +4,10 @@ Implementasi 2026-10-21. **TERBUKTI dari log pemilik**: loop agent dan Ollama Cl
 
 ## Mulai dari UI
 
-1. Restart worker bot terkait melalui admin, lalu refresh halaman. Dependency QuickJS sudah dipasang pada workspace ini; instalasi baru mengikuti `npm install`.
+1. Instal dependency sesuai lockfile melalui `npm ci`, periksa keluaran postinstall, lalu restart worker terkait dan refresh halaman. QuickJS adalah dependency proyek; jangan menganggap dependency komputer sebelumnya tersedia pada checkout baru.
 2. Buka Single atau pilih bot fokus pada Multi. Panel **AGENT / IZIN** menyediakan slider **Observasi — Semi — Penuh**, tersimpan per bot.
 3. Pilih **Penuh**, masukkan tujuan, lalu **Mulai kegiatan** (Single) atau **Jalankan tujuan** (Multi). Contoh: “Kumpulkan 4 cobblestone. Siapkan alat dan pulihkan hambatan crafting sampai berhasil.”
-4. Pantau alasan, hasil native, keputusan, dan token. **Hentikan agent** menjeda; **Batalkan tujuan** mengakhiri tujuan. Kill switch tetap berlaku.
+4. Pantau status/langkah terbaru pada panel ringkas. Klik baris status untuk melihat seluruh proses, hasil/error dan jumlah token. **Hentikan agent** menjeda; **Batalkan tujuan** mengakhiri tujuan. Kill switch tetap berlaku.
 
 | Mode | Perilaku |
 |---|---|
@@ -113,6 +113,6 @@ Tes tanpa Minecraft/API key:
 npm run test:agent
 ```
 
-TERUJI TIRUAN: 13 kasus agent; regresi misi 8, API 57, UI 50, Director 48; check/sintaks lulus. Edge desktop/HP: agent Semi → dua langkah → verifikasi, slider Penuh persisten, karakter/kamera/input stabil. Admin multi-worker/multi-kamera juga lulus. Docker command dan server/LLM nyata belum diuji.
+Hasil implementasi dan tes menurut tanggal ada di [CHANGELOG.md](CHANGELOG.md); audit ulang 29 Oktober ada di [PROJECT_STATUS.md](PROJECT_STATUS.md). Suite agent kini memuat 17 kasus, termasuk anti-loop. Uji Edge memakai viewport desktop/HP, bukan perangkat HP fisik. Bukti lapangan agent/Ollama lama tidak membuktikan fix anti-loop terbaru; Docker nyata dan Linux/Termux fisik masih BELUM DIUJI.
 
 Referensi isolasi: [QuickJS/WASM](https://github.com/justjake/quickjs-emscripten) dan [opsi container Docker](https://docs.docker.com/reference/cli/docker/container/run/). Tidak menggunakan `node:vm` sebagai batas keamanan.

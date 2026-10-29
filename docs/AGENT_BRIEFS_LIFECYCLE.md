@@ -1,3 +1,5 @@
+> **ARSIP RENCANA — bukan instruksi kerja/status aktif.** Dipertahankan untuk konteks keputusan lama; sebagian fitur di bawah sudah diimplementasikan. Aturan pengiriman patch/fix, kewajiban izin/delegasi, dan pernyataan “belum ada kode” di arsip tidak berlaku otomatis. Gunakan [indeks aktif](README.md), [status proyek](PROJECT_STATUS.md), [backlog](../TODO.md), dan [metode kerja](WORKFLOW.md).
+
 # docs/AGENT_BRIEFS_LIFECYCLE.md - kartu kerja paralel untuk otak lifecycle (2026-10-12)
 Rancangan: docs/LIFECYCLE_PLAN.md. Aturan bersama, area, dan prompt pembuka: docs/AGENT_BRIEFS.md bagian A dan D (berlaku sama). Area: A contracts+engine | B ui | C skills (termasuk interpreter makro) | D orchestrator + lifecycle/ | E control + viewer | Pemilik = uji server. Satu kartu = satu patch kecil terhadap hash HEAD; 8-12 tes termasuk jalur gagal + uji mutasi; label TERBUKTI/DILAPORKAN/TERUJI TIRUAN/BELUM DIUJI; tanpa dependency baru tanpa persetujuan.
 

@@ -1,3 +1,5 @@
+> **ARSIP RENCANA — bukan instruksi kerja/status aktif.** Dipertahankan untuk konteks keputusan lama; sebagian fitur di bawah sudah diimplementasikan. Aturan pengiriman patch/fix, kewajiban izin/delegasi, dan pernyataan “belum ada kode” di arsip tidak berlaku otomatis. Gunakan [indeks aktif](README.md), [status proyek](PROJECT_STATUS.md), [backlog](../TODO.md), dan [metode kerja](WORKFLOW.md).
+
 # docs/ORCHESTRATOR_PLAN.md - dari "Director usul task" menuju orchestrator (v1, 2026-10-12)
 Prinsip tetap dari UI_PLAN: LLM hanya mengusulkan Task/Command tervalidasi; killswitch selalu ada; otonomi bawaan MATI; label status jujur.
 

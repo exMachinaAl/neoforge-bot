@@ -1,3 +1,5 @@
+> **ARSIP RENCANA — bukan instruksi kerja/status aktif.** Dipertahankan untuk konteks keputusan lama; sebagian fitur di bawah sudah diimplementasikan. Aturan pengiriman patch/fix, kewajiban izin/delegasi, dan pernyataan “belum ada kode” di arsip tidak berlaku otomatis. Gunakan [indeks aktif](README.md), [status proyek](PROJECT_STATUS.md), [backlog](../TODO.md), dan [metode kerja](WORKFLOW.md).
+
 # Rencana upgrade Arcadia — 19 Oktober 2026
 
 Update implementasi: pemuatan Momoi, renderer stabil, autosave, dan kalibrasi per model sudah dikerjakan pada 19 Oktober; lihat CHANGELOG bagian Profil GLB v2. Validasi browser/aset nyata memakai API terisolasi, tanpa server Minecraft. P1–P3 tetap usulan.

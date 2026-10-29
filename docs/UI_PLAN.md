@@ -1,3 +1,5 @@
+> **ARSIP RENCANA — bukan instruksi kerja/status aktif.** Dipertahankan untuk konteks keputusan lama; sebagian fitur di bawah sudah diimplementasikan. Aturan pengiriman patch/fix, kewajiban izin/delegasi, dan pernyataan “belum ada kode” di arsip tidak berlaku otomatis. Gunakan [indeks aktif](README.md), [status proyek](PROJECT_STATUS.md), [backlog](../TODO.md), dan [metode kerja](WORKFLOW.md).
+
 # docs/UI_PLAN.md - cara berpikir dan template (v1.1, 2026-10-10; v1.1 = keputusan multi-bot, bagian 7)
 Berlaku untuk UI, viewer, dan lifecycle. Patch 0001/0002 (kontrak v0.2.0, progress) adalah contoh pola ini.
 

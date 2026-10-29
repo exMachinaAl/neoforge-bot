@@ -1,4 +1,6 @@
-# Arcadia Admin — 2026-10-20
+# Arcadia Admin
+
+Panduan aktif, diselaraskan 29 Oktober 2026. [Indeks dokumentasi](README.md) · [Status dan bukti](PROJECT_STATUS.md) · [Metode upgrade](WORKFLOW.md).
 
 Panel admin sekarang memiliki login owner, registry bot, pengelola proses, dashboard multi-kamera, dan mode single companion dalam satu origin. Implementasi langsung di source; tidak ada apply/upgrader.
 
@@ -6,12 +8,13 @@ Panel admin sekarang memiliki login owner, registry bot, pengelola proses, dashb
 
 Multi dan Single kini menyediakan slider izin serta kontrol tujuan [agent berulang](AGENT_RUNTIME.md). Preferensi dan data agent terpisah per bot. Jalankan tujuan menggunakan loop keputusan/pemulihan LLM.
 
-Dari folder proyek, jika konfigurasi Ollama Windows sudah disimpan:
+Atur `.env` di root sesuai [LLM_SETUP.md](LLM_SETUP.md), lalu jalankan dari folder proyek pada Windows/Linux/Termux:
 
-```powershell
-. .\scripts\load-ollama.ps1
+```sh
 npm run admin
 ```
+
+Loader PowerShell `scripts/load-ollama.ps1` tetap tersedia hanya untuk konfigurasi DPAPI Windows lama; tidak wajib untuk `.env` portable.
 
 Tanpa LLM, cukup `npm run admin`; pengelolaan bot, kamera, task manual, dan generator offline tetap tersedia. Worker mewarisi konfigurasi LLM dari proses admin, jadi perubahan environment membutuhkan restart admin/worker.
 
@@ -31,6 +34,14 @@ Panel baru tidak menghentikan proses standalone lama pada port 8787. Sebelum mem
 8. **Hapus** tersedia setelah proses berhenti. Konfigurasi dikeluarkan dari daftar, tetapi folder data bot tetap disimpan.
 
 Eagle/first-person adalah kamera pengamatan. Kontrol tindakan saat ini melalui tujuan/misi, task, chat Minecraft dan kontrol proses. Teleoperasi WASD/mouse-look belum tersedia. Banyak iframe 3D menambah beban GPU/CPU; buka hanya kamera yang dibutuhkan atau gunakan Tutup semua kamera.
+
+## Profil 3D dan log agent
+
+Setiap kartu Multi memiliki profil GLB di kanan atas dan **Atur framing** untuk ukuran, rotasi, posisi X/Y, serta reset. Single menyediakan pengaturan lengkap melalui **Model & animasi**. Kalibrasi tersimpan per bot/per model; admin melayani profil langsung dari penyimpanan, termasuk saat worker berhenti.
+
+Untuk framing kepala, besarkan ukuran lalu geser posisi X/Y. Single yang sudah terbuka belum otomatis menerima perubahan dari Multi; gunakan **Muat ulang model** untuk mengambil profil tersimpan. Kembali ke Multi memuat ulang profil kartu, sedangkan polling rutin mempertahankan renderer.
+
+Panel agent menampilkan tujuan, status dan langkah terbaru/aktif. Indikator status aktif beranimasi; klik baris status untuk membuka seluruh langkah dalam area scroll. Tutup kembali agar panel ringkas. Ini riwayat keputusan/tindakan yang dicatat aplikasi, bukan akses ke pemikiran internal tersembunyi model.
 
 ## Arsitektur dan data
 

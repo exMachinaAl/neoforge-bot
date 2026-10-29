@@ -1,3 +1,5 @@
+> **ARSIP RENCANA — bukan instruksi kerja/status aktif.** Dipertahankan untuk konteks keputusan lama; sebagian fitur di bawah sudah diimplementasikan. Aturan pengiriman patch/fix, kewajiban izin/delegasi, dan pernyataan “belum ada kode” di arsip tidak berlaku otomatis. Gunakan [indeks aktif](README.md), [status proyek](PROJECT_STATUS.md), [backlog](../TODO.md), dan [metode kerja](WORKFLOW.md).
+
 # docs/LIFECYCLE_PLAN.md - otak lifecycle: statistik -> task acak berbobot -> evaluasi -> upgrade -> tool tambahan (v1, 2026-10-12)
 Status: RENCANA (belum ada kode). Melengkapi docs/ORCHESTRATOR_PLAN.md (L1..L4) dan docs/UI_PLAN_ADDENDUM_v1.2.md. Prinsip tetap: kontrak dulu (hanya menambah), otonomi bawaan MATI, killswitch menang, label status jujur, LLM hanya mengusulkan.
 

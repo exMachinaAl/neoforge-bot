@@ -1,3 +1,5 @@
+> **ARSIP RENCANA — bukan instruksi kerja/status aktif.** Dipertahankan untuk konteks keputusan lama; sebagian fitur di bawah sudah diimplementasikan. Aturan pengiriman patch/fix, kewajiban izin/delegasi, dan pernyataan “belum ada kode” di arsip tidak berlaku otomatis. Gunakan [indeks aktif](README.md), [status proyek](PROJECT_STATUS.md), [backlog](../TODO.md), dan [metode kerja](WORKFLOW.md).
+
 # Rancangan panel admin multi-bot — 2026-10-20
 
 Status terbaru: **fondasi owner + worker + UI multi/single + dual kamera sudah diimplementasikan**, setelah persetujuan pemilik berikutnya. Cara pakai, hasil uji, dan batas nyata: [ADMIN_PANEL.md](ADMIN_PANEL.md). Rancangan historis di bawah bukan daftar fitur yang seluruhnya sudah selesai. Customer management, profil LLM per bot, dan SQLite masih belum diterapkan.

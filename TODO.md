@@ -1,238 +1,34 @@
-# TODO (checkpoint #4)
-## Pembaruan 2026-10-21 — agent berulang
-- [~] Loop keputusan/pemulihan LLM, izin per bot, checkpoint/recovery, metode JS sandbox, world.inspect/world.place/world.explore dan dataset pengalaman: agent+Ollama TERBUKTI dari log; fix anti-loop TERUJI TIRUAN, lihat docs/AGENT_RUNTIME.md.
-- [ ] Uji ulang tujuan pencarian/mining dan pemulihan modded di Minecraft + Ollama setelah restart; uji command Docker serta Linux/Termux fisik.
-- [ ] Perluasan native smelting/portal, validasi tujuan bangunan, training ML dari pengalaman, budget LLM bersama lintas worker.
+# Backlog aktif Arcadia
 
-## Pembaruan 2026-10-21 — prasyarat mining
-- [~] Namespace vanilla + bootstrap wooden_pickaxe dari log/papan, pemasangan meja, progres dan stop: TERUJI TIRUAN; lihat docs/MINING_PREPARATION.md.
-- [ ] Uji bootstrap di server asli; lanjutkan planner prasyarat tier batu/besi, smelting, dan sublangkah misi persisten.
+Diperbarui 29 Oktober 2026. Implementasi dan bukti dipisahkan: [PROJECT_STATUS.md](docs/PROJECT_STATUS.md). Backlog lama tersedia sebagai [arsip](docs/archive/TODO_2026-10-21.md); checkbox di sana tidak menentukan kondisi sekarang.
 
-## Pembaruan 2026-10-20 — admin multi-bot
-- [~] Login owner, registry/worker, multi/single, Eagle fokus + first-person per bot, proxy satu origin: TERUJI TIRUAN termasuk dua proses bot dan Edge nyata.
-- [ ] Uji multi-bot Minecraft asli + LLM di admin; beban kamera jangka panjang.
-- [ ] UI customer management, profil LLM per bot, teleoperasi manual dan deployment HTTPS eksternal.
+## Sebelum promosi main
 
-## Pembaruan 2026-10-19 — companion & misi (lihat docs/MISSIONS.md)
-- [~] UI karakter/kegiatan/percakapan/ingatan dan runner dependency persisten, stop/replan/recovery: TERUJI TIRUAN, termasuk browser Edge nyata.
-- [ ] Uji misi baru di Minecraft + LLM sungguhan; periksa hasil restart di dunia sebelum retry.
-- [ ] First-person view, autentikasi customer, dan training ranker/task generator ML offline.
+Usulan urutan inti untuk verifikasi pemilik: [CORE_ROADMAP](docs/CORE_ROADMAP.md), R0 baseline → R1 reliability → R2 progres/prasyarat → R3 shelter. **Belum disahkan sebagai urutan implementasi**; tidak berarti seluruh item di bawah otomatis disetujui untuk dibangun.
 
-Legenda: [x] TERBUKTI (log/!test) | [~] TERUJI TIRUAN / sebagian | [ ] belum
+- [ ] Hentikan pelacakan `mc.local.json.bp1` dan `mc.local.json.bp2` tanpa menghapus salinan lokal; evaluasi riwayat jika pernah memuat kredensial.
+- [ ] Verifikasi instalasi bersih dari lockfile di checkout terisolasi; dependency viewer/canvas opsional dan dependency tes admin harus jelas.
+- [ ] Buat kegagalan patch dependency menghasilkan exit code gagal; saat ini postinstall dapat terlihat berhasil walau salah satu patch gagal.
+- [ ] Tinjau status audit dan hasil suite terbaru sebelum merge; belum ada CI tercatat di repository.
 
-## Koneksi & kompatibilitas modded
-- [x] Handshake, adapt otomatis, data map, spawn dan bertahan, respawn
-- [x] Fisika dasar, dig, place, chest, equip, attack(entityHurt), blok modded padat (patch-blocks)
-- [ ] Diagnosis T-pose: A/B ARCADIA_UNKNOWN_EMPTY=1, !channels ysm epicfight yes_steve; lihat klien lain
-- [ ] YSM: handler channel ysm_epicfight_compat:model_request/model_chunk (closed source: tangkap payload klien asli atau cek /ysm)
-- [ ] entity_metadata/entity_equipment gagal: ambil payload (TRACE=1 + xxd), parser aman yang hanya mengambil slot + id item
-- [ ] Inventory: bandingkan !test inventory vs /data get entity BotAlpha Inventory (item modded, item berkomponen); jalur cadangan parser SNBT
-- [ ] Tes equip/place item non-hotbar bermodded komponen (serialisasi ItemStack)
-- [ ] Rarity enum bergeser (6 entri): pantau efek parse item
-- [ ] noErrorLogging: ringkas PARSE GAGAL per 10 detik
-- [ ] !help diperbarui (!test !task !channels)
+## Validasi lapangan
 
-## Skills (kontrak: contracts/)
-- [x] nav.goto (jalan datar, pulang-pergi)
-- [~] nav.goto tanpa y / XZ tercapai (fix timeout y di tanah)
-- [~] mine.collect baru (drop otomatis, alat, dig natural, guard, chest) - uji server
-- [~] fish.cast, farm.harvest, hunt.kill - uji server
-- [ ] craft.vanilla (crafting table + window click), inv.store/take (chest umum), eat/sleep sebagai skill sendiri
-- [ ] Mining lanjutan: strip-mine, hindari lava/air, penyimpanan saat penuh
-- [ ] Combat: tes damage Epic Fight (/data get entity sebelum-sesudah), PvP setelah equipment terbaca
-- [ ] Tes otomatis: tests/ dengan harness bot tiruan (31 kasus ada di sesi, belum di repo) + npm test
+- [ ] Uji anti-loop: pencarian oak_log kosong → eksplorasi wilayah baru → gunakan progres parsial; jangan mengulang area/radius identik tanpa perubahan.
+- [ ] Uji prasyarat crafting/mining dan pemindahan item bermuatan komponen modded ke chest; hasil native harus diteruskan ke keputusan agent.
+- [ ] Uji restart saat task aktif: observasi dunia dulu, hindari pengulangan aksi yang belum diketahui hasilnya.
+- [ ] Uji multi-bot Minecraft + Ollama lewat admin, beban kamera/GLB jangka panjang, dan HP/Termux/Linux fisik.
+- [ ] Uji sandbox command Docker nyata dan batas debug/production.
+- [ ] Tutup diagnosis sleep/guard/T-pose dan parsing inventory/metadata yang masih terbuka dengan log baru; lihat [FIELD_TESTS.md](docs/FIELD_TESTS.md).
 
-## Task engine & orchestrator
-- [ ] Antrean prioritas, interupsi, resume, retry onFail (sekarang satu task per waktu)
-- [ ] Banyak bot: satu proses per bot, reconnect, jeda login
-- [ ] Event bus sesuai skema Event; BotState dengan capabilities dari hasil !test
+## Perluasan fitur
 
-## Mind (persona & planner)
-- [ ] Persona sebagai parameter perilaku; planner LLM memilih Task dari SkillManifest (batas maxLlmCallsPerMin)
-- [ ] Keputusan: LLM API vs lokal, dijalankan di mana
+- [ ] Anggaran panggilan/token LLM bersama yang mencakup loop agent seluruh worker.
+- [ ] Framing Multi ↔ Single tersinkron tanpa reload model atau menimpa perubahan lama.
+- [ ] Planner prasyarat tier batu/besi, smelting, validasi bahan/rencana bangunan, lalu portal.
+- [ ] Customer management lengkap, profil LLM per bot/customer, deployment HTTPS teruji.
+- [ ] Teleoperasi WASD/mouse-look; kamera first-person sudah diimplementasikan.
+- [ ] Evaluasi dataset pengalaman, LLM sebagai teacher/ranker, lalu training generator/ranker offline. Kegiatan bertajuk tetap kumpulan task dengan skor multifaktor.
 
-## Control plane
-- [ ] CLI lanjutan, REST + WebSocket (contracts/README.md), Web UI minimal, kill switch
+## Sudah diimplementasikan
 
-## Infra, uji, keamanan
-- [ ] Lingkungan laptop (server/ subfolder, tanpa mc.local.json); bandingkan hasil !test dengan HP
-- [ ] Opsi MC_DATA (folder JSON per lingkungan) agar laptop/HP tidak saling menimpa
-- [ ] Tes postinstall pada fresh clone (rm -rf node_modules && npm install)
-- [ ] Whitelist BotAlpha, firewall, batas biaya LLM
-
-## Urutan berikut
-1. Jalankan test list di README (bagian Uji) dan kirim hasilnya
-2. Putuskan arah T-pose dari hasil A/B + !channels
-3. Perbaiki skill berdasarkan SKILLRESULT.data.reasons
-4. Task engine minimum, lalu tes otomatis di repo
-
-## Pembaruan #5
-- [x] nav.goto XZ + y tak terjangkau (OK dengan note), jarak 90 blok (TERBUKTI log)
-- [x] mine.collect dirt dan stone -> cobblestone, menembus tanah (TERBUKTI log)
-- [~] DILAPORKAN (pemilik: anggap tes lain berhasil, log tak dilihat): hunt, farm, fish, guard, tes T-list lain
-- [ ] Uji ulang chest: koordinat yang diberikan terbaca 'stone' oleh bot (3x gagal); coba chest=true (auto-detect)
-- [ ] Uji nav.goto dari lubang hasil galian (retry + gali keluar); sebelumnya UNKNOWN dalam 91 ms tanpa bergerak
-- [~] engine/ + control/ + ui/ (antrean, API, SSE, UI web) - TERUJI TIRUAN (npm test), BELUM DIUJI di server/browser HP
-- [ ] YSM: baca subperintah /ysm (Tab di klien OP); !channels ysm; pelajari paket pilih-model klien asli
-- [ ] Orchestrator multi-bot (proses per bot + IPC), persona, memori, planner LLM, UI lanjutan (daftar bot, inventory, peta)
-
-## Pembaruan #6
-- [x] farm.harvest: akar masalah ditemukan di source (GoalLookAtBlock tak pernah terpenuhi untuk blok tanpa shapes seperti tanaman); kini U.approach memakai GoalNear untuk blok tanpa bentuk tabrakan - TERUJI TIRUAN, BELUM DIUJI server
-- [x] Item unknown dikelompokkan per id numerik (unknown#<id>) di invTotals/BotState - TERUJI TIRUAN
-- [ ] Verifikasi inventory: skill inv.snapshot (/data get entity <bot> Inventory, parser SNBT) dibanding bot.inventory; butuh bot op
-- [ ] craft.item: resep vanilla ada di minecraft-data (782 item); alur crafting table + window click BELUM diuji; hanya bahan vanilla
-- [ ] Uji ulang farm.harvest di server; kirim tail -n 3 tasks.log bila gagal
-## Pembaruan #7 (inventory)
-- [~] inv.snapshot: bandingkan bot.inventory dengan /data get entity <bot> Inventory (butuh op); belajar nama item modded; state.inventory jadi source=snbt/accurate=true bila snapshot cocok dan <30 dtk - TERUJI TIRUAN, BELUM DIUJI di server
-- [~] inv.view / inv.store / inv.take: lihat, simpan, ambil dari chest dengan verifikasi /data get block Items; item modded dilewati kecuali includeModded - TERUJI TIRUAN, BELUM DIUJI di server
-- [~] Nama item modded dari registri minecraft:item (log "ITEM NAMES: n id"); bila tidak muncul, nama dipelajari dari inv.snapshot (itemmap.json)
-- [ ] Format keluaran /data get di server asli belum pernah dilihat: bila PROTOCOL_UNSUPPORTED, kirim snapshot_raw.txt
-- [ ] View 3D (prismarine-viewer) untuk UI - BELUM dikerjakan, lihat catatan kelayakan
-## Pembaruan #8 (inventory tahan banting, v2.3)
-- [~] Jendela chest tak terbaca (window_items dibuang karena komponen item modded): openChest memantau open_window sendiri, lanjut mode degraded (isi dari /data get block, pindah lewat shift-click berbasis slot), SELALU menutup jendela (close_window mentah) - TERUJI TIRUAN, BELUM DIUJI di server
-- [~] inv.store/inv.take: hasil dihitung dari isi chest di server (tidak lagi salah menilai gagal saat server lag); item vanilla yang tak terbaca bot ikut dipindah; item modded dengan includeModded=true dan bot op; inv.take item=all
-- [~] inv.snapshot hydrate: item polos (tanpa komponen) yang dibawa sebelum spawn dipulihkan ke tampilan bot; state.inventory memakai daftar kebenaran server selama snapshot <30 dtk
-- [ ] Item BERMUATAN komponen modded tetap tak terbaca bot (butuh skema SlotComponent: opsi 2)
-- [ ] craft.item dan breed.animals belum dikerjakan (craft memakai jendela yang sama; 2x2 lewat inventory tidak butuh jendela chest)
-## Pembaruan #9 (v2.4: crafting, breeding, catatan inventory)
-- [~] craft.item: resep 2x2 lewat inventory (tanpa jendela chest), resep meja lewat meja crafting terdekat/koordinat; jendela meja yang tak terbaca (degraded) ditolak jelas; bahan diperiksa lewat sinkron server (butuh op) - TERUJI TIRUAN, BELUM DIUJI di server
-- [~] breed.animals: cow/sheep/goat/mooshroom/pig/chicken/horse/donkey/llama/rabbit/fox; anak lahir diukur dari event entitySpawn (bukan metadata); cooldown 5 menit disimpan di memori proses - TERUJI TIRUAN. Deteksi anak lewat metadata[16] (AgeableMob) BELUM DIUJI
-- [~] Catatan inventory (BotState) disamakan dengan server setelah inv.store/inv.take/craft.item/breed.animals (reconcile: pulihkan item polos, hapus item hantu, koreksi jumlah)
-- [ ] ChestBook (inventory eksternal): catat isi tiap chest per koordinat (item, jumlah, waktu lihat) ke chests.json agar Director bisa memutuskan "ambil dari chest X"; data sudah tersedia dari inv.view/store/take, tinggal dicatat
-- [~] guard.post (v2.5): jaga titik tetap, serang hostile dalam radius (pedang, atau panah bila ada busur+panah dan jarak >= 5), kembali ke pos, mundur + makan saat HP rendah; durasi lewat durationMs/timeoutMs - TERUJI TIRUAN, BELUM DIUJI di server
-- [~] guard.follow (v2.5): ikut pemain (GoalFollow), jaga radius di sekitar pemain, panah/pedang, berhenti bila pemain hilang > lostTimeoutMs; mencatat bot.arcadia.companion (waktu bersama, kill, tembakan, sesi) sebagai bahan affection persona - TERUJI TIRUAN, BELUM DIUJI
-- [ ] Persona: nilai affection (disimpan JSON), dipengaruhi follow-as-guard, hadiah item, waktu bersama; mempengaruhi bobot Director (kontrak Persona.traits sudah ada)
-- [ ] Perintah di dalam game: pemilik mengetik "!bot guard/follow/stop/craft ..." di chat -> masuk antrean engine (hanya dari pemain yang diizinkan)
-- [ ] WebUI: tombol cepat guard/follow/stop, kartu Inventory (akurat/tidak, tombol Snapshot), kartu chest, form craft/breed; peta 2D lalu opsional viewer 3D
-- [ ] craft: menaruh meja crafting bila tidak ada, tungku (smelting), resep dengan bahan modded
-- [ ] breeding: deteksi mode cinta/anak yang lebih tepat, penyimpanan cooldown antar restart
-- [ ] Mekanik hidup (Director non-LLM + cyclebook JSON + persona + plugin planner LLM) setelah fungsi vanilla lengkap
-- [ ] Skema SlotComponent untuk komponen item modded (opsi 2) agar item bermuatan komponen terbaca penuh
-## Hasil uji lapangan: sleep.auto dan guard (Okt 2026; detail di docs/FIELD_TESTS.md)
-- [~] guard.post: DILAPORKAN selesai OK tepat durasi (30 dtk); statistik tidak terlihat (log CLI terpotong); akurasi panah dan guard.follow BELUM DIUJI
-- [ ] UI/CLI: tampilkan `data` penuh hasil task (kills/shots/hits dst.); log CLI memotong objek hasil
-- [ ] sleep.auto: bot terbangun 3-5 dtk setelah tidur ("1/2" -> "0/2 players sleeping") pada bed ditaruh DAN bed yang ada, tanpa mob (fights 0); selidiki pose tidur (entity_metadata gagal parse?), paket gerak saat tidur, bed hilang (warning q1)
-- [ ] sleep.auto: malam terlewati (hari 1, "Sleeping through this night") tetapi dicatat SERVER_REJECTED -> anggap sukses bila hari berganti selama/sesudah percobaan
-- [ ] engine: INTERRUPTED menjeda antrean walau bot tidak terkena damage -> jeda hanya bila ada damage/serangan, atau kode lain untuk bangun non-bahaya
-- [ ] sleep.auto multi-pemain: playersSleepingPercentage ("1/2"): laporkan "pemain lain belum tidur" alih-alih gagal
-- [ ] bot.died 8 dtk setelah guard.post selesai: penyebab belum diketahui
-
-## Batch 10 — Verifikasi & stabilitas (rencana 2026-10-09)
-
-Status masuk
-- TERBUKTI (log pemilik, terpotong): breed.animals species=auto pairs=2 lewat API/antrean -> OK 7,7 dtk;
-  antrean engine queued -> started -> finished berjalan. Jumlah anak tidak terlihat di log.
-- Perbaikan 09-10 (fix-breed-v2): gotoTimed tidak lagi menyamarkan Timeout sebagai PathStopped;
-  PathStopped dari luar dicoba ulang dan membawa "[asal: ...]"; approachEntity; anak dilacak dari entitySpawn.
-- Belum terjelaskan: PathStopped seketika (88 ms, 3,4 dtk) sebelum perbaikan. Jika muncul lagi, baca
-  "[asal: ...]" dan data.pathStops pada SKILLRESULT.
-
-Urutan: B10-1 -> (B10-2, B10-4, B10-5 bebas) -> B10-3 (butuh B10-1) -> B10-6 terakhir.
-
-### B10-1 Keamanan jaringan  [Pemilik, S] — DULU
-- Langkah: cek router tidak mem-forward 25565; firewall/bind server; API kontrol tetap 127.0.0.1 + token;
-  git rm --cached mc.local.json.bp, tambah *.bp ke .gitignore. Konsol: whitelist on, whitelist add BotAlpha
-  (pelengkap saja; nama BotAlpha tetap bisa dipalsukan di offline-mode).
-- Selesai bila: dari jaringan luar (data seluler) ping ke server gagal; repo tidak memuat berkas lokal.
-
-### B10-2 Konfirmasi breed.animals  [Pemilik, S]
-- Langkah: 3 skenario dengan hewan baru tiap uji (cooldown 5 menit): pairs=1 sapi dekat; pairs=2 sapi
-  bergerak; tanpa gandum. Kirim SKILLRESULT UTUH dari CLI (UI memotong hasil).
-- Selesai bila: data.babies = pairs, semua data.moves ok, pathStops kosong, tanpa PathStopped seketika
-  dalam 10 percobaan berurutan; tanpa gandum -> PRECONDITION_FAILED.
-
-### B10-3 Uji server skill yang baru "teruji tiruan"  [Pemilik, M] — setelah B10-1
-- Cakupan: craft.item (2x2 lalu meja), inv.snapshot/view/store/take, farm.harvest (pascaperbaikan approach),
-  mine.collect (dirt/stone + anomali nav.goto sesudah menggali lubang), guard.
-- Langkah: op BotAlpha + gamerule sendCommandFeedback true hanya selama sesi, lalu deop BotAlpha.
-  Parameter tiap skill lewat !task list. Satu sesi, satu log.
-- Selesai bila: tabel PASS/FAIL/SKIP per skill masuk HANDOFF (label TERBUKTI atau DILAPORKAN).
-
-### B10-4 Diagnosa T-pose A/B  [Pemilik, M]
-- Langkah: (1) ukur gerak di server: data get entity BotAlpha Pos dua kali berselang 2 dtk (animasi bukan
-  bukti gerak); (2) jalankan dengan ARCADIA_UNKNOWN_EMPTY=1 lawan bawaan, amati dari klien pemain saat bot
-  diam dan berjalan; (3) simpan keluaran !channels ysm epicfight; (4) catat apakah klien pengamat
-  memakai YSM/Epic Fight dan apakah pemain biasa tampil normal.
-- Selesai bila: tabel A/B terisi, hipotesis patch-blocks dikonfirmasi atau disanggah, dan ada keputusan
-  (lanjut tangkap paket pilih-model YSM, atau tutup).
-
-### B10-5 Spike statistik paket gagal parse  [Pemilik, S, hanya baca log]
-- Langkah: setelah 30 menit aktivitas, grep -a "PARSE GAGAL" bot.log | sed -E 's/.*paket: ([a-z_]+).*/\1/' | sort | uniq -c | sort -rn
-- Selesai bila: ada peringkat paket gagal; keputusan: skema SlotComponent sendiri layak (window_items/set_slot
-  sering) atau tidak (didominasi entity_equipment/metadata mob lain).
-
-### B10-6 Penutupan batch  [Pemilik + Agen, S]
-- npm test dijalankan di lingkungan sebenarnya (path.test.js dan 6 kasus baru di breed.test.js belum pernah
-  dijalankan di sana), commit, HANDOFF checkpoint #10 berisi hasil B10-1..5, MAP.md dibangkitkan ulang, tag prestable-1.
-
-### Ditunda (dengan alasan)
-- Skema SlotComponent sendiri: tunggu B10-5.   - PvP / damage Epic Fight: butuh HP mob terbaca.
-- Upgrade pathfinder: risiko regresi, tunggu semua skill terbukti.   - Persona / planner LLM / multi-bot: tunggu stabil.
-- Pilih-model YSM: tunggu B10-4.   - Format ack TaCZ selain kosong: hanya bila kick muncul.
-- [ ] Crossbow (muat lalu tembak) dan perilaku khusus creeper (menjauh) untuk guard
-- [ ] Affection persona: baca bot.arcadia.companion, simpan ke JSON, pengaruhi bobot Director
-- [ ] Progress langsung untuk skill panjang (guard/follow/farm): ctx.progress -> event task.progress -> kartu UI
-
-## Pembaruan #7 (UI/Director)
-- [~] UI modular + cookie per port + peta 2D + Director + /openapi.json: TERUJI TIRUAN (npm test), BELUM DIUJI di browser HP dan dengan model sungguhan
-- [ ] Uji model: ARCADIA_LLM_KEY=... node orchestrator/try.js "..." lalu lewat UI (kartu Director); kirim hasil/galat
-- [ ] Kartu progress memakai bentuk BotState.progress/event task.progress dari UI_PLAN (pct/label/data, taskId+seq): cocokkan dengan implementasi asli
-- [ ] Otonomi Director (loop) dan event director.decision di kontrak: belum ada (sengaja)
-- [ ] Viewer 3D: uji nyata (spike tinggal eksekusi)
-
-## Batch 11 — Viewer prismarine & Orchestrator LLM (rencana 2026-10-12)
-Kartu rinci (format UI_PLAN bagian 4): `docs/AGENT_BRIEFS.md`. Urutan tetap: B10-1 (keamanan jaringan) dulu sebelum membuka API ke jaringan atau memakai ARCADIA_BIND=0.0.0.0.
-Status masuk
-- TERUJI TIRUAN: UI modular, controller pelengkap, Director + klien model, peta 2D, pembungkus bind viewer (npm test). BELUM DIUJI: browser HP, model sungguhan, viewer dengan bot.
-- Keputusan pemilik (2026-10-12): viewer utama = prismarine-viewer (render asli); peta 2D buatan sendiri = cadangan; LLM dikembangkan hingga bisa menjadi orchestrator (bertahap L1..L4).
-Jalur 1 Viewer
-- [~] V-0 Spike viewer nyata [Pemilik+E, M]: TERBUKTI laptop/server asli untuk HTTP, Socket.IO, bind, chunk, entitas; render blok modded dan beban Termux/HP belum tuntas -> FIELD_TESTS.md
-- [x] V-1 Panel Viewer di UI [B, M]: TERBUKTI browser laptop; per bot, eagle view, port fallback; browser HP belum diuji  - [ ] V-2 Proxy same-origin [E, L, opsional]  - [ ] V-3 Kontrak BotState.viewer? [A, S]
-Jalur 2 Orchestrator
-- [ ] O-1 Usulan terstruktur (tool calling, retry, backoff, versi prompt) [D, M]  - [ ] O-4 Audit director.log [D, S]  - [ ] O-5 Harness evaluasi + skenario [D, M]
-- [ ] O-2 Loop multi-langkah dengan anggaran [D, L]  - [ ] O-3 Kebijakan otonomi + kontrak (Director, director.decision, Command) [A+D, L]  - [ ] O-8 Panel Director v2 [B, M]
-- [ ] ChestBook (chests.json) sebagai konteks Director (sudah ada di Pembaruan #9) - masuk L2
-Jalur 3 Pengerasan
-- [ ] H-1 sleep.auto klik bed lagi setelah bangun [C] (butuh tail -n 1 tasks.log)  - [ ] H-2 kartu progress cocok dengan BotState.progress asli [B]
-- [ ] H-3 tes extend tanpa mock lama [E]  - [ ] E-1 pindahkan rute stabil ke control/index.js [E]
-Pemilik
-- [ ] M-1 Uji model nyata (docs/USAGE_UPDATE.md bagian 3)  - [ ] B10-1..B10-6 tetap berlaku
-Ditunda (dengan alasan)
-- Hub multi-bot dan L4: tunggu L3 terbukti.  - Hapus peta 2D: tunggu V-1.  - Otonomi `auto` penuh: hanya setelah `auto-safe` terbukti di server uji.
-
-## Batch 12 — Otak lifecycle: statistik, task acak berbobot, skor, upgrade, tool tambahan (rencana 2026-10-12)
-Rancangan: `docs/LIFECYCLE_PLAN.md`; kartu paralel: `docs/AGENT_BRIEFS_LIFECYCLE.md`. Status: RENCANA, belum ada kode. Urutan: B10-1 tetap dulu untuk jaringan; Batch 11 (viewer/orchestrator) berjalan paralel.
-Gelombang 1 (serentak, tanpa mengubah perilaku bot)
-- [~] A-1 kontrak lifecycle v0.3 [A] (kontrak v0.3, 41 test PASS)
-- [ ] S-1 audit sinyal konteks [Pemilik+D] (butuh server nyata)
-- [~] S-2 pengumpul statistik [D] (lifecycle/stats.js, 14 test PASS)
-- [~] P-1 persona stats [D] (lifecycle/persona.js, 25 test PASS)
-- [~] S-3 penghitung skor offline di tasks.log [D] (lifecycle/scorer.js + replay.js, 16 test PASS)
-Gelombang 2:
-- [~] G-1 cyclebook + sampler mode kering [D] (12 template, lifecycle/sampler.js, dry.js, 12 test PASS)
-- [~] U-1 kartu Batch/Skor/Persona [B] (cards.mjs renderPersona + renderBatch, 43 test PASS)
-- [~] L-2 rubrik evaluator LLM [D] (lifecycle/evaluator.js rubrik terstruktur + clamp, 10 test PASS)
-- [~] T-1 spesifikasi makro [C+A] (docs/MACRO_SPEC.md, lifecycle/macro.schema.json, macro_check.js, 8 test PASS)
-Gelombang 3: [ ] G-2 mode propose + persetujuan  [ ] PR-1 progresi/upgrade  [ ] T-2 interpreter makro  [ ] L-1 peringkat ulang LLM
-Gelombang 4: [ ] C-1 konfigurasi berversi + patch  [ ] G-3 bandit  [ ] O-3 auto-safe  [ ] T-3 keputusan kode buatan model (bawaan: tidak)
-Keputusan terbuka pemilik: LIFECYCLE_PLAN bagian 7 (bobot skor, T3, kenaikan otomatis vs persetujuan, nama pemain di prompt, anggaran LLM, arti affection, ambang "banyak pemain", lokasi data).
-
-<!-- profile3d-lifecycle-v1 -->
-## Pembaruan #12 (profil 3D + generator kegiatan bertajuk)
-- [x] Renderer GLB lokal per bot, skala, drag rotasi, mode animasi otomatis/manual, pemetaan clip, dan fallback profil CSS.
-- [x] API profil/model terautentikasi; data model dan kalibrasi berada di 'data/', bukan repo.
-- [x] Tambah 14 statistik UI dan 21 faktor numerik stabil untuk scoring/dataset ML.
-- [x] Cyclebook multi-task berjudul + skor pemilihan; contoh **Hari yang Indah untuk Bertanam**.
-- [ ] Uji model Blue Archive milik pemilik: ukuran, material/texture, skeleton, seluruh nama clip, dan beban render HP.
-- [ ] Rekam pergantian idle/working/happy/tired/danger pada task server asli dan kalibrasi mapping per model.
-- [ ] Setelah outcome cukup: evaluasi teacher LLM -> label/ranking -> ranker offline kecil; bandingkan dengan heuristic sebelum mengaktifkan otomatis.
-
-## Pembaruan #11 (UI controller AI Life)
-- [x] Viewer otomatis setelah paket tersedia; toggle on/off dan preferensi per bot dari UI, tanpa env aktivasi
-- [x] Iframe prismarine-viewer stabil melewati polling; tidak dibuat ulang setiap 3 detik
-- [x] Dashboard controller/tamagotchi: world stage, status, task, inventory, lifecycle, Director, chat, statistik afeksi/needs/traits
-- [~] Boundary akun/tenant `/auth/session` dan account chip UI - TERUJI TIRUAN + browser lokal; login customer, penyimpanan user, session database, dan isolasi tenant BELUM dibuat
-- [x] Ollama Cloud `gpt-oss:20b` - TERBUKTI satu panggilan nyata; usulan tetap pending sampai disetujui
-- [ ] Uji responsif dari browser HP/Termux dan ukur viewer 5 menit
-- [ ] Auth customer: password/OAuth, session rotation, tenant membership, RBAC per bot, audit login, recovery
-- [ ] Director L2: mission runner manual-step dengan batas langkah/token dan replan dari outcome
+Engine antrean, API/SSE, persona/lifecycle/skor, runner misi, agent berulang/izin/sandbox, admin multi-bot, Eagle/first-person, GLB/animasi/framing, log agent ringkas, setup LLM melalui `.env`, dan 17 manifest skill. Lihat status pengujian di handoff; daftar ini bukan klaim bahwa semuanya terbukti pada server asli.

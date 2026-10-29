@@ -2,6 +2,19 @@
 Format: Ditambah / Diubah / Diperbaiki / Catatan keamanan / Diketahui bermasalah. Label status: TERBUKTI (log pemilik) | DILAPORKAN | TERUJI TIRUAN | BELUM DIUJI.
 Tanggal paket sebelum 2026-10-12 tidak tercatat; urutan di bawah = urutan pengiriman.
 
+Catatan historis berlaku pada tanggalnya. Untuk penggunaan sekarang ikuti [indeks aktif](README.md) dan [WORKFLOW](WORKFLOW.md), bukan instruksi installer/patch dalam riwayat lama.
+
+## [Dokumentasi aktif dan audit main] 2026-10-29
+
+- Analisis lanjutan fix vs upgrade dicatat dalam [CORE_ROADMAP.md](CORE_ROADMAP.md): rekomendasi reliability sebelum perluasan tujuan besar, dengan milestone dan skenario penerimaan. Status USULAN untuk verifikasi pemilik; tidak ada implementasi runtime atau uji server baru.
+
+- README, HANDOFF, TODO, MAP, AGENT_BRIEFS, NEXT_CHAT dan USAGE_UPDATE disusun ulang mengikuti source saat ini. Indeks docs, WORKFLOW dan PROJECT_STATUS ditambahkan; snapshot HANDOFF/TODO lama disimpan di docs/archive.
+- Codex/Claude Code/Antigravity dengan akses workspace wajib edit langsung di folder lokal. Chat Claude/ChatGPT/Gemini tanpa akses workspace mengirim ZIP source final. Dilarang memakai fix.js/installer/upgrader source; patch dependency NeoForge postinstall tetap bagian runtime.
+- Rencana dan fragmen _append ditandai ARSIP; tidak lagi menjadi instruksi aktif atau izin delegasi. Panduan admin, agent dan misi dibedakan menurut jalur eksekusi saat ini; batas sinkronisasi framing serta status training ML dicatat.
+- Native ditegaskan sebagai integrasi source Node.js/web. Promosi main belum direkomendasikan tanpa menutup backup konfigurasi yang masih terlacak, verifikasi instalasi bersih/dependency opsional, dan kegagalan postinstall yang belum menghasilkan exit code gagal.
+- Audit dilakukan pada baseline plus/38ba803, tanpa merge/commit/push, perubahan runtime, akses key, atau koneksi Minecraft/LLM cloud. Hasil uji terbaru dicatat di [PROJECT_STATUS.md](PROJECT_STATUS.md).
+- TERUJI TIRUAN: npm test, npm run check, test:admin dan test:llm-config lulus pada dependency lokal yang sudah terpasang. Pemeriksaan tautan lokal 33 dokumen tidak menemukan target hilang; instalasi bersih dan server asli tidak diuji pada audit ini.
+
 ## [Log agent ringkas dan profil 3D Multi] 2026-10-21
 
 - Panel agent kini hanya menampilkan tujuan serta langkah terbaru/aktif secara bawaan. Status aktif memakai indikator beranimasi; klik status membuka seluruh riwayat proses dalam area scroll, sehingga panel tidak terus memanjangkan dashboard.

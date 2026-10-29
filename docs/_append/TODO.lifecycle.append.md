@@ -1,3 +1,5 @@
+> **ARSIP FRAGMEN INSTALLER — JANGAN DITERAPKAN.** Isi ini berasal dari distribusi lama dan tidak boleh ditambahkan kembali ke README/MAP/TODO. Gunakan [indeks aktif](../README.md) dan [WORKFLOW](../WORKFLOW.md); upgrade source tidak memakai fix.js.
+
 ## Batch 12 — Otak lifecycle: statistik, task acak berbobot, skor, upgrade, tool tambahan (rencana 2026-10-12)
 Rancangan: `docs/LIFECYCLE_PLAN.md`; kartu paralel: `docs/AGENT_BRIEFS_LIFECYCLE.md`. Status: RENCANA, belum ada kode. Urutan: B10-1 tetap dulu untuk jaringan; Batch 11 (viewer/orchestrator) berjalan paralel.
 Gelombang 1 (serentak, tanpa mengubah perilaku bot)

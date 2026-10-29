@@ -1,5 +1,7 @@
 # Setup dan pengujian LLM — Windows, Termux, Linux
 
+Panduan aktif. Lihat [indeks](README.md), [status proyek](PROJECT_STATUS.md), dan [aturan upgrade](WORKFLOW.md). Provider/model contoh harus disesuaikan dengan konfigurasi akun; audit dokumentasi ini tidak memverifikasi katalog atau layanan cloud saat ini.
+
 Gunakan Node.js 22 atau lebih baru (sesuai requirement mineflayer yang terpasang). Semua perintah di bawah dijalankan dari root proyek.
 
 ## Kenapa key sudah disimpan tetapi belum terbaca?

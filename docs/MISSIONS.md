@@ -9,7 +9,7 @@ Implementasi 2026-10-19. Status **TERUJI TIRUAN**: engine/API asli dengan execut
 Restart proses bot (`npm start` setelah proses lama berhenti), lalu muat ulang UI. Perubahan backend memerlukan restart; tidak ada installer/apply/upgrader.
 
 - **Kirim pesan** mengobrol melalui konfigurasi LLM yang sudah ada. Balasan menerima konteks dunia, persona, percakapan terakhir, dan 12 ingatan terbaru. Chat tidak menjalankan aksi.
-- **Mulai kegiatan** mengubah tujuan menjadi kegiatan berjudul melalui Director, kemudian menjalankannya langsung.
+- **Mulai kegiatan** mengirim tujuan ke agent berulang; tindakan mengikuti mode izin. Jalur misi di bawah berlaku untuk kegiatan offline dan API `/missions`.
 - **Pilih kegiatan offline** memakai sampler lifecycle yang ada, tanpa LLM. Ini masih aturan/skor deterministik, bukan ML terlatih.
 - **Hentikan kegiatan** membatalkan task aktif dan menghentikan langkah berikutnya. **Lanjutkan** tersedia setelah masalah langkah diselesaikan.
 - **Perbaiki rencana · LLM** menyusun sisa langkah berdasarkan hasil yang sudah tercatat. Langkah selesai tetap dipertahankan; rencana baru menunggu Lanjutkan. Maksimal tiga revisi.
@@ -18,7 +18,7 @@ Restart proses bot (`npm start` setelah proses lama berhenti), lalu muat ulang U
 
 ## Perilaku runner
 
-`lifecycle/missions.js` menjadi pemilik eksekusi kegiatan dari UI baru. Director dipanggil dengan `proposeOnly:true`: tidak ada auto-approve atau proposal legacy yang dapat mengantrekan task yang sama lagi. Lifecycle menyediakan `plan()` tanpa membuat batch approval lama.
+`lifecycle/missions.js` menjadi pemilik eksekusi kegiatan offline dan API `/missions`. Director dipanggil dengan `proposeOnly:true`: tidak ada auto-approve atau proposal legacy yang dapat mengantrekan task yang sama lagi. Lifecycle menyediakan `plan()` tanpa membuat batch approval lama.
 
 Satu misi berjalan per bot, satu langkah dikirim ke engine pada satu waktu. Langkah berikutnya menunggu semua `dependsOn` selesai. Rencana LLM/lifecycle saat ini dikonversi menjadi dependency linear; API internal `create()` menerima graph acyclic eksplisit. Validasi menolak skill/parameter salah, dependency hilang, ID duplikat, dan siklus. Batas 12 langkah per rencana; Director tetap membatasi tiga task per balasan.
 
@@ -28,7 +28,7 @@ Checkpoint disimpan sebelum enqueue ke `data/missions/<botId>.json` (atau `ARCAD
 
 Saat restart, misi aktif menjadi paused dan langkah aktif menjadi uncertain. **Tidak ada pengulangan aksi otomatis.** Periksa dunia, lalu konfirmasi selesai atau siapkan ulang langkah dan lanjutkan. Task lama yang masih berjalan harus berhenti sebelum resolusi. Mati, disconnect, dan kill switch menghentikan kelanjutan misi. Ini pemulihan checkpoint, bukan melanjutkan posisi internal skill di tengah aksi.
 
-API legacy Director/lifecycle tetap tersedia untuk kompatibilitas dan memiliki perilaku lama. UI companion memakai endpoint misi terpadu. Autonomi tanpa tujuan pemilik, first-person view, login customer, dan training ML belum termasuk perubahan ini.
+API legacy Director/lifecycle tetap tersedia untuk kompatibilitas. UI companion memakai agent untuk tujuan baru dan runner misi untuk kegiatan offline. First-person dan login owner admin sudah tersedia; customer management serta training ML masih backlog. Lihat [ADMIN_PANEL.md](ADMIN_PANEL.md) dan [AGENT_RUNTIME.md](AGENT_RUNTIME.md).
 
 ## API
 

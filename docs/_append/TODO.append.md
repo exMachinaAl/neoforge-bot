@@ -1,3 +1,5 @@
+> **ARSIP FRAGMEN INSTALLER — JANGAN DITERAPKAN.** Isi ini berasal dari distribusi lama dan tidak boleh ditambahkan kembali ke README/MAP/TODO. Gunakan [indeks aktif](../README.md) dan [WORKFLOW](../WORKFLOW.md); upgrade source tidak memakai fix.js.
+
 ## Batch 11 — Viewer prismarine & Orchestrator LLM (rencana 2026-10-12)
 Kartu rinci (format UI_PLAN bagian 4): `docs/AGENT_BRIEFS.md`. Urutan tetap: B10-1 (keamanan jaringan) dulu sebelum membuka API ke jaringan atau memakai ARCADIA_BIND=0.0.0.0.
 Status masuk

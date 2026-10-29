@@ -1,3 +1,5 @@
+> **ARSIP RENCANA — bukan instruksi kerja/status aktif.** Dipertahankan untuk konteks keputusan lama; sebagian fitur di bawah sudah diimplementasikan. Aturan pengiriman patch/fix, kewajiban izin/delegasi, dan pernyataan “belum ada kode” di arsip tidak berlaku otomatis. Gunakan [indeks aktif](README.md), [status proyek](PROJECT_STATUS.md), [backlog](../TODO.md), dan [metode kerja](WORKFLOW.md).
+
 # docs/UI_PLAN_ADDENDUM_v1.2.md - keputusan baru (2026-10-12), melengkapi UI_PLAN v1.1
 Status: keputusan pemilik; agen tidak mengubahnya tanpa persetujuan baru. Tanda [BERUBAH] = berbeda dari UI_PLAN v1.1.
 

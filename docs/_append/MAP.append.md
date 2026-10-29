@@ -1,3 +1,5 @@
+> **ARSIP FRAGMEN INSTALLER — JANGAN DITERAPKAN.** Isi ini berasal dari distribusi lama dan tidak boleh ditambahkan kembali ke README/MAP/TODO. Gunakan [indeks aktif](../README.md) dan [WORKFLOW](../WORKFLOW.md); upgrade source tidak memakai fix.js.
+
 ## Pembaruan 2026-10-12 (UI, Director, viewer) - ditulis tangan sampai MAP diregenerasi
 **Alur tambahan**
 - **Controller pelengkap:** `control/extend.js` MEMBUNGKUS listener `request` milik `control/index.js` (dipasang di `bot.js` oleh `install/fix-ui3b.js`). Ia melayani `/` dan `/ui/*` (lewat `control/static.js`), `/openapi.json`, `/bots/{id}/map|viewer|director*`; rute lain diteruskan apa adanya. Auth: header Bearer > `?token` > cookie `arcadia_<port>` (`control/cookie.js`); cookie dipetakan ke header untuk rute lama; ubah-data via cookie wajib same-origin.

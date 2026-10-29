@@ -2,6 +2,8 @@
 
 Legenda: TERBUKTI = terlihat di log server/CLI | DUGAAN = penjelasan yang belum diuji | BELUM DIUJI. Tambahkan hasil baru di bawah, jangan menimpa.
 
+> Catatan di bawah adalah bukti historis sesuai tanggalnya, bukan daftar pekerjaan aktif. Rangkuman diagnosis tersisa ada di [TODO](../TODO.md); audit terbaru di [PROJECT_STATUS](PROJECT_STATUS.md). Instruksi upgrade yang berlaku: [WORKFLOW](WORKFLOW.md).
+
 ## sleep.auto (Okt 2026, server LAN, 2 pemain: pemilik + bot, malam dipasang dengan /time set 13000)
 Params semua uji: `place:true, breakAfter:true, waitForNight:true, force:true`.
 

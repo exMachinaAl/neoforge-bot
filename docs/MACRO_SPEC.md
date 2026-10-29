@@ -1,6 +1,6 @@
 # docs/MACRO_SPEC.md - Spesifikasi Makro Deklaratif (DSL) Arcadia v1.0
 
-Spesifikasi makro deklaratif untuk menyusun urutan skill yang sudah ada secara terstruktur, aman, dan tanpa eksekusi kode sembarang (*no arbitrary code execution* / *no eval*).
+Spesifikasi makro deklaratif untuk menyusun urutan skill yang sudah ada secara terstruktur, tanpa eksekusi kode JS sembarang di interpreter makro. Makro berbeda dari `tool.create/tool.run` milik [agent](AGENT_RUNTIME.md), yang memakai QuickJS terisolasi. Keberhasilan validasi contoh tidak berarti semua aksi contoh sudah terbukti di Minecraft; status implementasi dan pengujian: [PROJECT_STATUS.md](PROJECT_STATUS.md).
 
 ---
 
